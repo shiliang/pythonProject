@@ -8,5 +8,5 @@ RUN mvn package
 
 FROM maven:3.8.6-openjdk-11
 WORKDIR /home/workspace
-COPY --from=builder /code/target/parser-0.0.1-SNAPSHOT.jar /home/workspace/parser-0.0.1-SNAPSHOT.jar
-CMD [ "java", "-jar", "parser-0.0.1-SNAPSHOT.jar" ]
+COPY --from=builder /code/target/job-service-0.0.1-SNAPSHOT.jar /home/workspace/job-service-0.0.1-SNAPSHOT.jar
+CMD [ "java", "-jar", "job-service-0.0.1-SNAPSHOT.jar" ]
