@@ -1,0 +1,9 @@
+server:
+  address: 0.0.0.0
+  port: 5005
+
+catalog:
+#  address: "java-backendservice"
+#  port: "8008"
+  address: "192.168.0.112"
+  port: "31008"

@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: Deployment  #绑定的是Deployment模板
+metadata:
+  name: {{ include "job-service.fullname" . }}   # deployment模板的名字
+  labels:  # 标签
+    {{- include "job-service.labels" . | nindent 4 }}
+    app: {{ .Values.metadata.labels.app }}     # app 名字，需要和后面的service.yaml 一致
+spec:   # pod 的描述信息
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}    # 开启两个pods
+  {{- end }}
+  selector:   # 选择器
+    matchLabels:
+      {{- include "job-service.selectorLabels" . | nindent 6 }}
+    # app: job-service    # 需要和app 一致
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "job-service.selectorLabels" . | nindent 8 }}
+        app: {{ .Values.metadata.labels.app }}    # 需要和app 一致 
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "job-service.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}      
+      volumes:  # 宿主机挂载目录
+        - name: chainmaker-sdk-config         # 给需要挂载的宿主机路径起个名字
+          hostPath:                           # 宿主机路径
+            path: {{ .Values.env.SDK_PATH }}
+            type: Directory
+        - name: nfs-pv-mpc
+          persistentVolumeClaim:
+            claimName: nfs-pvc-mpc
+      containers:                            # 容器描述
+        - name: {{ .Chart.Name }}            # 容器的名字
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"   # 要拉取镜像的信息地址
+          imagePullPolicy: {{ .Values.image.pullPolicy }}          # 镜像拉取策略
+          ports:                        # 容器内部映射的端口号
+            - name: http
+              containerPort: 5005           #  容器内部映射的端口号
+              protocol: TCP
+          volumeMounts:                 # 容器内部映射的目录路径
+            - name: chainmaker-sdk-config    # 给需要映射的目录路径起个名字，名字要和上面的宿主机路径的名字对应
+              mountPath: /home/workspace/sdk  # 容器内部映射挂载的目录路径
+            - mountPath: /home/workspace/logs
+              name: nfs-pv-mpc
+              subPathExpr: job-service/$(POD_NAMESPACE)_$(POD_NAME)_$(POD_IP)_$(NODE_IP)_$(NODE_NAME)
+          env:
+            - name: SDKCP
+              value: {{ .Values.env.SDKCP | quote }}  # quote使用双引号将变量值包裹起来
+            - name: SDK_PATH
+              value: {{ .Values.env.SDK_PATH | quote }}
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /v1/version
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /v1/version
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 1
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
