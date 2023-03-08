@@ -473,7 +473,7 @@ public class LogicalPlanBuilder extends SqlBaseBaseVisitor<Node> {
 
         List<FlExpression> model = new ArrayList<>();
         Identifier key = new Identifier("model_name");
-        Identifier value = new Identifier(context.flModelSeq(0).flModel(0).HELR().getText());
+        Identifier value = new Identifier(context.flModelSeq(0).flModel(0).getText());
         FlExpression modelName = new FlExpression(key, value, FlExpression.Operator.EQUAL);
         model.add(modelName);
         for (int i=0; i<context.flModelSeq(0).flModel(0).flExpressionSeq().flExpression().size(); i++) {
