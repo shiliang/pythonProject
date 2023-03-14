@@ -1,0 +1,2 @@
+[34m2023-03-14 14:59:01.378[0;39m        [[31mWARN[0;39m]    [main]       org.apache.catalina.core.AprLifecycleListener:173    This listener must only be nested within Server elements, but is in [TomcatEmbeddedContext].
+ 
