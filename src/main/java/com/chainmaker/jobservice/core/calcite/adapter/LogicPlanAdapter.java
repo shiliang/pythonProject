@@ -5,7 +5,6 @@ import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
 import com.chainmaker.jobservice.core.parser.plans.*;
 import com.chainmaker.jobservice.core.parser.tree.*;
-import com.esri.core.geometry.SegmentIterator;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.Enumerable;

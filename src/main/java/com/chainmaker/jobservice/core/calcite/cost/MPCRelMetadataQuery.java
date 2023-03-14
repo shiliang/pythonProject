@@ -11,11 +11,11 @@ import org.apache.calcite.rel.metadata.RelMetadataQuery;
 public class MPCRelMetadataQuery extends RelMetadataQuery {
 
     public MPCRelMetadataQuery(JaninoRelMetadataProvider metadataProvider, RelMetadataQuery prototype) {
-        super(THREAD_PROVIDERS.get(), EMPTY);
+        super();
     }
 
     public MPCRelMetadataQuery() {
-        super(THREAD_PROVIDERS.get(), EMPTY);
+        super();
     }
 
     public static MPCRelMetadataQuery instance() {

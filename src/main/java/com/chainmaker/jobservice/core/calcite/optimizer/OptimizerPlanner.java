@@ -4,11 +4,14 @@ import com.chainmaker.jobservice.core.calcite.converter.MPCFilterConverter;
 import com.chainmaker.jobservice.core.calcite.converter.MPCJoinConverter;
 import com.chainmaker.jobservice.core.calcite.converter.MPCProjectConverter;
 import com.chainmaker.jobservice.core.calcite.converter.MPCTableScanConverter;
+import com.chainmaker.jobservice.core.optimizer.RuleBasedOptimizer;
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.rules.*;
+import org.apache.calcite.tools.RuleSet;
+import org.apache.calcite.tools.RuleSets;
 
 /**
  * 查询优化类，封装了一些繁琐的调用，使用起来更加简单
@@ -57,6 +60,7 @@ public class OptimizerPlanner {
             planner.addRule(MPCFilterConverter.INSTANCE);
             planner.addRule(MPCProjectConverter.INSTANCE);
             planner.addRule(MPCJoinConverter.INSTANCE);
+
 //            planner.removeRule(EnumerableRules.ENUMERABLE_PROJECT_RULE);
 //            planner.removeRule(EnumerableRules.ENUMERABLE_FILTER_RULE);
 //            planner.removeRule(EnumerableRules.ENUMERABLE_JOIN_RULE);
@@ -75,17 +79,28 @@ public class OptimizerPlanner {
 //            planner.addRule(EnumerableRules.ENUMERABLE_LIMIT_RULE);
 
 
-            planner.addRule(JoinAssociateRule.INSTANCE);
-            planner.addRule(FilterJoinRule.FILTER_ON_JOIN);
-            planner.addRule(ReduceExpressionsRule.PROJECT_INSTANCE);
-            planner.addRule(ReduceExpressionsRule.CALC_INSTANCE);
-            planner.addRule(JoinPushThroughJoinRule.LEFT);
-            planner.addRule(JoinPushThroughJoinRule.RIGHT);
-            planner.addRule(JoinCommuteRule.INSTANCE);
-            planner.addRule(JoinCommuteRule.SWAP_OUTER);
-            planner.addRule(ProjectMergeRule.INSTANCE);
-            planner.addRule(AggregateJoinRemoveRule.INSTANCE);
-            planner.addRule(ProjectSortTransposeRule.INSTANCE);
+            planner.addRule(CoreRules.JOIN_ASSOCIATE);
+            planner.addRule(CoreRules.FILTER_INTO_JOIN);
+            planner.addRule(CoreRules.FILTER_REDUCE_EXPRESSIONS);
+            planner.addRule(CoreRules.CALC_REDUCE_EXPRESSIONS);
+            planner.addRule(CoreRules.PROJECT_REDUCE_EXPRESSIONS);
+            planner.addRule(CoreRules.JOIN_CONDITION_PUSH);
+            planner.addRule(CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES);
+            planner.addRule(CoreRules.JOIN_COMMUTE_OUTER);
+            planner.addRule(CoreRules.JOIN_COMMUTE);
+            planner.addRule(CoreRules.PROJECT_MERGE);
+            planner.addRule(CoreRules.PROJECT_SET_OP_TRANSPOSE);
+//            planner.addRule(JoinAssociateRule.INSTANCE);
+//            planner.addRule(FilterJoinRule.FILTER_ON_JOIN);
+//            planner.addRule(ReduceExpressionsRule.PROJECT_INSTANCE);
+//            planner.addRule(ReduceExpressionsRule.CALC_INSTANCE);
+//            planner.addRule(JoinPushThroughJoinRule.LEFT);
+//            planner.addRule(JoinPushThroughJoinRule.RIGHT);
+//            planner.addRule(JoinCommuteRule.INSTANCE);
+//            planner.addRule(JoinCommuteRule.SWAP_OUTER);
+//            planner.addRule(ProjectMergeRule.INSTANCE);
+//            planner.addRule(AggregateJoinRemoveRule.INSTANCE);
+//            planner.addRule(ProjectSortTransposeRule.INSTANCE);
 
         }
     }

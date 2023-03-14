@@ -5,7 +5,6 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.catalina.session.TooManyActiveSessionsException;
-import org.codehaus.janino.Java;
 
 import java.util.ArrayList;
 import java.util.Arrays;

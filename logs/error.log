@@ -68,3 +68,24 @@
 	at org.chainmaker.sdk.RpcServiceClient.newServiceClient(RpcServiceClient.java:91)
 	at org.chainmaker.sdk.GrpcClientFactory.createRpcClient(GrpcClientFactory.java:125)
 	at org.chainmaker.sdk.GrpcClientFactory.create(GrpcClientFactory.java:108)
+[34m2023-03-14 17:16:24.007[0;39m        [[1;31mERROR[0;39m]    [http-nio-0.0.0.0-5005-exec-5]       com.chainmaker.jobservice.api.aspect.WebLogAspect:108    未知异常！原因是:
+ java.lang.NoSuchMethodError: com.google.common.base.Preconditions.checkArgument(ZLjava/lang/String;CLjava/lang/Object;)V
+	at io.grpc.Metadata$Key.validateName(Metadata.java:629)
+	at io.grpc.Metadata$Key.<init>(Metadata.java:637)
+	at io.grpc.Metadata$Key.<init>(Metadata.java:567)
+	at io.grpc.Metadata$AsciiKey.<init>(Metadata.java:742)
+	at io.grpc.Metadata$AsciiKey.<init>(Metadata.java:737)
+[34m2023-03-14 17:26:15.389[0;39m        [[1;31mERROR[0;39m]    [http-nio-0.0.0.0-5005-exec-4]       com.chainmaker.jobservice.api.aspect.WebLogAspect:108    未知异常！原因是:
+ java.lang.NoSuchMethodError: com.google.common.base.Preconditions.checkArgument(ZLjava/lang/String;CLjava/lang/Object;)V
+	at io.grpc.Metadata$Key.validateName(Metadata.java:629)
+	at io.grpc.Metadata$Key.<init>(Metadata.java:637)
+	at io.grpc.Metadata$Key.<init>(Metadata.java:567)
+	at io.grpc.Metadata$AsciiKey.<init>(Metadata.java:742)
+	at io.grpc.Metadata$AsciiKey.<init>(Metadata.java:737)
+[34m2023-03-14 17:28:24.272[0;39m        [[1;31mERROR[0;39m]    [http-nio-0.0.0.0-5005-exec-4]       com.chainmaker.jobservice.api.aspect.WebLogAspect:108    未知异常！原因是:
+ java.lang.NoSuchMethodError: com.google.common.base.Preconditions.checkArgument(ZLjava/lang/String;CLjava/lang/Object;)V
+	at io.grpc.Metadata$Key.validateName(Metadata.java:629)
+	at io.grpc.Metadata$Key.<init>(Metadata.java:637)
+	at io.grpc.Metadata$Key.<init>(Metadata.java:567)
+	at io.grpc.Metadata$AsciiKey.<init>(Metadata.java:742)
+	at io.grpc.Metadata$AsciiKey.<init>(Metadata.java:737)

@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.api.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.chainmaker.jobservice.api.builder.JobBuilder;
 import com.chainmaker.jobservice.api.builder.JobBuilderWithOptimizer;
 import com.chainmaker.jobservice.api.model.bo.*;
 import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
