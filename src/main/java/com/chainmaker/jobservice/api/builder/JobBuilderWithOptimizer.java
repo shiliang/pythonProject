@@ -257,12 +257,14 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // party
         List<Party> parties = new ArrayList<>();
-        Party party = new Party();
-        party.setServerInfo(null);
-        party.setStatus(null);
-        party.setTimestamp(null);
-        party.setPartyID(inputDataList.get(0).getDomainID());
-        parties.add(party);
+        for (TaskInputData inputData : inputDataList) {
+            Party party = new Party();
+            party.setServerInfo(null);
+            party.setStatus(null);
+            party.setTimestamp(null);
+            party.setPartyID(inputData.getDomainID());
+            parties.add(party);
+        }
         task.setParties(parties);
 
         for (Party p : parties) {
@@ -341,6 +343,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 object.put(subName, subJson);
             }
         } else {
+            if (key.equals("init_method")) {
+                return;
+            }
             object.put(key, value);
         }
     }
