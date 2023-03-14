@@ -343,9 +343,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 object.put(subName, subJson);
             }
         } else {
-            if (key.equals("init_method")) {
-                return;
-            }
             object.put(key, value);
         }
     }
