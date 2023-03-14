@@ -1,7 +1,7 @@
 package com.chainmaker.jobservice.api.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
-import com.chainmaker.jobservice.api.builder.JobBuilder;
+import com.chainmaker.jobservice.api.builder.JobBuilderWithOptimizer;
 import com.chainmaker.jobservice.api.model.bo.*;
 import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
 import com.chainmaker.jobservice.api.model.bo.graph.*;
@@ -136,6 +136,7 @@ public class JobParserServiceImpl implements JobParserService {
         String jobID = jobInfo.getJob().getJobID();
         put(jobID, jobGraph);
         CatalogCache catalogCache = new CatalogCache();
+        System.out.println(jobMissionDetail.getMissionDetailVOList());
         catalogCache.setMissionDetailVOList(jobMissionDetail.getMissionDetailVOList());
         catalogCache.setModelParamsVoList(jobMissionDetail.getModelParamsVoList());
         put(jobID, catalogCache);
@@ -151,6 +152,7 @@ public class JobParserServiceImpl implements JobParserService {
         missionInfoVo.setJobID(jobID);
         missionInfoVo.setMissionDetailVOs(getCatalogCache(jobID).getMissionDetailVOList());
         missionInfoVo.setModelParams(getCatalogCache(jobID).getModelParamsVoList());
+        System.out.println(missionInfoVo.getJobID());
 
         List<ServiceParamsVo> serviceParamsVos = new ArrayList<>();
         for (Service service : jobGraph.getJobInfo().getServices()) {
@@ -168,9 +170,11 @@ public class JobParserServiceImpl implements JobParserService {
 
     @Override
     public JobInfo jobCreate(MissionInfo missionInfo) {
+        System.out.println("missionInfo: " + missionInfo);
         String jobID = missionInfo.getJobID();
         JobGraph jobGraph = getJobGraph(jobID);
         JobInfo jobInfo = jobGraph.getJobInfo();
+
         jobInfo.getJob().setJobName(missionInfo.getName());
         jobInfo.getJob().setCreateTime(String.valueOf(System.currentTimeMillis()));
         jobInfo.getJob().setUpdateTime(String.valueOf(System.currentTimeMillis()));
@@ -181,10 +185,11 @@ public class JobParserServiceImpl implements JobParserService {
         for (ServiceParamsVo serviceParamsVo : missionInfo.getServiceParams()) {
             parties.add(serviceParamsVo.getOrgDID());
         }
-        for (String party : jobInfo.getJob().getParties()) {
-            parties.add(party);
+        for (MissionDetailInfo missionDetailInfo : missionInfo.getMissionDetailInfos()) {
+            parties.add(missionDetailInfo.getOrgId());
         }
         jobInfo.getJob().setParties(new ArrayList<>(parties));
+        System.out.println("jobInfo: " + jobInfo);
         return jobInfo;
     }
 
@@ -302,12 +307,15 @@ public class JobParserServiceImpl implements JobParserService {
         String sqltext = sqlVo.getSqltext().toUpperCase().replace("\"", "");
         SqlParser sqlParser = new SqlParser(sqltext, sqlVo.getModelType(), sqlVo.getIsStream());
         sqlParser.setCatalogConfig(catalogConfig);
-        JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser());
+//        JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser());
+//        jobBuilder.build();
+        JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parserWithOptimizer());
         jobBuilder.build();
         JobMissionDetail jobMissionDetail = new JobMissionDetail();
         jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
         jobMissionDetail.setMissionDetailVOList(sqlParser.getMissionDetailVOs());
         jobMissionDetail.setModelParamsVoList(sqlParser.getModelParamsVos());
+        System.out.println(jobMissionDetail);
         return jobMissionDetail;
     }
 

@@ -100,6 +100,7 @@ public class ParserController {
         JobInfo jobInfo = jobParserService.jobCreate(missionInfo);
         String jobID = jobInfo.getJob().getJobID();
         JobInfoPo jobInfoPo = JobInfoPo.converterToJobInfoPo(jobInfo);
+        System.out.println("jobInfoPo: " + jobInfoPo);
         ContractServiceResponse csr = blockchainContractService.invokeContract(CONTRACT_NAME, "CreateJobByApplication", jobInfoPo.toContractParams());
         csr.setJsonResult("{\"jobID\"" + ":\"" + jobID + "\"}");
         String response = csr.toString();

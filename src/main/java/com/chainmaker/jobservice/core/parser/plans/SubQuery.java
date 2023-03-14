@@ -1,5 +1,7 @@
 package com.chainmaker.jobservice.core.parser.plans;
 
+import org.apache.calcite.rel.RelNode;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,5 +51,9 @@ public class SubQuery extends LogicalPlan {
     @Override
     public void accept(LogicalPlanVisitor visitor) {
         visitor.visit(this);
+    }
+
+    public RelNode accept(LogicalPlanRelVisitor visitor) {
+        return visitor.visit(this);
     }
 }
