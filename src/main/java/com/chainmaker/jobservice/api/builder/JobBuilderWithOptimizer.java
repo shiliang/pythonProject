@@ -257,12 +257,16 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // party
         List<Party> parties = new ArrayList<>();
+        HashSet<String> partySet = new HashSet<>();
         for (TaskInputData inputData : inputDataList) {
+            partySet.add(inputData.getDomainID());
+        }
+        for (String value : partySet) {
             Party party = new Party();
             party.setServerInfo(null);
             party.setStatus(null);
             party.setTimestamp(null);
-            party.setPartyID(inputData.getDomainID());
+            party.setPartyID(value);
             parties.add(party);
         }
         task.setParties(parties);
