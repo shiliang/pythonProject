@@ -62,7 +62,7 @@ public class JobParserServiceImpl implements JobParserService {
 
     @Override
     public UserInfo getUserInfo(String userName) {
-        String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/login/orgId/" + userName;
+        String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/login/orgDID/" + userName;
         RestTemplate restTemplate = new RestTemplate();
         JSONObject result = JSONObject.parseObject(restTemplate.getForObject(url, String.class));
         return JSONObject.parseObject(result.getString("data"), UserInfo.class);
