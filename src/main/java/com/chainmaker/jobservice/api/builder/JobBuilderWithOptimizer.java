@@ -200,15 +200,18 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // party
         List<Party> parties = new ArrayList<>();
-        for (int i = 0; i < inputDataList.size(); i++) {
+        HashSet<String> partySet = new HashSet<>();
+        for (TaskInputData inputData : inputDataList) {
+            partySet.add(inputData.getDomainID());
+        }
+        for (String value : partySet) {
             Party party = new Party();
             party.setServerInfo(null);
             party.setStatus(null);
             party.setTimestamp(null);
-            party.setPartyID(inputDataList.get(i).getDomainID());
+            party.setPartyID(value);
             parties.add(party);
         }
-
         task.setParties(parties);
         for (Party p : parties) {
             jobParties.add(p.getPartyID());
@@ -381,37 +384,33 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     public List<Task> generateTasks(Stack<String> stk) {
         List<Task> tasks = new ArrayList<>();
 
-        Stack<String> operands = new Stack<>();
+        Stack<List<String>> operands = new Stack<>();
         while (!stk.isEmpty()) {
             String s = stk.pop().trim();
 //            System.out.println("current str = " + s);
             List<String> params = List.of(s.split("\\[|]"));
             if (s.startsWith("MPCTableScan")) {
                 // MPCTableScan [TC], 直接加入操作栈
-                operands.add(s);
+                List<String> tslist = new ArrayList<>();
+                tslist.add(params.get(1));
+                operands.add(tslist);
             } else if (s.startsWith("MPCJoin")) {
                 // MPCJoin [JoinType[INNER], JoinCond[=($0, $2)], $ from [TA.ID, TA.AGE, TC.ID]]
                 // 默认都是两两PSI，所以取两个操作数
-                String left = operands.pop().trim();
-                String right = operands.pop().trim();
-                String leftTaskName = null, rightTaskName = null;
-                if (!left.startsWith("MPC")) {
-                    leftTaskName = left.split(" ")[0];
-                }
-                if (!right.startsWith("MPC")) {
-                    rightTaskName = right.split(" ")[0];
-                }
+                List<String> lefts = operands.pop();
+                List<String> rights = operands.pop();
 
                 // 完成string到Task的转换
-//                Task PSITask = str2Task(s, cnt, "PSI", leftTaskName, rightTaskName, stk.isEmpty());
-                Task PSITask = str2Task(s, cnt, "PSI", leftTaskName, rightTaskName, false);
+                Task PSITask = str2Task(s, cnt, "PSI", lefts, rights, false);
                 tasks.add(PSITask);
 
                 // 该task的输出作为下一个的输入加入操作数栈
                 Output PSIOutput = PSITask.getOutput();
-                String outputDataName = PSIOutput.getData().get(0).getDataName();
-//                operands.add(outputDataName + " " + PSIOutput);
-                operands.add(outputDataName);
+                List<String> outputDataNames = new ArrayList<>();
+                for (TaskOutputData outputData : PSIOutput.getData()) {
+                    outputDataNames.add(outputData.getDataName());
+                }
+                operands.add(outputDataNames);
                 cnt++;
             } else if (s.startsWith("MPCFilter")) {
                 // MPCFilter [FilterCond[AND(>($0, 10), <($1, 50))] $ from [TA.ID, TA.AGE]]
@@ -431,24 +430,19 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 } else {
                     // 如果是单独Cond的情况，则直接生成Task
                     // MPCFilter [FilterCond[>($0, 10)] $ from [TA.ID, TA.AGE]]
-                    String child = operands.pop().trim();
-                    String childTaskName = null;
-                    if (child.contains("-")) {
-                        childTaskName = child.split(" ")[0];
-                    }
+                    List<String> childTaskNames = operands.pop();
                     Task FilterTask;
                     String cond = params.get(2);
                     if (cond.substring(0, cond.indexOf(",")).contains("$") && cond.substring(cond.indexOf(",")).contains("$")) {
-//                        FilterTask = str2Task(s, cnt, "VariableFilter", childTaskName, null, stk.isEmpty());
-                        FilterTask = str2Task(s, cnt, "VariableFilter", childTaskName, null, false);
+                        FilterTask = str2Task(s, cnt, "VariableFilter", childTaskNames, null, false);
                     } else {
-                        FilterTask = str2Task(s, cnt, "ConstantFilter", childTaskName, null, false);
+                        FilterTask = str2Task(s, cnt, "ConstantFilter", childTaskNames, null, false);
                     }
                     tasks.add(FilterTask);
                     Output FilterOutput = FilterTask.getOutput();
-                    String outputDataName = FilterOutput.getData().get(0).getDataName();
-//                    operands.add(outputDataName + " " + FilterOutput);
-                    operands.add(outputDataName);
+                    List<String> outputDataNames = new ArrayList<>();
+                    outputDataNames.add(FilterOutput.getData().get(0).getDataName());
+                    operands.add(outputDataNames);
                     cnt++;
                 }
             } else if (s.startsWith("MPCProject")) {
@@ -466,23 +460,19 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     }
                 } else {
                     // 已经是单独的Project
-                    String child = operands.pop().trim();
-                    String childTaskName = null;
+                    List<String> childNames = operands.pop();
                     Task ProjectTask;
-                    if (child.contains("-")) {
-                        childTaskName = child.split(" ")[0];
-                    }
+
                     if (s.contains("MAX") || s.contains("MIN") || s.contains("COUNT") ||
-                            s.contains("AVG") || s.contains("SUM")) {
-                        ProjectTask = str2Task(s, cnt, "MPC", childTaskName, null, true);
+                            s.contains("AVG") || s.contains("SUM") || s.contains("+") || s.contains("-") || s.contains("*") || s.contains("/")) {
+                        ProjectTask = str2Task(s, cnt, "MPC", childNames, null, true);
                     } else {
-                        ProjectTask = str2Task(s, cnt, "QUERY", childTaskName, null, true);
+                        ProjectTask = str2Task(s, cnt, "QUERY", childNames, null, true);
                     }
                     tasks.add(ProjectTask);
-                    Output ProjectOutput = ProjectTask.getOutput();
-                    String outputDataName = ProjectOutput.getData().get(0).getDataName();
-//                    operands.add(outputDataName + " " + ProjectOutput);
-                    operands.add(child);
+//                    Output ProjectOutput = ProjectTask.getOutput();
+//                    String outputDataName = ProjectOutput.getData().get(0).getDataName();
+                    operands.add(childNames);
                     cnt++;
                 }
             } else {
@@ -497,7 +487,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * @param str
      * @return
      */
-    public Task str2Task(String str, int curTaskName, String moduleName, String leftDataName, String rightDataName, boolean isFinalResult) {
+    public Task str2Task(String str, int curTaskName, String moduleName, List<String> leftDataName, List<String> rightDataName, boolean isFinalResult) {
         // 生成具有基本信息的Task对象
         Task task = basicTask(String.valueOf(curTaskName));
         List<String> params = List.of(str.split("\\[|]"));
@@ -534,10 +524,16 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             }
             case "MPC": {
                 String MPCProj = str.substring(str.indexOf("[") + 1, str.length() - 1);
-                String func = MPCProj.substring(0, MPCProj.indexOf("["));
-                moduleparams.put("function", func);
-
-                String MPCExpr = MPCProj.substring(MPCProj.indexOf("["), MPCProj.length()-1);
+                String MPCExpr = MPCProj;
+                if (MPCProj.contains("[")) {
+                    // 说明是 COUNT(ADATA.A1)这种，包含聚合函数
+                    String func = MPCProj.substring(0, MPCProj.indexOf("["));
+                    moduleparams.put("function", func);
+                    MPCExpr = MPCProj.substring(MPCProj.indexOf("["), MPCProj.length()-1);
+                } else {
+                    // 说明是 ADATA.A1+BDATA.B1这种，不包含聚合函数，function置为base
+                    moduleparams.put("function", "base");
+                }
                 String expression = "";
                 int chNum = 0;
                 for (int i = 0; i < MPCExpr.length(); i++) {
@@ -579,64 +575,86 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
                 // 如果是无条件求交
                 if (params.get(4).equals("true")) {
-                    if (leftDataName != null) {
-                        inputdata1.setDataName(leftDataName);
-                        inputdata1.setTaskSrc(leftDataName.split("-")[1]);
-                    } else {
-                        inputdata1.setDataName(fields.get(0).split("\\.")[0].trim());
-                        inputdata1.setTaskSrc("0");
-                    }
-                    if (rightDataName != null) {
-                        inputdata2.setDataName(rightDataName);
-                        inputdata2.setTaskSrc(rightDataName.split("-")[1]);
-                    } else {
-                        inputdata2.setDataName(fields.get(fields.size()-1).split("\\.")[0].trim());
-                        inputdata2.setTaskSrc("0");
-                    }
-
-                    if (!inputdata1.getDataName().contains("-")) {
-                        inputdata1.setDataID(inputdata1.getDataName());
-                    }
-                    if (!inputdata2.getDataName().contains("-")) {
-                        inputdata2.setDataID(inputdata2.getDataName());
-                    }
+//                    if (leftDataName != null) {
+//                        inputdata1.setDataName(leftDataName);
+//                        inputdata1.setTaskSrc(leftDataName.split("-")[1]);
+//                    } else {
+//                        inputdata1.setDataName(fields.get(0).split("\\.")[0].trim());
+//                        inputdata1.setTaskSrc("0");
+//                    }
+//                    if (rightDataName != null) {
+//                        inputdata2.setDataName(rightDataName);
+//                        inputdata2.setTaskSrc(rightDataName.split("-")[1]);
+//                    } else {
+//                        inputdata2.setDataName(fields.get(fields.size()-1).split("\\.")[0].trim());
+//                        inputdata2.setTaskSrc("0");
+//                    }
+//
+//                    if (!inputdata1.getDataName().contains("-")) {
+//                        inputdata1.setDataID(inputdata1.getDataName());
+//                    }
+//                    if (!inputdata2.getDataName().contains("-")) {
+//                        inputdata2.setDataID(inputdata2.getDataName());
+//                    }
 
                 } else {
                     // 正常求交 on TA.id=TB.id
                     // Join左侧
                     String index = params.get(4).substring(params.get(4).indexOf("$") + 1, params.get(4).indexOf(","));
                     String tableField = fields.get(Integer.parseInt(index)).trim();
+                    String leftTable = tableField.split("\\.")[0];
+                    String leftField = tableField.split("\\.")[1];
 
-                    if (leftDataName != null) {
-                        inputdata1.setDataName(leftDataName);
-                        inputdata1.setTaskSrc(leftDataName.split("-")[1]);
-                        inputdata1.setDataID("");
-                    } else {
-                        inputdata1.setDataName(tableField.split("\\.")[0]);
+                    for (String dataName : leftDataName) {
+                        if (dataName.startsWith(leftTable)) {
+                            inputdata1.setDataName(dataName);
+                            if (dataName.contains("-")) {
+                                inputdata1.setTaskSrc(dataName.split("-")[1]);
+                                inputdata1.setDataID("");
+                            } else {
+                                inputdata1.setTaskSrc("0");
+                                inputdata1.setDataID(inputdata1.getDataName());
+                            }
+                            break;
+                        }
+                    }
+                    if (inputdata1.getDataName() == null) {
+                        inputdata1.setDataName(leftTable);
                         inputdata1.setTaskSrc("0");
                         inputdata1.setDataID(inputdata1.getDataName());
                     }
 
-                    inputData1Params.put("table", tableField.split("\\.")[0]);
-                    inputData1Params.put("field", tableField.split("\\.")[1]);
+                    inputData1Params.put("table", leftTable);
+                    inputData1Params.put("field", leftField);
 
                     // Join右侧
                     index = params.get(4).substring(params.get(4).lastIndexOf("$") + 1, params.get(4).indexOf(")"));
                     tableField = fields.get(Integer.parseInt(index)).trim();
+                    String rightTable = tableField.split("\\.")[0];
+                    String rightField = tableField.split("\\.")[1];
 
-                    if (rightDataName != null) {
-                        inputdata2.setDataName(rightDataName);
-                        inputdata2.setTaskSrc(rightDataName.split("-")[1]);
-                        inputdata2.setDataID("");
-                    } else {
-                        inputdata2.setDataName(tableField.split("\\.")[0]);
+                    for (String dataName : rightDataName) {
+                        if (dataName.startsWith(rightTable)) {
+                            inputdata2.setDataName(dataName);
+                            if (dataName.contains("-")) {
+                                inputdata2.setTaskSrc(dataName.split("-")[1]);
+                                inputdata2.setDataID("");
+                            } else {
+                                inputdata2.setTaskSrc("0");
+                                inputdata2.setDataID(inputdata2.getDataName());
+                            }
+                            break;
+                        }
+                    }
+                    if (inputdata1.getDataName() == null) {
+                        inputdata2.setDataName(rightTable);
                         inputdata2.setTaskSrc("0");
                         inputdata2.setDataID(inputdata2.getDataName());
                     }
 
 
-                    inputData2Params.put("table", tableField.split("\\.")[0]);
-                    inputData2Params.put("field", tableField.split("\\.")[1]);
+                    inputData2Params.put("table", rightTable);
+                    inputData2Params.put("field", rightField);
                 }
 
                 inputdata1.setDomainID(getFieldDomainID(inputData1Params.get("table") + "." + inputData1Params.get("field")));
@@ -662,18 +680,29 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 }
                 TaskInputData inputdata = new TaskInputData();
                 String tableField = params.get(4).split(",")[index].trim();
-                if (leftDataName != null) {
-                    inputdata.setDataName(leftDataName);
-                    inputdata.setTaskSrc(leftDataName.split("-")[1]);
-                    inputdata.setDataID("");
-                } else {
-                    inputdata.setDataName(tableField.split("\\.")[0]);
+                String table = tableField.split("\\.")[0];
+                String field = tableField.split("\\.")[1];
+                for (String dataName : leftDataName) {
+                    if (dataName.startsWith(table)) {
+                        inputdata.setDataName(dataName);
+                        if (dataName.contains("-")) {
+                            inputdata.setTaskSrc(dataName.split("-")[1]);
+                            inputdata.setDataID("");
+                        } else {
+                            inputdata.setTaskSrc("0");
+                            inputdata.setDataID(inputdata.getDataName());
+                        }
+                        break;
+                    }
+                }
+                if (inputdata.getDataName() == null) {
+                    inputdata.setDataName(table);
                     inputdata.setTaskSrc("0");
                     inputdata.setDataID(inputdata.getDataName());
                 }
                 JSONObject jsonObjectParams = new JSONObject(true);
-                jsonObjectParams.put("table", tableField.split("\\.")[0]);
-                jsonObjectParams.put("field", tableField.split("\\.")[1]);
+                jsonObjectParams.put("table", table);
+                jsonObjectParams.put("field", field);
 
 
                 inputdata.setDomainID(getFieldDomainID(jsonObjectParams.get("table") + "." + jsonObjectParams.get("field")));
@@ -688,27 +717,40 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             }
             case "MPC": {
                 String MPCProj = str.substring(str.indexOf("[") + 1, str.length() - 1);
-                String func = MPCProj.substring(0, MPCProj.indexOf("["));
-
-                String[] fields = MPCProj.substring(MPCProj.indexOf("[")+1, MPCProj.length()-1).split("\\+|-|\\*|/|\\(|\\)");
-                for (String field : fields) {
-                    if (field.length() == 0) {
+                String[] fields;
+                if (MPCProj.contains("[")) {
+                    fields = MPCProj.substring(MPCProj.indexOf("[") + 1, MPCProj.length() - 1).split("\\+|-|\\*|/|\\(|\\)");
+                } else {
+                    fields = MPCProj.split("\\+|-|\\*|/|\\(|\\)");
+                }
+                for (String tableField : fields) {
+                    if (tableField.length() == 0) {
                         continue;
                     }
+                    String table = tableField.split("\\.")[0];
+                    String field = tableField.split("\\.")[1];
                     TaskInputData inputdata = new TaskInputData();
-                    if (leftDataName != null) {
-                        inputdata.setDataName(leftDataName);
-                        inputdata.setTaskSrc(leftDataName.split("-")[1]);
-                        inputdata.setDataID("");
-                    } else {
-                        inputdata.setDataName(field.split("\\.")[0]);
+                    for (String dataName : leftDataName) {
+                        if (dataName.startsWith(table)) {
+                            inputdata.setDataName(dataName);
+                            if (dataName.contains("-")) {
+                                inputdata.setTaskSrc(dataName.split("-")[1]);
+                                inputdata.setDataID("");
+                            } else {
+                                inputdata.setTaskSrc("0");
+                                inputdata.setDataID(inputdata.getDataName());
+                            }
+                            break;
+                        }
+                    }
+                    if (inputdata.getDataName() == null) {
+                        inputdata.setDataName(table);
                         inputdata.setTaskSrc("0");
                         inputdata.setDataID(inputdata.getDataName());
                     }
-
                     JSONObject jsonObjectParams = new JSONObject(true);
-                    jsonObjectParams.put("table", field.split("\\.")[0]);
-                    jsonObjectParams.put("field", field.split("\\.")[1]);
+                    jsonObjectParams.put("table", table);
+                    jsonObjectParams.put("field", field);
 
 
                     inputdata.setDomainID(getFieldDomainID(jsonObjectParams.get("table") + "." + jsonObjectParams.get("field")));
@@ -719,26 +761,37 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 break;
             }
             case "QUERY": {
-                String field = str.substring(str.indexOf("[") + 1, str.length() - 1);
+                String tableField = str.substring(str.indexOf("[") + 1, str.length() - 1);
+                String table = tableField.split("\\.")[0];
+                String field = tableField.split("\\.")[1];
                 TaskInputData inputdata = new TaskInputData();
-                if (leftDataName != null) {
-                    inputdata.setDataName(leftDataName);
-                    inputdata.setTaskSrc(leftDataName.split("-")[1]);
-                    inputdata.setDataID("");
-                } else {
-                    inputdata.setDataName(field.split("\\.")[0]);
+                for (String dataName : leftDataName) {
+                    if (dataName.startsWith(table)) {
+                        inputdata.setDataName(dataName);
+                        if (dataName.contains("-")) {
+                            inputdata.setTaskSrc(dataName.split("-")[1]);
+                            inputdata.setDataID("");
+                        } else {
+                            inputdata.setTaskSrc("0");
+                            inputdata.setDataID(inputdata.getDataName());
+                        }
+                        break;
+                    }
+                }
+                if (inputdata.getDataName() == null) {
+                    inputdata.setDataName(table);
                     inputdata.setTaskSrc("0");
                     inputdata.setDataID(inputdata.getDataName());
                 }
 
                 JSONObject jsonObjectParams = new JSONObject(true);
-                if (isNumeric(field)) {
-                    jsonObjectParams.put("const", field);
+                if (isNumeric(tableField)) {
+                    jsonObjectParams.put("const", tableField);
                     inputdata.setDomainID("");
                 } else {
-                    jsonObjectParams.put("table", field.split("\\.")[0]);
-                    jsonObjectParams.put("field", field.split("\\.")[1]);
-                    inputdata.setDomainID(getFieldDomainID(jsonObjectParams.get("table") + "." + jsonObjectParams.get("field")));
+                    jsonObjectParams.put("table", table);
+                    jsonObjectParams.put("field", field);
+                    inputdata.setDomainID(getFieldDomainID(tableField));
                 }
 
 
@@ -816,17 +869,20 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // parties信息
         List<Party> parties = new ArrayList<>();
-        Party party1 = new Party();
-//        party1.setPartyID(metadata.getTableOrgId(inputDatas.get(0).getDataName().split("-")[0]));      // input 中的 domainID
-        party1.setPartyID(inputDatas.get(0).getDomainID());
-        party1.setStatus("");
-        party1.setTimestamp("");
-        ServerInfo serverInfo = new ServerInfo();
-        serverInfo.setIp("");
-        serverInfo.setPort("");
-        party1.setServerInfo(serverInfo);
-        parties.add(party1);
+        HashSet<String> partySet = new HashSet<>();
+        for (TaskInputData inputData : inputDatas) {
+            partySet.add(inputData.getDomainID());
+        }
+        for (String value : partySet) {
+            Party party = new Party();
+            party.setServerInfo(null);
+            party.setStatus(null);
+            party.setTimestamp(null);
+            party.setPartyID(value);
+            parties.add(party);
+        }
         task.setParties(parties);
+
         for (Party party : parties) {
             jobParties.add(party.getPartyID());
         }
