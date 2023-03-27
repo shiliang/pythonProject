@@ -1,5 +1,7 @@
 package com.chainmaker.jobservice.core.parser.plans;
 
+import org.apache.calcite.rel.RelNode;
+
 /**
  * @author gaokang
  * @date 2022-10-24 15:46
@@ -7,33 +9,35 @@ package com.chainmaker.jobservice.core.parser.plans;
  * @version:
  */
 public abstract class LogicalPlanRelVisitor {
-    public LogicalPlan visit(LogicalPlan node) {
+    public RelNode visit(LogicalPlan node) {
         return null;
     }
-    public LogicalPlan visit(LogicalProject node) {
+    public RelNode visit(LogicalProject node) {
         return null;
     }
-    public LogicalPlan visit(FederatedLearning node) {
-        return null;
-    }
-
-    public LogicalPlan visit(LogicalFilter node) {
+    public RelNode visit(FederatedLearning node) {
         return null;
     }
 
-    public LogicalPlan visit(LogicalJoin node) {
+    public RelNode visit(LogicalFilter node) {
         return null;
     }
 
-    public LogicalPlan visit(SubQuery node) {
+    public RelNode visit(LogicalJoin node) {
         return null;
     }
 
-    public LogicalPlan visit(LogicalTable node) {
+    public RelNode visit(SubQuery node) {
         return null;
     }
 
-    public LogicalPlan visit(NonRelation node) {
+    public RelNode visit(LogicalTable node) {
         return null;
     }
+
+    public RelNode visit(NonRelation node) {
+        return null;
+    }
+
+    public RelNode visit(LogicalSort node) { return null; }
 }

@@ -32,6 +32,10 @@ public class Analyzer extends LogicalPlanVisitor {
     private static final String TEE_PARTY = "69vkhy6org.cm-5w2wtw3afr";
     private List<MissionDetailVO> missionDetailVOs = new ArrayList<>();
     private List<ModelParamsVo> modelParamsVos = new ArrayList<>();
+
+    private JSONArray dataCatalogInfoList;
+
+    public JSONArray getDataCatalogInfoList() {return dataCatalogInfoList; }
     public List<MissionDetailVO> getMissionDetailVOs() {
         return missionDetailVOs;
     }
@@ -55,7 +59,6 @@ public class Analyzer extends LogicalPlanVisitor {
         String catalog_url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/dataCatalog/name/all";
         String model_url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/confidentialComputings/methodName/";
         HashMap<String, String> tableOwnerMap = new HashMap<>();
-
         List<MissionDetailVO> missionDetailVOList = new ArrayList<>();
         for (String name : tableNameMap.values()) {
             MissionDetailVO missionDetailVO = new MissionDetailVO();
@@ -70,7 +73,8 @@ public class Analyzer extends LogicalPlanVisitor {
         if (response == null || response.getJSONArray("data").isEmpty()) {
             throw new RestException(response.toString());
         }
-        JSONArray dataCatalogInfoList = response.getJSONArray("data");
+        dataCatalogInfoList = response.getJSONArray("data");
+
         for (DataCatalogInfo dataCatalogInfo : dataCatalogInfoList.toJavaObject(DataCatalogInfo[].class)) {
             tableOwnerMap.put(dataCatalogInfo.getName(), dataCatalogInfo.getOrgDID());
 

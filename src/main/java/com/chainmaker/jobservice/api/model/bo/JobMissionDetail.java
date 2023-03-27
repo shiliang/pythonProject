@@ -42,4 +42,13 @@ public class JobMissionDetail {
     public void setMissionDetailVOList(List<MissionDetailVO> missionDetailVOList) {
         this.missionDetailVOList = missionDetailVOList;
     }
+
+    @Override
+    public String toString() {
+        return "JobMissionDetail{" +
+                "jobTemplate=" + jobTemplate +
+                ", missionDetailVOList=" + missionDetailVOList +
+                ", modelParamsVoList=" + modelParamsVoList +
+                '}';
+    }
 }

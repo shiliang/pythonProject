@@ -2,6 +2,7 @@ package com.chainmaker.jobservice.core.parser.plans;
 
 import com.chainmaker.jobservice.core.parser.tree.Expression;
 import com.chainmaker.jobservice.core.parser.tree.Node;
+import org.apache.calcite.rel.RelNode;
 
 import java.util.List;
 
@@ -46,5 +47,14 @@ public class LogicalSort extends LogicalPlan {
     @Override
     public String toString() {
         return null;
+    }
+
+    @Override
+    public void accept(LogicalPlanVisitor visitor) {
+        visitor.visit(this);
+    }
+
+    public RelNode accept(LogicalPlanRelVisitor visitor) {
+        return visitor.visit(this);
     }
 }
