@@ -85,7 +85,7 @@ public class RexNodeRowCounter {
         if (left instanceof RexInputRef) {
 //            FieldInfo leftInfo = mpcMetadata.getFieldInfo((RexInputRef) left);
             FieldInfo leftInfo = mpcMetadata.getFieldInfo(filter.getRowType().getFieldNames().get(((RexInputRef) left).getIndex()));
-            System.out.println(filter.getRowType().getFieldNames().get(((RexInputRef) left).getIndex()));
+//            System.out.println(filter.getRowType().getFieldNames().get(((RexInputRef) left).getIndex()));
             if (right instanceof RexInputRef) {
                 // 左右都是属性名（TA.A > TB.B）
                 FieldInfo rightInfo = mpcMetadata.getFieldInfo(filter.getRowType().getFieldNames().get(((RexInputRef) right).getIndex()));

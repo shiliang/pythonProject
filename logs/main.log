@@ -126,4 +126,51 @@
  [34m2023-03-14 14:59:28.917[0;39m        [[34mINFO[0;39m]    [http-nio-0.0.0.0-5005-exec-5]       com.chainmaker.jobservice.api.aspect.WebLogAspect:86    Time-Consuming : 2827 ms
  [34m2023-03-14 14:59:28.917[0;39m        [[34mINFO[0;39m]    [http-nio-0.0.0.0-5005-exec-5]       com.chainmaker.jobservice.api.aspect.WebLogAspect:87    =========================================== Success ===========================================
 
+ [34m2023-03-27 09:56:22.869[0;39m        [[34mINFO[0;39m]    [main]       com.chainmaker.jobservice.api.ParserApplication:55    Starting ParserApplication using Java 11 on LAPTOP-CG65DHMG with PID 17956 (D:\study\MyJavaSpace\chainmaker-job-service\target\classes started by 谢旭晨 in D:\study\MyJavaSpace\chainmaker-job-service)
+ [34m2023-03-27 09:56:22.871[0;39m        [[34mINFO[0;39m]    [main]       com.chainmaker.jobservice.api.ParserApplication:635    No active profile set, falling back to default profiles: default
+ [34m2023-03-27 09:56:24.431[0;39m        [[34mINFO[0;39m]    [main]       org.springframework.data.repository.config.RepositoryConfigurationDelegate:262    Multiple Spring Data modules found, entering strict repository configuration mode!
+ [34m2023-03-27 09:56:24.434[0;39m        [[34mINFO[0;39m]    [main]       org.springframework.data.repository.config.RepositoryConfigurationDelegate:132    Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+ [34m2023-03-27 09:56:24.470[0;39m        [[34mINFO[0;39m]    [main]       org.springframework.data.repository.config.RepositoryConfigurationDelegate:201    Finished Spring Data repository scanning in 12 ms. Found 0 Redis repository interfaces.
+ [34m2023-03-27 09:56:25.153[0;39m        [[34mINFO[0;39m]    [main]       org.springframework.boot.web.embedded.tomcat.TomcatWebServer:108    Tomcat initialized with port(s): 5005 (http)
+ [34m2023-03-27 09:56:25.163[0;39m        [[34mINFO[0;39m]    [main]       org.apache.coyote.http11.Http11NioProtocol:173    Initializing ProtocolHandler ["http-nio-0.0.0.0-5005"]
+ [34m2023-03-27 09:56:25.164[0;39m        [[34mINFO[0;39m]    [main]       org.apache.catalina.core.StandardService:173    Starting service [Tomcat]
+ [34m2023-03-27 09:56:25.164[0;39m        [[34mINFO[0;39m]    [main]       org.apache.catalina.core.StandardEngine:173    Starting Servlet engine: [Apache Tomcat/9.0.56]
+ [34m2023-03-27 09:56:25.166[0;39m        [[31mWARN[0;39m]    [main]       org.apache.catalina.core.AprLifecycleListener:173    This listener must only be nested within Server elements, but is in [TomcatEmbeddedContext].
+ [34m2023-03-27 09:56:25.167[0;39m        [[34mINFO[0;39m]    [main]       org.apache.catalina.core.AprLifecycleListener:173    An older version [1.2.21] of the Apache Tomcat Native library is installed, while Tomcat recommends a minimum version of [1.2.30]
+ [34m2023-03-27 09:56:25.167[0;39m        [[34mINFO[0;39m]    [main]       org.apache.catalina.core.AprLifecycleListener:173    Loaded Apache Tomcat Native library [1.2.21] using APR version [1.6.5].
+ [34m2023-03-27 09:56:25.167[0;39m        [[34mINFO[0;39m]    [main]       org.apache.catalina.core.AprLifecycleListener:173    APR capabilities: IPv6 [true], sendfile [true], accept filters [false], random [true], UDS [false].
+ [34m2023-03-27 09:56:25.168[0;39m        [[34mINFO[0;39m]    [main]       org.apache.catalina.core.AprLifecycleListener:173    APR/OpenSSL configuration: useAprConnector [false], useOpenSSL [true]
+ [34m2023-03-27 09:56:25.172[0;39m        [[34mINFO[0;39m]    [main]       org.apache.catalina.core.AprLifecycleListener:173    OpenSSL successfully initialized [OpenSSL 1.1.1a  20 Nov 2018]
+ [34m2023-03-27 09:56:25.306[0;39m        [[34mINFO[0;39m]    [main]       org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/]:173    Initializing Spring embedded WebApplicationContext
+ [34m2023-03-27 09:56:25.307[0;39m        [[34mINFO[0;39m]    [main]       org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext:290    Root WebApplicationContext: initialization completed in 2398 ms
+ [34m2023-03-27 09:56:27.103[0;39m        [[34mINFO[0;39m]    [main]       org.apache.coyote.http11.Http11NioProtocol:173    Starting ProtocolHandler ["http-nio-0.0.0.0-5005"]
+ [34m2023-03-27 09:56:27.136[0;39m        [[34mINFO[0;39m]    [main]       org.springframework.boot.web.embedded.tomcat.TomcatWebServer:220    Tomcat started on port(s): 5005 (http) with context path ''
+ [34m2023-03-27 09:56:27.145[0;39m        [[34mINFO[0;39m]    [main]       com.chainmaker.jobservice.api.ParserApplication:61    Started ParserApplication in 4.793 seconds (JVM running for 6.771)
+ [34m2023-03-27 10:00:35.240[0;39m        [[34mINFO[0;39m]    [http-nio-0.0.0.0-5005-exec-1]       org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/]:173    Initializing Spring DispatcherServlet 'dispatcherServlet'
+ [34m2023-03-27 10:00:35.242[0;39m        [[34mINFO[0;39m]    [http-nio-0.0.0.0-5005-exec-1]       org.springframework.web.servlet.DispatcherServlet:525    Initializing Servlet 'dispatcherServlet'
+ [34m2023-03-27 10:00:35.243[0;39m        [[34mINFO[0;39m]    [http-nio-0.0.0.0-5005-exec-1]       org.springframework.web.servlet.DispatcherServlet:547    Completed initialization in 1 ms
+ [34m2023-03-27 10:00:35.280[0;39m        [[34mINFO[0;39m]    [http-nio-0.0.0.0-5005-exec-1]       com.chainmaker.jobservice.api.aspect.WebLogAspect:58    ========================================== Start ==========================================
+ [34m2023-03-27 10:00:35.281[0;39m        [[34mINFO[0;39m]    [http-nio-0.0.0.0-5005-exec-1]       com.chainmaker.jobservice.api.aspect.WebLogAspect:60    URL            : http://127.0.0.1:5005/v1/preview/dag
+ [34m2023-03-27 10:00:35.282[0;39m        [[34mINFO[0;39m]    [http-nio-0.0.0.0-5005-exec-1]       com.chainmaker.jobservice.api.aspect.WebLogAspect:62    Description    : 预生成DAG
+ [34m2023-03-27 10:00:35.282[0;39m        [[34mINFO[0;39m]    [http-nio-0.0.0.0-5005-exec-1]       com.chainmaker.jobservice.api.aspect.WebLogAspect:64    HTTP Method    : POST
+ [34m2023-03-27 10:00:35.283[0;39m        [[34mINFO[0;39m]    [http-nio-0.0.0.0-5005-exec-1]       com.chainmaker.jobservice.api.aspect.WebLogAspect:66    Class Method   : com.chainmaker.jobservice.api.controller.ParserController.jobPreview
+ [34m2023-03-27 10:00:35.283[0;39m        [[34mINFO[0;39m]    [http-nio-0.0.0.0-5005-exec-1]       com.chainmaker.jobservice.api.aspect.WebLogAspect:68    IP             : 127.0.0.1
+ [34m2023-03-27 10:00:35.315[0;39m        [[34mINFO[0;39m]    [http-nio-0.0.0.0-5005-exec-1]       com.chainmaker.jobservice.api.aspect.WebLogAspect:70    Request Args   : ["{\r\n\t                                                                                                 \r\n\t\"sqltext\":\"SELECT FL(a.b.c.is_train=true,is_test=false,FLLABEL(SOURCE_DATA=BREAST_HETERO_HOST,with_label=true,label_type=int,output_format=dense,namespace=experiment),FLLABEL(SOURCE_DATA=BREAST_HETERO_GUEST,with_label=false,output_format=dense,namespace=experiment),INTERSECTION(intersect_method=rsa),HELR(penalty=L2,tol=0.0001,alpha=0.01,optimizer=rmsprop,batch_size=-1,learning_rate=0.15,init_param.init_method=zeros,init_param.fit_intercept=true,max_iter=1,early_stop=diff,encrypt_param.key_length=1024,reveal_strategy=respectively,reveal_every_iter=true),EVAL(eval_type=binary)) FROM BREAST_HETERO_HOST,BREAST_HETERO_GUEST\",\r\n\t                                                            \r\n\t\"modelType\": 1,\r\n\t\"isStream\": 0\r\n}"]
+ [34m2023-03-27 10:00:35.786[0;39m        [[34mINFO[0;39m]    [http-nio-0.0.0.0-5005-exec-1]       com.chainmaker.jobservice.core.analyzer.Analyzer:68    request data： [MissionDetailVO{name='BREAST_HETERO_HOST', remark='null', version=0, OrgId='null', datacatalogId='null'}, MissionDetailVO{name='BREAST_HETERO_GUEST', remark='null', version=0, OrgId='null', datacatalogId='null'}]
+ [34m2023-03-27 10:00:35.787[0;39m        [[34mINFO[0;39m]    [http-nio-0.0.0.0-5005-exec-1]       com.chainmaker.jobservice.core.analyzer.Analyzer:69    request url： http://java-backendservice:8008/dataCatalog/name/all
+ [34m2023-03-27 10:00:37.880[0;39m        [[1;31mERROR[0;39m]    [http-nio-0.0.0.0-5005-exec-1]       com.chainmaker.jobservice.api.aspect.WebLogAspect:106    请求后台数据异常！原因是:
+ org.springframework.web.client.ResourceAccessException: I/O error on POST request for "http://java-backendservice:8008/dataCatalog/name/all": java-backendservice; nested exception is java.net.UnknownHostException: java-backendservice
+	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:785)
+	at org.springframework.web.client.RestTemplate.execute(RestTemplate.java:711)
+	at org.springframework.web.client.RestTemplate.postForObject(RestTemplate.java:437)
+	at com.chainmaker.jobservice.core.analyzer.Analyzer.getMetaData(Analyzer.java:71)
+	at com.chainmaker.jobservice.core.SqlParser.parserWithOptimizer(SqlParser.java:97)
+Caused by: java.net.UnknownHostException: java-backendservice
+	at java.base/java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:220)
+	at java.base/java.net.Socket.connect(Socket.java:591)
+	at java.base/java.net.Socket.connect(Socket.java:540)
+	at java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:182)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:474)
+[34m2023-03-27 10:00:37.881[0;39m        [[34mINFO[0;39m]    [http-nio-0.0.0.0-5005-exec-1]       com.chainmaker.jobservice.api.aspect.WebLogAspect:110    =========================================== Failed ===========================================
+
  

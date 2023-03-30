@@ -9,10 +9,10 @@ import org.apache.calcite.DataContext;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
@@ -28,6 +28,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.tomcat.util.http.LegacyCookieProcessor;
 
 import java.util.*;
@@ -85,7 +86,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         }
 
         config = Frameworks.newConfigBuilder()
-                .parserConfig(SqlParser.Config.DEFAULT)
+//                .parserConfig(SqlParser.Config.DEFAULT)
                 .defaultSchema(rootSchema)
                 .traitDefs((List<RelTraitDef>) null)
                 .costFactory(MPCCost.FACTORY)           // 此处将cost计算方式换成自行实现的版本
@@ -99,11 +100,8 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
      */
     public void CastToRelNode() {
         builder = RelBuilder.create(config);
-        RexBuilder rexBuilder = builder.getRexBuilder();
-
-        // RelVisit系列和visit系列一样，根据node的具体类型执行相应代码
         root = visit(originLogicalPlan);
-//        System.out.println("cast to calcite Relnode success");
+
     }
 
     /**
@@ -139,7 +137,6 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
      */
     @Override
     public RelNode visit(LogicalProject node) {
-
         RelNode ans = null;
         // 优先处理子节点
         int childNum = node.getChildren().size();
@@ -152,7 +149,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
                 multiTableList.add("::");
             }
         }
-        System.out.println(multiTableList);
+//        System.out.println(multiTableList);
 
         // 找到所有映射相关表达式
         List<RexNode> projections = new ArrayList<>();
@@ -183,9 +180,10 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         builder.project(projections, projectionNames);
         ans = builder.build();
         multiTableList.clear();
-        System.out.println(
-                RelOptUtil.dumpPlan("[Logical plan]", ans, SqlExplainFormat.TEXT,
-                        SqlExplainLevel.ALL_ATTRIBUTES));
+        long end = System.currentTimeMillis();
+//        System.out.println(
+//                RelOptUtil.dumpPlan("[Logical plan]", ans, SqlExplainFormat.TEXT,
+//                        SqlExplainLevel.ALL_ATTRIBUTES));
         return ans;
     }
 
@@ -196,7 +194,6 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
      */
     @Override
     public RelNode visit(LogicalFilter node) {
-
         RelNode ans = null;
         // 优先处理子节点
         int childNum = node.getChildren().size();
@@ -217,9 +214,10 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
 
         ans = builder.build();
         multiTableList.clear();
-        System.out.println(
-                RelOptUtil.dumpPlan("[Logical plan]", ans, SqlExplainFormat.TEXT,
-                        SqlExplainLevel.EXPPLAN_ATTRIBUTES));
+        long end = System.currentTimeMillis();
+//        System.out.println(
+//                RelOptUtil.dumpPlan("[Logical plan]", ans, SqlExplainFormat.TEXT,
+//                        SqlExplainLevel.EXPPLAN_ATTRIBUTES));
         return ans;
     }
 
@@ -231,7 +229,6 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
     @Override
     public RelNode visit(LogicalJoin node) {
         RelNode ans = null;
-
         // 先访问要Join的左右节点，并获取JoinType
         RelNode left = node.getLeft().accept(this);
         RelNode right = node.getRight().accept(this);
@@ -269,10 +266,10 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
 
         ans = builder.build();
         multiTableList.clear();
-
-        System.out.println(
-                RelOptUtil.dumpPlan("[Logical plan]", ans, SqlExplainFormat.TEXT,
-                        SqlExplainLevel.EXPPLAN_ATTRIBUTES));
+        long end = System.currentTimeMillis();
+//        System.out.println(
+//                RelOptUtil.dumpPlan("[Logical plan]", ans, SqlExplainFormat.TEXT,
+//                        SqlExplainLevel.EXPPLAN_ATTRIBUTES));
         return ans;
     }
 
@@ -283,7 +280,6 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
      */
     @Override
     public RelNode visit(LogicalTable node) {
-
         String tableName = node.getTableName();
         String alias = node.getAlias();
 
@@ -294,10 +290,10 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         }
 
         RelNode ans = builder.build();
-
-        System.out.println(
-                RelOptUtil.dumpPlan("[Logical plan]", ans, SqlExplainFormat.TEXT,
-                        SqlExplainLevel.EXPPLAN_ATTRIBUTES));
+        long end = System.currentTimeMillis();
+//        System.out.println(
+//                RelOptUtil.dumpPlan("[Logical plan]", ans, SqlExplainFormat.TEXT,
+//                        SqlExplainLevel.EXPPLAN_ATTRIBUTES));
 
         return ans;
     }
@@ -610,7 +606,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
             ans = builder.field(inputCount, inputOrdinal, tableName+"."+fieldName);
         }
 
-        System.out.println(ans.toString() + " : [" + tableName+"."+fieldName+"]");
+//        System.out.println(ans.toString() + " : [" + tableName+"."+fieldName+"]");
 
 //        if (metadata.getMarkIDFieldNameMap().containsKey(ans.toString())) {
 //            metadata.getMarkIDFieldNameMap().replace(ans.toString(), tableName+"."+fieldName);

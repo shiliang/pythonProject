@@ -358,9 +358,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * 将物理计划转化成Task列表
      */
     public List<Task> PhyPlan2Task() {
-        System.out.println(
-                RelOptUtil.dumpPlan("[Physical plan] TEXT", phyPlan, SqlExplainFormat.TEXT,
-                        SqlExplainLevel.ALL_ATTRIBUTES));
+//        System.out.println(
+//                RelOptUtil.dumpPlan("[Physical plan] TEXT", phyPlan, SqlExplainFormat.TEXT,
+//                        SqlExplainLevel.ALL_ATTRIBUTES));
         String str = tidyPhyPlan(phyPlan, 0);
         System.out.println(str);
         Stack<String> stk = new Stack<>();

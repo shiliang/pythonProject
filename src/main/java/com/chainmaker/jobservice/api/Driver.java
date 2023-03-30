@@ -9,6 +9,12 @@ import com.chainmaker.jobservice.api.model.vo.ServiceVo;
 import com.chainmaker.jobservice.core.SqlParser;
 import com.chainmaker.jobservice.core.optimizer.nodes.DAG;
 import com.chainmaker.jobservice.core.optimizer.plans.PhysicalPlan;
+import org.apache.commons.logging.LogFactory;
+
+import java.io.PrintStream;
+import java.util.logging.Logger;
+
+import static com.chainmaker.jobservice.api.ParserApplication.disableWarning;
 
 public class Driver {
     public static void main(String[] args) {
@@ -18,7 +24,8 @@ public class Driver {
 //        String query = "SELECT NUCLEIC_ACID_TESTING(TRAFFIC_NUCLEIC_ACID_TESTING.JSONDATA) FROM TRAFFIC_NUCLEIC_ACID_TESTING";
 //        String query = "SELECT FL(a.b.c.is_train=true,a.b.is_on=false,is_test=false,FLLABEL(SOURCE_DATA=ADATA,with_label=true,label_type=int,output_format=dense,namespace=experiment),FLLABEL(SOURCE_DATA=BDATA,with_label=false,output_format=dense,namespace=experiment),INTERSECTION(intersect_method=rsa),HELR(penalty=L2,tol=0.0001,alpha=0.01,optimizer=rmsprop,batch_size=-1,learning_rate=0.15,init_param.init_method=zeros,init_param.fit_intercept=true,max_iter=1,early_stop=diff,encrypt_param.key_length=1024,reveal_strategy=respectively,reveal_every_iter=true),EVAL(eval_type=binary)) FROM ADATA,BDATA";
 //        String query = "select adata.a1, testt(adata.a1, bdata.b1) from adata, bdata";
-        String query = "select adata.a1+bdata.b1 from adata, bdata";
+//        String query = "select adata.a1+bdata.b1 from adata, bdata";
+        String query = "SELECT ADATA.A1 FROM ADATA JOIN BDATA ON ADATA.A2=BDATA.B2 WHERE BDATA.B1>3 AND ADATA.A2>5";
 //        String query = "SELECT ADATA.A1 FROM ADATA JOIN BDATA ON ADATA.A2=BDATA.B2 WHERE BDATA.B1>3";
 //        String query = "SELECT SUM(ADATA.A1+BDATA.B2) FROM ADATA JOIN BDATA ON ADATA.A2=BDATA.B2 WHERE BDATA.B1>3";
 //        String query = "select bdata.b2 from adata join bdata on adata.a1=bdata.b1 where adata.a1 > 4 and adata.a2 > 50";
@@ -69,14 +76,20 @@ public class Driver {
         String sql = query.toUpperCase().replace("\"", "");
         SqlParser sqlParser = new SqlParser(sql, modelType, isStream);
         sqlParser.setCatalogConfig(catalogConfig);
-        if (isStream == 1) {
+        if (isStream == 1) {    // 2590ms
+            long start = System.currentTimeMillis();
             JobBuilder jobBuilder = new JobBuilder(modelType, isStream, sqlParser.parser());
             jobBuilder.build();
-            System.out.println(JSONObject.toJSONString(jobBuilder.getJobTemplate(), SerializerFeature.DisableCircularReferenceDetect, SerializerFeature.PrettyFormat, SerializerFeature.WriteMapNullValue, SerializerFeature.WriteDateUseDateFormat));
-        } else {
-            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(modelType, isStream, sqlParser.parserWithOptimizer());
-            jobBuilder.build();
-            System.out.println(JSONObject.toJSONString(jobBuilder.getJobTemplate(), SerializerFeature.DisableCircularReferenceDetect, SerializerFeature.PrettyFormat, SerializerFeature.WriteMapNullValue, SerializerFeature.WriteDateUseDateFormat));
+//            System.out.println(JSONObject.toJSONString(jobBuilder.getJobTemplate(), SerializerFeature.DisableCircularReferenceDetect, SerializerFeature.PrettyFormat, SerializerFeature.WriteMapNullValue, SerializerFeature.WriteDateUseDateFormat));
+            long end = System.currentTimeMillis();
+            System.out.println("Origin Plan: " + String.valueOf(end-start) + "ms");
+        } else {    // 4758ms
+            long start = System.currentTimeMillis();
+            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(modelType, isStream, sqlParser.parserWithOptimizer());     // 4000+ ms
+            jobBuilder.build(); // <50 ms
+            long end = System.currentTimeMillis();
+            System.out.println("Optimizer Plan: " + String.valueOf(end-start) + "ms");
+//            System.out.println(JSONObject.toJSONString(jobBuilder.getJobTemplate(), SerializerFeature.DisableCircularReferenceDetect, SerializerFeature.PrettyFormat, SerializerFeature.WriteMapNullValue, SerializerFeature.WriteDateUseDateFormat));
         }
     }
 }
