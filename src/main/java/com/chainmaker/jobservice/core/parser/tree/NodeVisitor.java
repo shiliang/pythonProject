@@ -52,5 +52,8 @@ public class NodeVisitor<T> {
     public T visit(ParenthesizedExpression node) {return visit(node);}
 
     public T visit(FunctionCallExpression node) {return visit(node);}
+    public T visit(HintExpression node) {
+        return visit(node);
+    }
 
 }

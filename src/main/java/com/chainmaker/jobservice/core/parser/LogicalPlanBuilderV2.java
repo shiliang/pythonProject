@@ -84,7 +84,25 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     @Override
     public LogicalPlan visitQueryPrimaryDefault(SqlBaseParser.QueryPrimaryDefaultContext context) {
         if (context.querySpecification() instanceof SqlBaseParser.RegularQuerySpecificationContext) {
-            return visitRegularQuerySpecification((SqlBaseParser.RegularQuerySpecificationContext) context.querySpecification());
+            if (((SqlBaseParser.RegularQuerySpecificationContext) context.querySpecification()).selectClause().hints.size() == 0) {
+                return visitRegularQuerySpecification((SqlBaseParser.RegularQuerySpecificationContext) context.querySpecification());
+            } else {
+                LogicalPlan child = visitRegularQuerySpecification((SqlBaseParser.RegularQuerySpecificationContext) context.querySpecification());
+                List<HintExpression> hintExpressions = new ArrayList<>();
+                for (SqlBaseParser.HintStatementContext hintStatementContext: ((SqlBaseParser.RegularQuerySpecificationContext) context.querySpecification()).selectClause().hint(0).hintStatement()) {
+                    List<String> values = new ArrayList<>();
+                    String key = hintStatementContext.hintName.getText();
+                    for (SqlBaseParser.PrimaryExpressionContext primaryExpressionContext: hintStatementContext.parameters) {
+                        values.add(primaryExpressionContext.getText());
+                    }
+                    HintExpression hintExpression = new HintExpression(key, values);
+                    hintExpressions.add(hintExpression);
+                };
+                List<LogicalPlan> children = new ArrayList<>();
+                children.add(child);
+                return new LogicalHint(hintExpressions, children);
+            }
+
         } else {
             throw new ParserException(DEFAULT_ERROR + ": " + context.querySpecification().getText());
         }
@@ -94,6 +112,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     public LogicalPlan visitRegularQuerySpecification(SqlBaseParser.RegularQuerySpecificationContext context) {
 //        System.out.println(context.selectClause().hint.hintStatement(0).getText());
         List<LogicalPlan> children = new ArrayList<>();
+
         if (context.fromClause() == null) {
             throw new ParserException(DEFAULT_ERROR + ": " + "缺少From");
         } else if (context.whereClause() == null) {

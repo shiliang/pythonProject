@@ -4,6 +4,8 @@ public abstract class LogicalPlanVisitor {
 
     public void visit(LogicalPlan node) {
     }
+    public void visit(LogicalHint node) {
+    }
     public void visit(LogicalProject node) {
     }
     public void visit(FederatedLearning node) { }
