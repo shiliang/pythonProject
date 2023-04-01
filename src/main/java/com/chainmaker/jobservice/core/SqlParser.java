@@ -17,6 +17,7 @@ import com.chainmaker.jobservice.core.optimizer.PlanOptimizer;
 import com.chainmaker.jobservice.core.optimizer.nodes.DAG;
 import com.chainmaker.jobservice.core.optimizer.plans.PhysicalPlan;
 import com.chainmaker.jobservice.core.parser.LogicalPlanBuilder;
+import com.chainmaker.jobservice.core.parser.LogicalPlanBuilderV2;
 import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
 import com.chainmaker.jobservice.core.parser.printer.LogicalPlanPrinter;
 import org.apache.calcite.rel.RelNode;
@@ -65,7 +66,7 @@ public class SqlParser {
     }
 
     public DAG<PhysicalPlan> parser() {
-        LogicalPlanBuilder logicalPlanBuilder = new LogicalPlanBuilder(this.sql);
+        LogicalPlanBuilderV2 logicalPlanBuilder = new LogicalPlanBuilderV2(this.sql);
         LogicalPlan logicalPlan = logicalPlanBuilder.getLogicalPlan();
 
         Analyzer analyzer = new Analyzer(this.catalogConfig);
@@ -85,7 +86,7 @@ public class SqlParser {
      * @return
      */
     public parserWithOptimizerReturnValue parserWithOptimizer() {
-        LogicalPlanBuilder logicalPlanBuilder = new LogicalPlanBuilder(this.sql);
+        LogicalPlanBuilderV2 logicalPlanBuilder = new LogicalPlanBuilderV2(this.sql);
         LogicalPlan logicalPlan = logicalPlanBuilder.getLogicalPlan();
 
 //        LogicalPlanPrinter printer = new LogicalPlanPrinter();

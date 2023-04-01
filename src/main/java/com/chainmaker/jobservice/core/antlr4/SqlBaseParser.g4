@@ -822,7 +822,78 @@ namedExpression
     ;
 
 namedExpressionSeq
-    : namedExpression (COMMA namedExpression)*
+    : namedExpression (',' namedExpression)*                        #federatedQueryExpression
+    | flType '(' flExpressionSeq (',' flLabelSeq)+ (',' flPSISeq)* (',' flFeatSeq)* (',' flModelSeq)* (',' flEvalSeq)* ')'   #federatedLearningExpression
+    ;
+
+// task type(federated learning)
+flType
+    : FL
+    ;
+
+// TRANSFORM(dataIO)
+flLabelSeq
+    :flLabel (',' flLabel)*
+    ;
+
+flLabel
+    : FLLABEL '(' flExpressionSeq ')'
+    ;
+
+// psi
+flPSISeq
+    : flPSI (',' flPSI)*
+    ;
+
+flPSI
+    : INTERSECTION '(' flExpressionSeq ')'
+    ;
+
+// feature engineer
+flFeatSeq
+    : flFeat (',' flFeat)*
+    ;
+
+flFeat
+    : HEFB '(' flExpressionSeq ')'   // feature binning
+    | HEFSL '(' flExpressionSeq ')'  // feature selection
+    | HEFSP '(' flExpressionSeq ')'  // sampling
+    | HEFSC '(' flExpressionSeq ')'  // feature scale
+    | HEDS '(' flExpressionSeq ')'   // data statistic
+    ;
+
+// model
+flModelSeq
+    : flModel (',' flModel)*
+    ;
+
+flModel
+    : HESB '(' flExpressionSeq ')'  // hetero secure boost
+    | HOSB '(' flExpressionSeq ')'  // hetero secure boost
+    | HELR '(' flExpressionSeq ')'  // hetero logistic regression
+    | HEKMS '(' flExpressionSeq ')' // hetero kmeans
+    | HELNR '(' flExpressionSeq ')' // hetero linear regression
+    ;
+
+// evaluation
+flEvalSeq
+    : flEval (',' flEval)*
+    ;
+
+flEval
+    : EVAL '(' flExpressionSeq ')'
+    ;
+
+flExpressionSeq
+    : flExpression (',' flExpression)*
+    ;
+
+flExpression
+    : left=valueExpression flOperator right=valueExpression
+    ;
+
+flOperator
+    : EQ
     ;
 
 partitionFieldList
