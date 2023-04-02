@@ -308,4 +308,12 @@ public class ParserController {
         String result = "v1";
         return result;
     }
+    @RequestMapping(value = "/ports", method = RequestMethod.POST)
+    public String portManager(@RequestBody String req) {
+        JSONObject request = JSON.parseObject(req);
+        String jobID = request.getString("jobID");
+        String taskName = request.getString("taskName");
+        String partyID = request.getString("partyID");
+        return "3333";
+    }
 }
