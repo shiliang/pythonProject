@@ -10,6 +10,15 @@ package com.chainmaker.jobservice.api.model.bo.job.task;
 public class ServerInfo {
     private String ip;
     private String port;
+    private String clusterID;
+
+    public String getClusterID() {
+        return clusterID;
+    }
+
+    public void setClusterID(String clusterID) {
+        this.clusterID = clusterID;
+    }
 
     public String getIp() {
         return ip;
