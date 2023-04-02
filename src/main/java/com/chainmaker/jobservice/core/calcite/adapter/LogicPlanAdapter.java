@@ -117,6 +117,23 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         return plan.accept(this);
     }
 
+    @Override
+    public RelNode visit(LogicalHint node) {
+        RelNode ans = null;
+        int childNum = node.getChildren().size();
+        RelNode[] childs = new RelNode[childNum];
+        for (int i = 0; i < childNum; i++) {
+            childs[i] = node.getChildren().get(i).accept(this);
+            builder.push(childs[i]);
+        }
+        ans = builder.build();
+//        System.out.println(
+//                RelOptUtil.dumpPlan("[Logical plan]", ans, SqlExplainFormat.TEXT,
+//                        SqlExplainLevel.EXPPLAN_ATTRIBUTES));
+        return ans;
+    }
+
+    @Override
     public RelNode visit(FederatedLearning node) {
         RelNode ans = null;
         int childNum = node.getChildren().size();
