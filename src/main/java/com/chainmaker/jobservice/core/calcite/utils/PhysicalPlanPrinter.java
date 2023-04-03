@@ -106,9 +106,9 @@ public class PhysicalPlanPrinter {
      * 将物理计划转化成最终需要的格式
      */
     public List<JSONObject> PhyPlan2Task() {
-        System.out.println(
-                RelOptUtil.dumpPlan("[Physical plan] TEXT", phyPlan, SqlExplainFormat.TEXT,
-                        SqlExplainLevel.ALL_ATTRIBUTES));
+//        System.out.println(
+//                RelOptUtil.dumpPlan("[Physical plan] TEXT", phyPlan, SqlExplainFormat.TEXT,
+//                        SqlExplainLevel.ALL_ATTRIBUTES));
         String str = Print(phyPlan);
         System.out.println(str);
         Stack<String> stk = new Stack<>();

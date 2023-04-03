@@ -112,7 +112,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
     }
     @Override
     public void visit(TableScan plan) {
-        System.out.println("TableScan");
+//        System.out.println("TableScan");
     }
     @Override
     public void visit(SpdzMpc plan) {

@@ -129,7 +129,7 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         for (LogicalPlan child: node.getChildren()) {
             child.accept(this);
         }
-         System.out.println("JOIN");
+//         System.out.println("JOIN");
 
     }
 
@@ -137,7 +137,7 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         for (LogicalPlan child: node.getChildren()) {
             child.accept(this);
         }
-        System.out.println("Filter");
+//        System.out.println("Filter");
 
 
     }
