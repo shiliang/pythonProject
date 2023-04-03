@@ -3,6 +3,7 @@ package com.chainmaker.jobservice.api.controller;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.aspect.WebLog;
 import com.chainmaker.jobservice.api.model.bo.*;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
@@ -88,7 +89,9 @@ public class ParserController {
     @WebLog(description = "提交DAG")
     @RequestMapping(value = "/commit/dag", method = RequestMethod.POST)
     public Result jobCommit(@RequestBody String req) {
-        JobGraphVo jobGraphVo = JSONObject.parseObject(req, JobGraphVo.class);
+        System.out.println("req: " + req);
+        JobGraphVo jobGraphVo = JSONObject.parseObject(req, JobGraphVo.class, Feature.OrderedField);
+        System.out.println("jobGraphVo: " + jobGraphVo);
         MissionInfoVo missionInfoVo = jobParserService.jobCommit(jobGraphVo);
         return Result.success(missionInfoVo);
     }
