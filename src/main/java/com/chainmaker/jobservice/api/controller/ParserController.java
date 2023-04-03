@@ -81,7 +81,7 @@ public class ParserController {
     @WebLog(description = "预生成DAG")
     @RequestMapping(value = "/preview/dag", method = RequestMethod.POST)
     public Result jobPreview(@RequestBody String req) {
-        SqlVo sqlVo = JSONObject.parseObject(req, SqlVo.class);
+        SqlVo sqlVo = JSONObject.parseObject(req, SqlVo.class, Feature.OrderedField);
         JobGraphVo jobGraphVo= jobParserService.jobPreview(sqlVo);
         return Result.success(jobGraphVo);
     }
@@ -99,7 +99,7 @@ public class ParserController {
     @WebLog(description = "创建JOB")
     @RequestMapping(value = "/jobs", method = RequestMethod.POST)
     public ResponseEntity<String> jobCreate(@RequestBody String req) {
-        MissionInfo missionInfo = JSONObject.parseObject(req, MissionInfo.class);
+        MissionInfo missionInfo = JSONObject.parseObject(req, MissionInfo.class, Feature.OrderedField);
         JobInfo jobInfo = jobParserService.jobCreate(missionInfo);
         String jobID = jobInfo.getJob().getJobID();
         JobInfoPo jobInfoPo = JobInfoPo.converterToJobInfoPo(jobInfo);
@@ -122,7 +122,7 @@ public class ParserController {
         JobGetPo jobGetPo = new JobGetPo();
         jobGetPo.setJobID(jobID);
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
-        JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class);
+        JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class, Feature.OrderedField);
         JobGraphVo jobGraphVo = jobParserService.getJobApproval(jobInfoPo);
         return Result.success(jobGraphVo);
     }
@@ -132,7 +132,7 @@ public class ParserController {
         JobGetPo jobGetPo = new JobGetPo();
         jobGetPo.setJobID(jobID);
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
-        JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class);
+        JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class, Feature.OrderedField);
         JobGraphVo jobGraphVo = jobParserService.getJobInfo(jobInfoPo);
         return Result.success(jobGraphVo);
     }
@@ -140,7 +140,7 @@ public class ParserController {
     @WebLog(description = "更新service信息")
     @RequestMapping(value = "/service/list/update", method = RequestMethod.POST)
     public Result updateService(@RequestBody String req) {
-        ServiceUpdateVo serviceUpdateVo = JSONObject.parseObject(req, ServiceUpdateVo.class);
+        ServiceUpdateVo serviceUpdateVo = JSONObject.parseObject(req, ServiceUpdateVo.class, Feature.OrderedField);
         ServiceUpdatePo serviceUpdatePo = jobParserService.updateService(serviceUpdateVo);
         ContractServiceResponse csr = blockchainContractService.invokeContract(CONTRACT_NAME, "UpdateServices", serviceUpdatePo.toContractParams());
         JSONObject res = csr.toJSON(false);
@@ -155,7 +155,8 @@ public class ParserController {
         jobGetPo.setJobID(jobID);
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
         HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
-        JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class);
+        System.out.println("csr: " + csr);
+        JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class, Feature.OrderedField);
         JobRunner jobRunner = jobParserService.getJobRunner(jobInfoPo);
         return new ResponseEntity<JobRunner>(jobRunner, responseStatus);
     }
@@ -181,7 +182,7 @@ public class ParserController {
         jobGetPo.setJobID(jobID);
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobCommon", jobGetPo.toContractParams());
         String response = csr.toString();
-        JSONObject res = JSONObject.parseObject(csr.toString());
+        JSONObject res = JSONObject.parseObject(csr.toString(), Feature.OrderedField);
         JSONObject result = new JSONObject();
         result.put("result", res.get("method_name"));
         HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;

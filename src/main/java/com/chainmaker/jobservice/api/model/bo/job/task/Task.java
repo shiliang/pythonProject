@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.api.model.bo.job.task;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.model.po.contract.job.TaskInputDataPo;
 import com.chainmaker.jobservice.api.model.po.contract.job.TaskPo;
 
@@ -40,7 +41,7 @@ public class Task {
 
         Module module = new Module();
         module.setModuleName(taskPo.getModule().getModuleName());
-        module.setParams(JSON.parseObject(taskPo.getModule().getParams()));
+        module.setParams(JSON.parseObject(taskPo.getModule().getParams(), Feature.OrderedField));
         task.setModule(module);
 
         Input input = new Input();
@@ -52,7 +53,7 @@ public class Task {
             taskInputData.setTaskSrc(taskInputDataPo.getTaskSrc());
             taskInputData.setDomainID(taskInputDataPo.getDomainID());
             taskInputData.setRole(taskInputDataPo.getRole());
-            taskInputData.setParams(JSON.parseObject(taskInputDataPo.getParams()));
+            taskInputData.setParams(JSON.parseObject(taskInputDataPo.getParams(), Feature.OrderedField));
             data.add(taskInputData);
         }
         input.setData(data);
