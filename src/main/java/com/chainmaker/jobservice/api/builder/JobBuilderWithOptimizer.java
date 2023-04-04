@@ -625,7 +625,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                                 inputdata1.setTaskSrc(dataName.split("-")[1]);
                                 inputdata1.setDataID("");
                             } else {
-                                inputdata1.setTaskSrc("0");
+                                inputdata1.setTaskSrc("");
                                 inputdata1.setDataID(inputdata1.getDataName());
                             }
                             break;
@@ -633,7 +633,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     }
                     if (inputdata1.getDataName() == null) {
                         inputdata1.setDataName(leftTable);
-                        inputdata1.setTaskSrc("0");
+                        inputdata1.setTaskSrc("");
                         inputdata1.setDataID(inputdata1.getDataName());
                     }
 
@@ -653,7 +653,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                                 inputdata2.setTaskSrc(dataName.split("-")[1]);
                                 inputdata2.setDataID("");
                             } else {
-                                inputdata2.setTaskSrc("0");
+                                inputdata2.setTaskSrc("");
                                 inputdata2.setDataID(inputdata2.getDataName());
                             }
                             break;
@@ -661,7 +661,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     }
                     if (inputdata1.getDataName() == null) {
                         inputdata2.setDataName(rightTable);
-                        inputdata2.setTaskSrc("0");
+                        inputdata2.setTaskSrc("");
                         inputdata2.setDataID(inputdata2.getDataName());
                     }
 
@@ -702,7 +702,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                             inputdata.setTaskSrc(dataName.split("-")[1]);
                             inputdata.setDataID("");
                         } else {
-                            inputdata.setTaskSrc("0");
+                            inputdata.setTaskSrc("");
                             inputdata.setDataID(inputdata.getDataName());
                         }
                         break;
@@ -710,7 +710,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 }
                 if (inputdata.getDataName() == null) {
                     inputdata.setDataName(table);
-                    inputdata.setTaskSrc("0");
+                    inputdata.setTaskSrc("");
                     inputdata.setDataID(inputdata.getDataName());
                 }
                 JSONObject jsonObjectParams = new JSONObject(true);
@@ -750,7 +750,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                                 inputdata.setTaskSrc(dataName.split("-")[1]);
                                 inputdata.setDataID("");
                             } else {
-                                inputdata.setTaskSrc("0");
+                                inputdata.setTaskSrc("");
                                 inputdata.setDataID(inputdata.getDataName());
                             }
                             break;
@@ -758,7 +758,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     }
                     if (inputdata.getDataName() == null) {
                         inputdata.setDataName(table);
-                        inputdata.setTaskSrc("0");
+                        inputdata.setTaskSrc("");
                         inputdata.setDataID(inputdata.getDataName());
                     }
                     JSONObject jsonObjectParams = new JSONObject(true);
@@ -785,7 +785,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                             inputdata.setTaskSrc(dataName.split("-")[1]);
                             inputdata.setDataID("");
                         } else {
-                            inputdata.setTaskSrc("0");
+                            inputdata.setTaskSrc("");
                             inputdata.setDataID(inputdata.getDataName());
                         }
                         break;
@@ -793,7 +793,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 }
                 if (inputdata.getDataName() == null) {
                     inputdata.setDataName(table);
-                    inputdata.setTaskSrc("0");
+                    inputdata.setTaskSrc("");
                     inputdata.setDataID(inputdata.getDataName());
                 }
 
