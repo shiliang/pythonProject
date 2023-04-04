@@ -7,6 +7,7 @@ import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.InvalidRelException;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
@@ -69,6 +70,9 @@ public class MPCJoinConverter extends ConverterRule {
             }
         } else {
             try {
+                System.out.println(left.getRowType());
+                System.out.println(left.getRelTypeName());
+                System.out.println(((RelSubset) left).getOriginal().getTable().getQualifiedName().get(0));
                 return MPCJoin.create(left, right, info.getEquiCondition(left, right, cluster.getRexBuilder()), join.getVariablesSet(), join.getJoinType());
             } catch (InvalidRelException var11) {
                 return null;

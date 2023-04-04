@@ -11,35 +11,28 @@ public class TableInfo {
     private HashMap<String, FieldInfo> fields;      // 表中的所有属性
     private double rowCount;                        // 行数
     private String name;                            // 表名
-    private String OrgId;                           // 数据来源
+    private String OrgDId;                          // 数据来源
 
     public TableInfo() {
         fields = null;
         rowCount = 0;
         name = null;
-        OrgId = null;
+        OrgDId = null;
     }
 
     public TableInfo(HashMap<String, FieldInfo> fields, double rowCount, String name, String belongsTo) {
         this.fields = fields;
         this.rowCount = rowCount;
         this.name = name;
-        this.OrgId = belongsTo;
+        this.OrgDId = belongsTo;
     }
 
-    public String getOrgId() {
-        return OrgId;
+    public String getOrgDId() {
+        return OrgDId;
     }
 
-    public String getOrgDID() {
-        for (Map.Entry<String, FieldInfo> e: fields.entrySet()) {
-            return e.getValue().getDomainID();
-        }
-        return null;
-    }
-
-    public void setOrgId(String orgId) {
-        OrgId = orgId;
+    public void setOrgDId(String orgDId) {
+        OrgDId = orgDId;
     }
 
     public HashMap<String, FieldInfo> getFields() {

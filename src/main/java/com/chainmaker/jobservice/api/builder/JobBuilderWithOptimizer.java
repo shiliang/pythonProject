@@ -183,7 +183,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             String field = e.toString().split("\\.")[1];
             data.setDataName(table);
             data.setDataID(data.getDataName());
-            data.setDomainID(metadata.getTableOrgDId(table));
+            data.setDomainID(metadata.getTableOrgId(table));
             data.setRole("client");
             data.setTaskSrc("");
             JSONObject dataParams = new JSONObject(true);
@@ -304,7 +304,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
         inputData.setDataName(dataName);
         inputData.setDataID(dataName);
-        inputData.setDomainID(metadata.getTableOrgDId(dataName));
+        inputData.setDomainID(metadata.getTableOrgId(dataName));
         JSONObject params = parseFLParams(label);
         for (String l : constLabels) {
             if (!params.containsKey(l)) {

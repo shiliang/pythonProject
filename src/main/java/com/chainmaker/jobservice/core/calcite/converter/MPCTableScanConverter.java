@@ -41,7 +41,7 @@ public class MPCTableScanConverter extends ConverterRule {
         Table table = (Table)relOptTable.unwrap(Table.class);
         String tableName = relOptTable.getQualifiedName().get(0);
         double rowCount = MPCMetadata.getInstance().getTableRowCount(tableName);
-        String orgId = MPCMetadata.getInstance().getTableOrgId(tableName);
+//        String orgId = MPCMetadata.getInstance().getTableOrgId(tableName);
         if (!EnumerableTableScan.canHandle(table)) {
             return null;
         } else {

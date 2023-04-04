@@ -79,7 +79,7 @@ public class MPCMetadata {
      * @param tableName
      * @return
      */
-    public String getTableOrgId(String tableName) { return tables.get(tableName).getOrgId(); }
+    public String getTableOrgId(String tableName) { return tables.get(tableName).getOrgDId(); }
 
     /**
      * 初始化整个查询优化过程所需的metadata
@@ -166,7 +166,7 @@ public class MPCMetadata {
 //                tableInfos.put(tableName, new TableInfo(fieldInfos, rowCount, tableName, "source1"));
 //            }
 //            setTables(tableInfos);
-//            this.tables.get("TB").setOrgId("source2");
+//            this.tables.get("TB").setOrgDId("source2");
 //            this.tables.get("TC").setRowCount(100);
         }
     }
@@ -187,14 +187,6 @@ public class MPCMetadata {
         return tableFieldMap;
     }
 
-    public HashMap<String, String> getMarkIDFieldNameMap() {
-        return markIDFieldNameMap;
-    }
-
-    public void setMarkIDFieldNameMap(HashMap<String, String> markIDFieldNameMap) {
-        this.markIDFieldNameMap = markIDFieldNameMap;
-    }
-
     public static MPCMetadata getInstance() {
         return instance;
     }
@@ -212,7 +204,4 @@ public class MPCMetadata {
         this.tables = tables;
     }
 
-    public String getTableOrgDId(String dataName) {
-        return tables.get(dataName).getOrgDID();
-    }
 }
