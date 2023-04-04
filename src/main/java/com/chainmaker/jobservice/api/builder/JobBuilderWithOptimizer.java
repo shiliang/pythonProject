@@ -59,16 +59,23 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private List<ServiceVo> services = new ArrayList<>();
     private List<Task> tasks = new ArrayList<>();
     private HashSet<String> jobParties = new HashSet<>();
-    private LogicalPlan FLLogicPlan;
+    private LogicalPlan OriginPlan;
+    private LogicalHint hint;
 
     public JobBuilderWithOptimizer(Integer modelType, Integer isStream, parserWithOptimizerReturnValue value) {
         this.modelType = modelType;
         this.isStream = isStream;
         this.phyPlan = value.getPhyPlan();
-        this.FLLogicPlan = value.getFLLogicPlan();
+        this.OriginPlan = value.getOriginPlan();
         this.createTime = String.valueOf(System.currentTimeMillis());
         this.jobID = UUID.randomUUID().toString().replace("-", "").toLowerCase();
         this.metadata = MPCMetadata.getInstance();
+        if (OriginPlan instanceof LogicalHint) {
+            hint = (LogicalHint) OriginPlan;
+            OriginPlan = (LogicalPlan) OriginPlan.getChildren().get(0);
+        } else {
+            hint = null;
+        }
     }
 
     public JobTemplate getJobTemplate() {
@@ -101,7 +108,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         tasks.addAll(PhyPlan2Task());
 
-        generateFLTasks(FLLogicPlan);
+        generateFLTasks(OriginPlan);
 
         job.setJobID(jobID);
         job.setJobType(jobType);
@@ -148,9 +155,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     tasks.add(parseTEE((FunctionCallExpression) expr));
                 }
             }
-        } else if (node instanceof LogicalHint) {
-//            "select /*+ BRAODCASTJOIN(B), TEEJOIN(A) */ adata.a1 from adata join bdata on adata.id=bdata.id"
-            ;
         } else {
             ;
         }
@@ -893,7 +897,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
 
         // select /*+ BRAODCASTJOIN(B), TEEJOIN(A) */ adata.a1 from adata join bdata on adata.id=bdata.id 修正
-        if (task.getModule().getModuleName().equals("PSI") && FLLogicPlan instanceof LogicalHint) {
+        if (task.getModule().getModuleName().equals("PSI") && hint != null) {
             logicalHintFix(task);
         }
 
@@ -901,7 +905,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     }
 
     public void logicalHintFix(Task task) {
-        List<HintExpression> list = ((LogicalHint) FLLogicPlan).getValues();
+        List<HintExpression> list = hint.getValues();
         for (HintExpression kv : list) {
             if (kv.getKey().equals("TEEJOIN")) {
                 List<String> values = kv.getValues();

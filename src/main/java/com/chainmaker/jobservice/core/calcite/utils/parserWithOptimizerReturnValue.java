@@ -8,11 +8,11 @@ public class parserWithOptimizerReturnValue {
 
     private RelNode phyPlan;            // 优化后的物理计划
 
-    private LogicalPlan FLLogicPlan;      // 无法参与优化的联邦查询相关物理计划
+    private LogicalPlan OriginPlan;      // 无法参与优化的联邦查询&TEE相关计划
 
-    public parserWithOptimizerReturnValue(RelNode plan, LogicalPlan FLplan) {
+    public parserWithOptimizerReturnValue(RelNode plan, LogicalPlan OriPlan) {
         this.phyPlan = plan;
-        this.FLLogicPlan = FLplan;
+        this.OriginPlan = OriPlan;
     }
 
     public RelNode getPhyPlan() {
@@ -23,11 +23,11 @@ public class parserWithOptimizerReturnValue {
         this.phyPlan = phyPlan;
     }
 
-    public LogicalPlan getFLLogicPlan() {
-        return FLLogicPlan;
+    public LogicalPlan getOriginPlan() {
+        return OriginPlan;
     }
 
-    public void setFLPhyPlan(LogicalPlan LogicPlan) {
-        this.FLLogicPlan = LogicPlan;
+    public void setOriginPlan(LogicalPlan originPlan) {
+        OriginPlan = originPlan;
     }
 }
