@@ -20,7 +20,6 @@ public class MPCRelMetaDataProvider {
     public static final RelMetadataProvider relMetaDataProvider = ChainedRelMetadataProvider.of(
                     ImmutableList.of(
                             MPCRelMdRowCount.SOURCE,
-//                            MPCCumulativeCost.SOURCE,
                             RelMdPercentageOriginalRows.SOURCE,
                             RelMdColumnOrigins.SOURCE,
                             RelMdExpressionLineage.SOURCE,

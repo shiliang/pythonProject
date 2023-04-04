@@ -458,6 +458,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 // MPCProject [TA.ID, SUM[TA.ID-TA.AGE]]
                 // Project分为普通QUERY和MPC两种
                 String tmp = s.substring(s.indexOf("[")+1, s.length()-1);
+                if (tmp.equals("")) {
+                    // 如果project是空的，即无法处理的FL和TEE已经被提出，无需进行proj处理
+                    continue;
+                }
                 if (tmp.contains(",")) {
                     // 如果是复合Project，则需要转化成多次单独Project
                     String[] projs = tmp.split(",");

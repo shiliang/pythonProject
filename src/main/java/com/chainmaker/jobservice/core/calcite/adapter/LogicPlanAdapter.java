@@ -50,6 +50,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
     private FrameworkConfig config;             // 创建builder的一些配置
     private RelBuilder builder;                 // RelNode生成器
     private Integer modelType;                      // 需要处理的任务类型
+//    private RelBuilderFactory relBuilderFactory;
 
     List<String> multiTableList = new ArrayList<>(); // 用于存储参加join的属性名
 
@@ -94,6 +95,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
 
 //        System.out.println("generate schema success");
     }
+
 
     /**
      * 将antlr4逻辑计划转化成calcite逻辑计划
