@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.api.model.bo.job;
 
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.model.po.contract.job.JobPo;
 
 import java.util.List;
@@ -40,7 +41,7 @@ public class Job {
         job.setRequestData(jobPo.getRequestData());
         job.setTasksDAG(jobPo.getTasksDAG());
         job.setParties(jobPo.getParties());
-        job.setCommon(JSONObject.parseObject(jobPo.getCommon(), Map.class));
+        job.setCommon(JSONObject.parseObject(jobPo.getCommon(), Map.class, Feature.OrderedField));
         return job;
     }
 

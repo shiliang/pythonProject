@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.api.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.builder.JobBuilder;
 import com.chainmaker.jobservice.api.builder.JobBuilderWithOptimizer;
 import com.chainmaker.jobservice.api.model.bo.*;
@@ -55,8 +56,8 @@ public class JobParserServiceImpl implements JobParserService {
     public List<ServiceValueParam> get(String orgDID, String jobID) {
         String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/missions/serviceValues/" + orgDID + "/local/" + jobID;
         RestTemplate restTemplate = new RestTemplate();
-        JSONObject result = JSONObject.parseObject(restTemplate.getForObject(url, String.class));
-        ServiceValueParam[] serviceValueParams = JSONObject.parseObject(result.getString("data"), ServiceValueParam[].class);
+        JSONObject result = JSONObject.parseObject(restTemplate.getForObject(url, String.class), Feature.OrderedField);
+        ServiceValueParam[] serviceValueParams = JSONObject.parseObject(result.getString("data"), ServiceValueParam[].class, Feature.OrderedField);
         return new ArrayList<>(Arrays.asList(serviceValueParams));
     }
 
@@ -64,8 +65,8 @@ public class JobParserServiceImpl implements JobParserService {
     public UserInfo getUserInfo(String userName) {
         String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/login/orgDID/" + userName;
         RestTemplate restTemplate = new RestTemplate();
-        JSONObject result = JSONObject.parseObject(restTemplate.getForObject(url, String.class));
-        return JSONObject.parseObject(result.getString("data"), UserInfo.class);
+        JSONObject result = JSONObject.parseObject(restTemplate.getForObject(url, String.class), Feature.OrderedField);
+        return JSONObject.parseObject(result.getString("data"), UserInfo.class, Feature.OrderedField);
     }
 
     @Override
@@ -260,6 +261,7 @@ public class JobParserServiceImpl implements JobParserService {
 
     @Override
     public JobRunner getJobRunner(JobInfoPo jobInfoPo) {
+        System.out.println("jobInfoPo: " + jobInfoPo);
         JobInfo jobInfo = JobInfo.converterToJobInfo(jobInfoPo);
         String jobID = jobInfo.getJob().getJobID();
         String orgDID = jobInfo.getJob().getSubmitter();
@@ -424,7 +426,7 @@ public class JobParserServiceImpl implements JobParserService {
                         System.out.println("serviceValueParam: " + serviceValueParam);
                         if (Objects.equals(service.getId(), serviceValueParam.getId())) {
                             String serviceStr = JSONObject.toJSONString(service);
-                            ServiceRunner serviceRunner = JSONObject.parseObject(serviceStr, ServiceRunner.class);
+                            ServiceRunner serviceRunner = JSONObject.parseObject(serviceStr, ServiceRunner.class, Feature.OrderedField);
                             serviceRunner.setNodePort(Integer.parseInt(serviceValueParam.getNodePort()));
                             for (HashMap<String, String> exposeEndpoint : serviceRunner.getExposeEndpoints().values()) {
                                 if (!Objects.equals(clientIdMap.get(serviceRunner.getId()), "")) {

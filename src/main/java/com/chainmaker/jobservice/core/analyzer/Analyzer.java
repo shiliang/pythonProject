@@ -2,6 +2,7 @@ package com.chainmaker.jobservice.core.analyzer;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
 import com.chainmaker.jobservice.api.model.vo.ModelParamsVo;
 import com.chainmaker.jobservice.api.response.ParserException;
@@ -87,11 +88,11 @@ public class Analyzer extends LogicalPlanVisitor {
             missionDetailVOs.add(missionDetailVO);
         }
         for (String modelName : modelNameList) {
-            JSONObject modelResult = JSONObject.parseObject(restTemplate.getForObject(model_url + modelName, String.class));
+            JSONObject modelResult = JSONObject.parseObject(restTemplate.getForObject(model_url + modelName, String.class), Feature.OrderedField);
             if (modelResult == null || modelResult.getJSONObject("data").isEmpty()) {
                 throw new RestException(response.toString());
             }
-            ModelParamsVo modelParamsVo = JSONObject.parseObject(modelResult.getString("data"), ModelParamsVo.class);
+            ModelParamsVo modelParamsVo = JSONObject.parseObject(modelResult.getString("data"), ModelParamsVo.class, Feature.OrderedField);
             modelParamsVos.add(modelParamsVo);
         }
 

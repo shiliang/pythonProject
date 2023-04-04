@@ -3,6 +3,7 @@ package com.chainmaker.jobservice.api.controller;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.aspect.WebLog;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.job.service.Service;
@@ -110,7 +111,7 @@ public class ContractController {
         jobGetServicePo.setServiceID(serviceID);
 
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryServiceDetails", jobGetServicePo.toContractParams());
-        ServicePo servicePo = JSON.parseObject(csr.toString(), ServicePo.class);
+        ServicePo servicePo = JSON.parseObject(csr.toString(), ServicePo.class, Feature.OrderedField);
         Service service = Service.servicePoToService(servicePo);
         HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
         return new ResponseEntity<Service>(service, responseStatus);
@@ -204,13 +205,13 @@ public class ContractController {
         jobGetTaskPo.setTaskName(taskName);
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryTaskDetails", jobGetTaskPo.toContractParams());
         String response = csr.toString();
-        JSONObject res = JSON.parseObject(response);
+        JSONObject res = JSON.parseObject(response, Feature.OrderedField);
         String moduleParamsStr = res.getJSONObject("module").getString("params");
-        JSONObject moduleParams = JSON.parseObject(moduleParamsStr);
+        JSONObject moduleParams = JSON.parseObject(moduleParamsStr, Feature.OrderedField);
         res.getJSONObject("module").put("params", moduleParams);
         for (int i = 0; i < res.getJSONObject("input").getJSONArray("data").size(); i++) {
             String dataParamsStr = res.getJSONObject("input").getJSONArray("data").getJSONObject(i).getString("params");
-            JSONObject dataParams = JSON.parseObject(dataParamsStr);
+            JSONObject dataParams = JSON.parseObject(dataParamsStr, Feature.OrderedField);
             res.getJSONObject("input").getJSONArray("data").getJSONObject(i).put("params", dataParams);
         }
         JSONObject taskInfo = new JSONObject();

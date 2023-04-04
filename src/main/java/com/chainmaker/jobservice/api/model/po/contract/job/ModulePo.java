@@ -26,4 +26,12 @@ public class ModulePo {
     public void setParams(String params) {
         this.params = params;
     }
+
+    @Override
+    public String toString() {
+        return "ModulePo{" +
+                "moduleName='" + moduleName + '\'' +
+                ", params='" + params + '\'' +
+                '}';
+    }
 }

@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.core.optimizer;
 
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.core.optimizer.model.FL.FateModel;
 import com.chainmaker.jobservice.core.optimizer.model.FL.FlInputData;
@@ -405,9 +406,9 @@ public class PlanOptimizer extends LogicalPlanVisitor {
                     temp.put(keys.get(0), flExpression.getRight().toString());
                     paramsStr = temp.toJSONString();
                 } else if (i == keys.size()-1) {
-                    params.put(keys.get(i), JSONObject.parseObject(paramsStr));
+                    params.put(keys.get(i), JSONObject.parseObject(paramsStr, Feature.OrderedField));
                 } else {
-                    temp.put(keys.get(i), JSONObject.parseObject(paramsStr));
+                    temp.put(keys.get(i), JSONObject.parseObject(paramsStr, Feature.OrderedField));
                     paramsStr = temp.toJSONString();
                 }
             }
