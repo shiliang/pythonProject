@@ -12,6 +12,9 @@ public abstract class LogicalPlanRelVisitor {
     public RelNode visit(LogicalPlan node) {
         return null;
     }
+    public RelNode visit(LogicalHint node) {
+        return null;
+    }
     public RelNode visit(LogicalProject node) {
         return null;
     }

@@ -17,6 +17,7 @@ import com.chainmaker.jobservice.core.optimizer.PlanOptimizer;
 import com.chainmaker.jobservice.core.optimizer.nodes.DAG;
 import com.chainmaker.jobservice.core.optimizer.plans.PhysicalPlan;
 import com.chainmaker.jobservice.core.parser.LogicalPlanBuilder;
+import com.chainmaker.jobservice.core.parser.LogicalPlanBuilderV2;
 import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
 import com.chainmaker.jobservice.core.parser.printer.LogicalPlanPrinter;
 import org.apache.calcite.rel.RelNode;
@@ -66,7 +67,7 @@ public class SqlParser {
     }
 
     public DAG<PhysicalPlan> parser() {
-        LogicalPlanBuilder logicalPlanBuilder = new LogicalPlanBuilder(this.sql);
+        LogicalPlanBuilderV2 logicalPlanBuilder = new LogicalPlanBuilderV2(this.sql);
         LogicalPlan logicalPlan = logicalPlanBuilder.getLogicalPlan();
 
         Analyzer analyzer = new Analyzer(this.catalogConfig);
@@ -86,18 +87,12 @@ public class SqlParser {
      * @return
      */
     public parserWithOptimizerReturnValue parserWithOptimizer() {
-        PrintStream old = System.out;
-        PrintStream filter = null;
-        try {
-            filter = new PrintStream("filter.txt");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        long start, end;
-        System.setOut(filter);
-
-        LogicalPlanBuilder logicalPlanBuilder = new LogicalPlanBuilder(this.sql);
+        LogicalPlanBuilderV2 logicalPlanBuilder = new LogicalPlanBuilderV2(this.sql);
         LogicalPlan logicalPlan = logicalPlanBuilder.getLogicalPlan();
+
+        LogicalPlanPrinter printer = new LogicalPlanPrinter();
+        printer.visitTree(logicalPlan, 0);
+        System.out.println(printer.logicalPlanString);
 
         Analyzer analyzer = new Analyzer(this.catalogConfig);
 
@@ -125,25 +120,14 @@ public class SqlParser {
 
         // 之前的sqlparser约用时1500ms
         // 接入Calcite    3000ms
-        start = System.currentTimeMillis();
         LogicPlanAdapter planAdapter = new LogicPlanAdapter(this.sql.toUpperCase(), logicalPlan, metadata, modelType);
-        end = System.currentTimeMillis();
-        System.setOut(old);
-        System.out.println(String.format("LogicPlanAdapter Init Time: %d ms", end-start));
-        start = System.currentTimeMillis();
+
         planAdapter.CastToRelNode();
-        end = System.currentTimeMillis();
-        System.out.println(String.format("LogicPlanAdapter Cast Time: %d ms", end-start));
 
         // 查询优化部分   300ms
-        System.setOut(filter);
-        start = System.currentTimeMillis();
         RelNode root = planAdapter.getRoot();
         OptimizerPlanner planner = new OptimizerPlanner(root, true);
         RelNode phyPlan = planner.optimize();
-        end = System.currentTimeMillis();
-        System.setOut(old);
-        System.out.println(String.format("Optimizer Time: %d ms", end-start));
 
         return new parserWithOptimizerReturnValue(phyPlan, logicalPlan);
     }

@@ -51,7 +51,7 @@ public class ContractController {
         }
     }
 
-//    @WebLog(description = "启动JOB")
+    @WebLog(description = "启动JOB")
     @RequestMapping(value = "/jobs/{jobID}/actions/launch", method = RequestMethod.POST)
     public ResponseEntity<String> setJobStsReady(@PathVariable String jobID, @RequestBody String req) {
         String timestamp = String.valueOf(System.currentTimeMillis());
@@ -68,7 +68,7 @@ public class ContractController {
         return new ResponseEntity<String>(response, responseStatus);
     }
 
-//    @WebLog(description = "撤销JOB")
+    @WebLog(description = "撤销JOB")
     @RequestMapping(value = "/jobs/{jobID}/actions/cancel", method = RequestMethod.POST)
     public ResponseEntity<String> cancelJob(@PathVariable String jobID, @RequestBody String req) {
         String timestamp = String.valueOf(System.currentTimeMillis());

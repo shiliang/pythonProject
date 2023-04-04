@@ -21,6 +21,7 @@ import com.chainmaker.jobservice.core.optimizer.model.TeeModel;
 import com.chainmaker.jobservice.core.optimizer.nodes.DAG;
 import com.chainmaker.jobservice.core.optimizer.plans.*;
 import com.chainmaker.jobservice.core.parser.plans.FederatedLearning;
+import com.chainmaker.jobservice.core.parser.plans.LogicalHint;
 import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
 import com.chainmaker.jobservice.core.parser.plans.LogicalProject;
 import com.chainmaker.jobservice.core.parser.tree.*;
@@ -112,7 +113,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     }
 
     /**
-     * 生成FL相关的Task
+     * 生成FL和TEE相关的Task
      * @param node
      */
     public void generateFLTasks(LogicalPlan node) {
@@ -136,16 +137,20 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     eval=[EVAL_TYPE=BINARY]}
              */
         } else if (node instanceof LogicalProject){
+            /*
+                "select adata.a1, testt(adata.a1, bdata.b1) from adata, bdata";
+             */
             List<NamedExpression> namedExpressionList = ((LogicalProject) node).getProjectList().getValues();
             for (NamedExpression ne : namedExpressionList) {
                 Expression expr = ne.getExpression();
-//                System.out.println("Project Expression = " + expr.toString());
-//                System.out.println("expression class = " + expr.getClass());
                 if (modelType == 2 && expr instanceof FunctionCallExpression) {
                     // TESTT[ADATA.A1, BDATA.B1]
                     tasks.add(parseTEE((FunctionCallExpression) expr));
                 }
             }
+        } else if (node instanceof LogicalHint) {
+//            "select /*+ BRAODCASTJOIN(B), TEEJOIN(A) */ adata.a1 from adata join bdata on adata.id=bdata.id"
+            ;
         } else {
             ;
         }
@@ -886,9 +891,29 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         for (Party party : parties) {
             jobParties.add(party.getPartyID());
         }
+
+        // select /*+ BRAODCASTJOIN(B), TEEJOIN(A) */ adata.a1 from adata join bdata on adata.id=bdata.id 修正
+        if (task.getModule().getModuleName().equals("PSI") && FLLogicPlan instanceof LogicalHint) {
+            logicalHintFix(task);
+        }
+
         return task;
     }
 
+    public void logicalHintFix(Task task) {
+        List<HintExpression> list = ((LogicalHint) FLLogicPlan).getValues();
+        for (HintExpression kv : list) {
+            if (kv.getKey().equals("TEEJOIN")) {
+                List<String> values = kv.getValues();
+                task.getModule().setModuleName("TEEPSI");
+                JSONObject params = task.getModule().getParams();
+                for (String p : values) {
+                    params.put(p, null);
+                }
+                break;
+            }
+        }
+    }
 
     /**
      * 简化PhyPlan的表示，便于后续转化成Task
