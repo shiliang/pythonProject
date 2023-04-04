@@ -65,16 +65,15 @@ public class MPCJoinConverter extends ConverterRule {
             // 非等值连接，好像不会用到
             try {
                 return MPCNestedLoopJoin.create(left, right, join.getCondition(), join.getVariablesSet(), join.getJoinType());
-            } catch (InvalidRelException var10) {
+            } catch (InvalidRelException e) {
                 return null;
             }
         } else {
             try {
-                System.out.println(left.getRowType());
-                System.out.println(left.getRelTypeName());
+                System.out.println(((RelSubset) left).getOriginal().getTable().getQualifiedName().size());
                 System.out.println(((RelSubset) left).getOriginal().getTable().getQualifiedName().get(0));
                 return MPCJoin.create(left, right, info.getEquiCondition(left, right, cluster.getRexBuilder()), join.getVariablesSet(), join.getJoinType());
-            } catch (InvalidRelException var11) {
+            } catch (InvalidRelException e) {
                 return null;
             }
         }

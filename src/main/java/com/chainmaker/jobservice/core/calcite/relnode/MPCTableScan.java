@@ -35,7 +35,6 @@ public class MPCTableScan extends TableScan implements EnumerableRel {
     private final Class elementType;
     private RelOptCost cost;
     private double rowCount;
-    private RelOptTable table;
 
     public MPCTableScan(RelOptCluster cluster, RelTraitSet traitSet,
                         RelOptTable table, Class elementType, double rowCount) {
@@ -43,7 +42,6 @@ public class MPCTableScan extends TableScan implements EnumerableRel {
         System.out.println(table == null);
         this.elementType = elementType;
         this.rowCount = rowCount;
-        this.table = table;
     }
 
     public static MPCTableScan create(RelOptCluster cluster, RelOptTable relOptTable, double rowCount) {
@@ -73,11 +71,6 @@ public class MPCTableScan extends TableScan implements EnumerableRel {
 
         cost = planner.getCostFactory().makeCost(dRows, dCpu, dIo);
         return cost;
-    }
-
-    @Override
-    public RelOptTable getTable() {
-        return table;
     }
 
     /** 以下内容均是为了该类能正常工作所完成的，与项目本身没有多少关系，不用在意其意义 **/
