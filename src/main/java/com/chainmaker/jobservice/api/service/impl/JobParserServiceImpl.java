@@ -347,7 +347,7 @@ public class JobParserServiceImpl implements JobParserService {
 
             String taskName = task.getTaskName();
             for (TaskInputData taskInputData: task.getInput().getData()) {
-                if (taskInputData.getTaskSrc() != "") {
+                if (!Objects.equals(taskInputData.getTaskSrc(), "")) {
                     DagEdge dagEdge = new DagEdge();
                     dagEdge.setFrom(Integer.parseInt(taskInputData.getTaskSrc()));
                     dagEdge.setTo(Integer.parseInt(taskName));
