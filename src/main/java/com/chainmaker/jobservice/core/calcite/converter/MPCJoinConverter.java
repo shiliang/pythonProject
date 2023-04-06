@@ -70,8 +70,10 @@ public class MPCJoinConverter extends ConverterRule {
             }
         } else {
             try {
+                System.out.println(((RelSubset) left).getOriginal().getRelTypeName());
+                System.out.println(((RelSubset) left));
                 System.out.println(((RelSubset) left).getOriginal().getTable().getQualifiedName().size());
-                System.out.println(((RelSubset) left).getOriginal().getTable().getQualifiedName().get(0));
+//                System.out.println(((RelSubset) left).getOriginal().getTable().getQualifiedName().get(0));
                 return MPCJoin.create(left, right, info.getEquiCondition(left, right, cluster.getRexBuilder()), join.getVariablesSet(), join.getJoinType());
             } catch (InvalidRelException e) {
                 return null;

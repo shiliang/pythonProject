@@ -26,7 +26,7 @@ public class Driver {
 
 //        String query = "select TEEPSI(adata.a1, bdata.b1) from adata join bdata on adata.id=bdata.id";
 //        String query = "select adata.a1+bdata.b1 from adata, bdata";
-        String query = "SELECT ADATA.A1 FROM ADATA JOIN BDATA ON ADATA.A2=BDATA.B2";
+        String query = "SELECT ADATA.A1 FROM (ADATA JOIN BDATA ON ADATA.A2=BDATA.B2) JOIN CDATA ON ADATA.A3=CDATA.C3";
 //        String query = "select /*+ BRAODCASTJOIN(B), TEEJOIN(A) */ adata.a1 from adata join bdata on adata.id=bdata.id";
 //        String query = "select /*+ TEEJOIN(1,2) */ METHODSNAME(adata.a1, bdata.b1), adata.a2 from adata join bdata on adata.id=bdata.id";
 
@@ -76,7 +76,7 @@ public class Driver {
         // isStream：
         // 0: 任务类型
         // 1: 服务类型
-        Integer isStream = 0, modelType = 2;
+        Integer isStream = 0, modelType = 0;
         String sql = query.toUpperCase().replace("\"", "");
         SqlParser sqlParser = new SqlParser(sql, modelType, isStream);
         sqlParser.setCatalogConfig(catalogConfig);

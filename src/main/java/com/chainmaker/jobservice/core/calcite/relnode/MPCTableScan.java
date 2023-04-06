@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.core.calcite.relnode;
 
 import com.chainmaker.jobservice.core.calcite.cost.MPCCost;
+import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -39,13 +40,11 @@ public class MPCTableScan extends TableScan implements EnumerableRel {
     public MPCTableScan(RelOptCluster cluster, RelTraitSet traitSet,
                         RelOptTable table, Class elementType, double rowCount) {
         super(cluster, traitSet, table);
-        System.out.println(table == null);
         this.elementType = elementType;
         this.rowCount = rowCount;
     }
 
     public static MPCTableScan create(RelOptCluster cluster, RelOptTable relOptTable, double rowCount) {
-        System.out.println(relOptTable == null);
         final Table table = relOptTable.unwrap(Table.class);
         Class elementType = EnumerableTableScan.deduceElementType(table);
         final RelTraitSet traitSet =
@@ -71,6 +70,14 @@ public class MPCTableScan extends TableScan implements EnumerableRel {
 
         cost = planner.getCostFactory().makeCost(dRows, dCpu, dIo);
         return cost;
+    }
+
+    /**
+     * 获取表的所属组织
+     * @return
+     */
+    public String getOrgDId() {
+        return MPCMetadata.getInstance().getTableOrgId(getTable().getQualifiedName().get(0));
     }
 
     /** 以下内容均是为了该类能正常工作所完成的，与项目本身没有多少关系，不用在意其意义 **/
