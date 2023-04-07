@@ -214,10 +214,10 @@ public class ContractController {
             JSONObject dataParams = JSON.parseObject(dataParamsStr, Feature.OrderedField);
             res.getJSONObject("input").getJSONArray("data").getJSONObject(i).put("params", dataParams);
         }
-        JSONObject taskInfo = new JSONObject();
-        taskInfo.put("task", res);
+//        JSONObject taskInfo = new JSONObject();
+//        taskInfo.put("task", res);
         HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
-        return new ResponseEntity<JSONObject>(taskInfo, responseStatus);
+        return new ResponseEntity<JSONObject>(res, responseStatus);
     }
 
 }
