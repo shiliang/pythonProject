@@ -56,7 +56,7 @@ public class Analyzer extends LogicalPlanVisitor {
      * @author gaokang
      * @date 2022/9/5 17:26
      */
-    public HashMap<String, String> getMetaData(HashMap<String, String> tableNameMap, List<String> modelNameList) {
+    public HashMap<String, String> getMetaData(HashMap<String, String> tableNameMap, List<String> modelNameList, Integer modelType) {
         String catalog_url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/dataCatalog/name/all";
         String model_url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/confidentialComputings/methodName/";
         HashMap<String, String> tableOwnerMap = new HashMap<>();
@@ -87,13 +87,15 @@ public class Analyzer extends LogicalPlanVisitor {
             missionDetailVO.setDatacatalogId(dataCatalogInfo.getId());
             missionDetailVOs.add(missionDetailVO);
         }
-        for (String modelName : modelNameList) {
-            JSONObject modelResult = JSONObject.parseObject(restTemplate.getForObject(model_url + modelName, String.class), Feature.OrderedField);
-            if (modelResult == null || modelResult.getJSONObject("data").isEmpty()) {
-                throw new RestException(response.toString());
+        if (modelType == 2) {
+            for (String modelName : modelNameList) {
+                JSONObject modelResult = JSONObject.parseObject(restTemplate.getForObject(model_url + modelName, String.class), Feature.OrderedField);
+                if (modelResult == null || modelResult.getJSONObject("data").isEmpty()) {
+                    throw new RestException(response.toString());
+                }
+                ModelParamsVo modelParamsVo = JSONObject.parseObject(modelResult.getString("data"), ModelParamsVo.class, Feature.OrderedField);
+                modelParamsVos.add(modelParamsVo);
             }
-            ModelParamsVo modelParamsVo = JSONObject.parseObject(modelResult.getString("data"), ModelParamsVo.class, Feature.OrderedField);
-            modelParamsVos.add(modelParamsVo);
         }
 
 

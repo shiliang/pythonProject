@@ -72,7 +72,7 @@ public class SqlParser {
 
         Analyzer analyzer = new Analyzer(this.catalogConfig);
 
-        HashMap<String, String> tableOwnerMap = analyzer.getMetaData(logicalPlanBuilder.getTableNameMap(), logicalPlanBuilder.getModelNameList());
+        HashMap<String, String> tableOwnerMap = analyzer.getMetaData(logicalPlanBuilder.getTableNameMap(), logicalPlanBuilder.getModelNameList(), this.modelType);
         missionDetailVOs = analyzer.getMissionDetailVOs();
         modelParamsVos = analyzer.getModelParamsVos();
 
@@ -96,7 +96,7 @@ public class SqlParser {
 
         Analyzer analyzer = new Analyzer(this.catalogConfig);
 
-        HashMap<String, String> tableOwnerMap = analyzer.getMetaData(logicalPlanBuilder.getTableNameMap(), logicalPlanBuilder.getModelNameList());
+        HashMap<String, String> tableOwnerMap = analyzer.getMetaData(logicalPlanBuilder.getTableNameMap(), logicalPlanBuilder.getModelNameList(), this.modelType);
         missionDetailVOs = analyzer.getMissionDetailVOs();
         modelParamsVos = analyzer.getModelParamsVos();
 
