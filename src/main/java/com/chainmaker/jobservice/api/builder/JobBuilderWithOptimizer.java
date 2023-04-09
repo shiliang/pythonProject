@@ -900,12 +900,44 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             jobParties.add(party.getPartyID());
         }
 
-        // select /*+ BRAODCASTJOIN(B), TEEJOIN(A) */ adata.a1 from adata join bdata on adata.id=bdata.id 修正
-        if (task.getModule().getModuleName().equals("PSI") && hint != null) {
-            logicalHintFix(task);
-        }
+
+        moduleNameCorrect(task);
 
         return task;
+    }
+
+    public void moduleNameCorrect(Task task) {
+        switch (task.getModule().getModuleName()) {
+            case "PSI":
+                if (hint != null) {
+                    logicalHintFix(task);
+                } else {
+                    if (task.getParties().size() > 1) {
+                        task.getModule().setModuleName("otpsi");
+                    } else {
+                        task.getModule().setModuleName("logicjoin");
+                    }
+                }
+                break;
+            case "ConstantFilter":
+                task.getModule().setModuleName("filter");
+                break;
+            case "QUERY":
+                task.getModule().setModuleName("query");
+                break;
+            case "MPC":
+                if (task.getModule().getParams().get("function").equals("base")) {
+                    // 算术表达式
+                    task.getModule().setModuleName("mpcexp");
+                } else {
+                    // 聚合表达式
+                    task.getModule().setModuleName("agg" + task.getModule().getParams().get("function").toString().toLowerCase());
+                }
+                break;
+            default:
+                break;
+        }
+
     }
 
     public void logicalHintFix(Task task) {
@@ -913,11 +945,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         for (HintExpression kv : list) {
             if (kv.getKey().equals("TEEJOIN")) {
                 List<String> values = kv.getValues();
-                task.getModule().setModuleName("TEEPSI");
+                task.getModule().setModuleName("teepsi");
                 JSONObject params = task.getModule().getParams();
-//                for (String p : values) {
-//                    params.put(p, null);
-//                }
                 params.put("teeHost", values.get(0));
                 params.put("teePort", values.get(1));
                 break;
