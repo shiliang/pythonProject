@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.core.calcite.relnode;
 
 import com.chainmaker.jobservice.core.calcite.cost.MPCCost;
+import com.chainmaker.jobservice.core.calcite.cost.MPCRelMetadataQuery;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import lombok.SneakyThrows;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
@@ -35,7 +36,8 @@ public class MPCJoin extends Join implements EnumerableRel {
 
     public static MPCJoin create(RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) throws InvalidRelException {
         RelOptCluster cluster = left.getCluster();
-        RelMetadataQuery mq = cluster.getMetadataQuery();
+//        RelMetadataQuery mq = cluster.getMetadataQuery();
+        RelMetadataQuery mq = MPCRelMetadataQuery.INSTANCE;
         RelTraitSet traitSet = cluster.traitSetOf(EnumerableConvention.INSTANCE).replaceIfs(RelCollationTraitDef.INSTANCE, () -> RelMdCollation.enumerableHashJoin(mq, left, right, joinType));
         return new MPCJoin(cluster, traitSet, left, right, condition, variablesSet, joinType);
     }
@@ -48,6 +50,11 @@ public class MPCJoin extends Join implements EnumerableRel {
                 condition, variablesSet, joinType);
     }
 
+
+    @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
+        return mq.getRowCount(this);
+    }
 
     /**
      * 代价计算函数

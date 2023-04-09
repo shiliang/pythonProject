@@ -49,6 +49,11 @@ public class MPCFilter extends Filter implements EnumerableRel {
 
 
     @Override
+    public double estimateRowCount(RelMetadataQuery mq) {
+        return mq.getRowCount(this);
+    }
+
+    @Override
     public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double dRows = mq.getRowCount(this);
         double dCpu = mq.getRowCount(this.getInput());

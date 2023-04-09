@@ -87,7 +87,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         }
 
         config = Frameworks.newConfigBuilder()
-//                .parserConfig(SqlParser.Config.DEFAULT)
+                .parserConfig(SqlParser.Config.DEFAULT)
                 .defaultSchema(rootSchema)
                 .traitDefs((List<RelTraitDef>) null)
                 .costFactory(MPCCost.FACTORY)           // 此处将cost计算方式换成自行实现的版本

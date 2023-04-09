@@ -15,35 +15,36 @@ import java.util.List;
  * 实现自己的元数据提供器，可根据需要修改某些计算方式
  * 此处暂时只修改了基数RowCount的计算方式
  */
-public class MPCRelMetaDataProvider {
+public class MPCRelMetaDataProvider extends ChainedRelMetadataProvider{
 
-    public static final RelMetadataProvider relMetaDataProvider = ChainedRelMetadataProvider.of(
-                    ImmutableList.of(
-                            MPCRelMdRowCount.SOURCE,
-                            RelMdPercentageOriginalRows.SOURCE,
-                            RelMdColumnOrigins.SOURCE,
-                            RelMdExpressionLineage.SOURCE,
-                            RelMdTableReferences.SOURCE,
-                            RelMdNodeTypes.SOURCE,
-                            RelMdMaxRowCount.SOURCE,
-                            RelMdMinRowCount.SOURCE,
-                            RelMdUniqueKeys.SOURCE,
-                            RelMdColumnUniqueness.SOURCE,
-                            RelMdPopulationSize.SOURCE,
-                            RelMdSize.SOURCE,
-                            RelMdParallelism.SOURCE,
-                            RelMdDistribution.SOURCE,
-                            RelMdMemory.SOURCE,
-                            RelMdDistinctRowCount.SOURCE,
-                            RelMdSelectivity.SOURCE,
-                            RelMdExplainVisibility.SOURCE,
-                            RelMdPredicates.SOURCE,
-                            RelMdAllPredicates.SOURCE,
-                            RelMdCollation.SOURCE
-                    ));
-
-
+    public static final RelMetadataProvider relMetaDataProvider = new MPCRelMetaDataProvider();
     public MPCRelMetaDataProvider() {
+        super(
+            ImmutableList.of(
+                    MPCRelMdRowCount.SOURCE,
+                    RelMdPercentageOriginalRows.SOURCE,
+                    RelMdColumnOrigins.SOURCE,
+                    RelMdExpressionLineage.SOURCE,
+                    RelMdTableReferences.SOURCE,
+                    RelMdNodeTypes.SOURCE,
+                    RelMdMaxRowCount.SOURCE,
+                    RelMdMinRowCount.SOURCE,
+                    RelMdUniqueKeys.SOURCE,
+                    RelMdColumnUniqueness.SOURCE,
+                    RelMdPopulationSize.SOURCE,
+                    RelMdSize.SOURCE,
+                    RelMdParallelism.SOURCE,
+                    RelMdDistribution.SOURCE,
+                    RelMdMemory.SOURCE,
+                    RelMdDistinctRowCount.SOURCE,
+                    RelMdSelectivity.SOURCE,
+                    RelMdExplainVisibility.SOURCE,
+                    RelMdPredicates.SOURCE,
+                    RelMdAllPredicates.SOURCE,
+                    RelMdCollation.SOURCE
+            ));
     }
+
+
 }
 

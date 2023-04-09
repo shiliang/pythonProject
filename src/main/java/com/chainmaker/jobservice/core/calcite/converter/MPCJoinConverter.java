@@ -57,8 +57,8 @@ public class MPCJoinConverter extends ConverterRule {
         }
 
         RelOptCluster cluster = join.getCluster();
-        left = (RelNode)newInputs.get(0);
-        RelNode right = (RelNode)newInputs.get(1);
+        left = newInputs.get(0);
+        RelNode right = newInputs.get(1);
         JoinInfo info = JoinInfo.of(left, right, join.getCondition());
 
         if (!info.isEqui()) {
@@ -70,9 +70,9 @@ public class MPCJoinConverter extends ConverterRule {
             }
         } else {
             try {
-                System.out.println(((RelSubset) left).getOriginal().getRelTypeName());
-                System.out.println(((RelSubset) left));
-                System.out.println(((RelSubset) left).getOriginal().getTable().getQualifiedName().size());
+//                System.out.println(((RelSubset) left).getOriginal().getRelTypeName());
+//                System.out.println(((RelSubset) left));
+//                System.out.println(((RelSubset) left).getOriginal().getTable().getQualifiedName().size());
 //                System.out.println(((RelSubset) left).getOriginal().getTable().getQualifiedName().get(0));
                 return MPCJoin.create(left, right, info.getEquiCondition(left, right, cluster.getRexBuilder()), join.getVariablesSet(), join.getJoinType());
             } catch (InvalidRelException e) {

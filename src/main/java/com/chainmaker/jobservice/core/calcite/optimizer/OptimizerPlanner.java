@@ -13,6 +13,8 @@ import org.apache.calcite.rel.rules.*;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 
+import java.rmi.registry.RegistryHandler;
+
 /**
  * 查询优化类，封装了一些繁琐的调用，使用起来更加简单
  */
@@ -35,6 +37,7 @@ public class OptimizerPlanner {
         planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
         desiredTraitSet = root.getTraitSet().replace(EnumerableConvention.INSTANCE);
         initRules(isClear);
+
     }
 
     /**

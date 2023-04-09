@@ -26,11 +26,11 @@ public class Driver {
 
 //        String query = "select TEEPSI(adata.a1, bdata.b1) from adata join bdata on adata.id=bdata.id";
 //        String query = "select adata.a1+bdata.b1 from adata, bdata";
-        String query = "SELECT ADATA.A1 FROM (ADATA JOIN BDATA ON ADATA.A2=BDATA.B2) JOIN CDATA ON ADATA.A3=CDATA.C3";
+//        String query = "SELECT ADATA.A1 FROM (ADATA JOIN CDATA ON ADATA.A2=CDATA.C2) JOIN BDATA ON ADATA.A3=BDATA.B3";
 //        String query = "select /*+ BRAODCASTJOIN(B), TEEJOIN(A) */ adata.a1 from adata join bdata on adata.id=bdata.id";
 //        String query = "select /*+ TEEJOIN(1,2) */ METHODSNAME(adata.a1, bdata.b1), adata.a2 from adata join bdata on adata.id=bdata.id";
 
-//        String query = "SELECT ADATA.A1 FROM ADATA JOIN BDATA ON ADATA.A2=BDATA.B2 WHERE BDATA.B1>3";
+        String query = "SELECT ADATA.A1 FROM ADATA JOIN BDATA ON ADATA.A2=BDATA.B2 WHERE BDATA.B1>3";
 //        String query = "SELECT SUM(ADATA.A1+BDATA.B2) FROM ADATA JOIN BDATA ON ADATA.A2=BDATA.B2 WHERE BDATA.B1>3";
 //        String query = "select bdata.b2 from adata join bdata on adata.a1=bdata.b1 where adata.a1 > 4 and adata.a2 > 50";
 //        String query = "SELECT TA.A AS A FROM TA";

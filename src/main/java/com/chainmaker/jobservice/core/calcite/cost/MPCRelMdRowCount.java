@@ -18,7 +18,7 @@ import org.apache.calcite.util.Util;
 /**
  * 自己实现的基数估计方式，用于替换默认的RelMdRowCount
  */
-public class MPCRelMdRowCount extends RelMdRowCount {
+public class MPCRelMdRowCount implements MetadataHandler<BuiltInMetadata.RowCount> {
     public MetadataDef<BuiltInMetadata.RowCount> getDef() {
         return BuiltInMetadata.RowCount.DEF;
     }
@@ -27,7 +27,6 @@ public class MPCRelMdRowCount extends RelMdRowCount {
             .reflectiveSource(BuiltInMethod.ROW_COUNT.method, new MPCRelMdRowCount());
 
 
-    @Override
     public Double getRowCount(RelNode rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
     }
@@ -41,7 +40,6 @@ public class MPCRelMdRowCount extends RelMdRowCount {
      * @param mq
      * @return
      */
-    @Override
     public Double getRowCount(Filter filter, RelMetadataQuery mq) {
         RexNodeRowCounter rowCounter = new RexNodeRowCounter(filter, mq.getRowCount(filter.getInput()));
         double rowCount = rowCounter.estimateRowCount();
@@ -55,7 +53,6 @@ public class MPCRelMdRowCount extends RelMdRowCount {
      * @param mq
      * @return
      */
-    @Override
     public Double getRowCount(Project rel, RelMetadataQuery mq) {
         return mq.getRowCount(rel.getInput());
     }
@@ -67,7 +64,6 @@ public class MPCRelMdRowCount extends RelMdRowCount {
      * @param mq
      * @return
      */
-    @Override
     public Double getRowCount(Join join, RelMetadataQuery mq) {
         return RelMdUtil.getJoinRowCount(mq, join, join.getCondition());
 //        System.out.println("left = " + join.getLeft().getRowType());

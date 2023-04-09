@@ -38,7 +38,7 @@ public class MPCProject extends Project implements EnumerableRel {
 
     @Override
     public double estimateRowCount(RelMetadataQuery mq) {
-        return super.estimateRowCount(mq);
+        return mq.getRowCount(this);
     }
 
     @Override
