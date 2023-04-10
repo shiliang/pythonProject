@@ -236,7 +236,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // module
         Module module = new Module();
-        module.setModuleName("fl");
+        module.setModuleName("FL");
         JSONObject moduleParams = new JSONObject(true);
         moduleParams.put("intersection", parseFLParams(expression.getPsi()));
         moduleParams.put("fl", parseFLParams(expression.getFl()));
@@ -913,25 +913,25 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     logicalHintFix(task);
                 } else {
                     if (task.getParties().size() > 1) {
-                        task.getModule().setModuleName("otpsi");
+                        task.getModule().setModuleName("OTPSI");
                     } else {
-                        task.getModule().setModuleName("logicjoin");
+                        task.getModule().setModuleName("LOCALJOIN");
                     }
                 }
                 break;
             case "ConstantFilter":
-                task.getModule().setModuleName("filter");
+                task.getModule().setModuleName("LOCALFILTER");
                 break;
             case "QUERY":
-                task.getModule().setModuleName("query");
+                task.getModule().setModuleName("QUERY");
                 break;
             case "MPC":
                 if (task.getModule().getParams().get("function").equals("base")) {
                     // 算术表达式
-                    task.getModule().setModuleName("mpcexp");
+                    task.getModule().setModuleName("MPCEXP");
                 } else {
                     // 聚合表达式
-                    task.getModule().setModuleName("agg" + task.getModule().getParams().get("function").toString().toLowerCase());
+                    task.getModule().setModuleName("AGG" + task.getModule().getParams().get("function").toString().toUpperCase());
                 }
                 break;
             default:
@@ -945,7 +945,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         for (HintExpression kv : list) {
             if (kv.getKey().equals("TEEJOIN")) {
                 List<String> values = kv.getValues();
-                task.getModule().setModuleName("teepsi");
+                task.getModule().setModuleName("TEEPSI");
                 JSONObject params = task.getModule().getParams();
                 params.put("teeHost", values.get(0));
                 params.put("teePort", values.get(1));
