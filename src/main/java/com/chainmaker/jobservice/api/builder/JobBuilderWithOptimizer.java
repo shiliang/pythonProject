@@ -736,9 +736,21 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 } else {
                     fields = MPCProj.split("\\+|-|\\*|/|\\(|\\)");
                 }
-                for (String tableField : fields) {
+                HashMap<String, Integer> idxMap = new HashMap<>();
+                int cnt = 0;
+                for (int i = 0; i < fields.length; i++) {
+                    String tableField = fields[i];
                     if (tableField.length() == 0) {
                         continue;
+                    }
+                    if (idxMap.containsKey(tableField)) {
+                        int pos = idxMap.get(tableField);
+                        List<Integer> list = (List<Integer>) inputDatas.get(pos).getParams().get("index");
+                        list.add(i);
+//                        inputDatas.get(pos).getParams().put("index", list);
+                        continue;
+                    } else {
+                        idxMap.put(tableField, cnt++);
                     }
                     String table = tableField.split("\\.")[0];
                     String field = tableField.split("\\.")[1];
@@ -764,6 +776,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     JSONObject jsonObjectParams = new JSONObject(true);
                     jsonObjectParams.put("table", table);
                     jsonObjectParams.put("field", field);
+                    List<Integer> list = new ArrayList<>();
+                    list.add(i);
+                    jsonObjectParams.put("index", list);
 
 
                     inputdata.setDomainID(getFieldDomainID(jsonObjectParams.get("table") + "." + jsonObjectParams.get("field")));
