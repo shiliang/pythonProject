@@ -11,7 +11,9 @@ import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
 import com.chainmaker.jobservice.api.model.bo.job.service.ReferEndpoint;
 import com.chainmaker.jobservice.api.model.bo.job.service.Service;
+import com.chainmaker.jobservice.api.model.bo.job.task.Input;
 import com.chainmaker.jobservice.api.model.bo.job.task.Task;
+import com.chainmaker.jobservice.api.model.bo.job.task.TaskInputData;
 import com.chainmaker.jobservice.api.model.po.contract.JobInfoPo;
 import com.chainmaker.jobservice.api.model.po.contract.ServiceParamsPo;
 import com.chainmaker.jobservice.api.model.po.contract.ServiceUpdatePo;
@@ -342,6 +344,17 @@ public class JobParserServiceImpl implements JobParserService {
             dagNode.setImage(task.getModule().getModuleName().toLowerCase());
             dagNode.setFindLabel(task.getTaskName());
             nodes.add(dagNode);
+
+            String taskName = task.getTaskName();
+            for (TaskInputData taskInputData: task.getInput().getData()) {
+                if (!Objects.equals(taskInputData.getTaskSrc(), "")) {
+                    DagEdge dagEdge = new DagEdge();
+                    dagEdge.setFrom(Integer.parseInt(taskInputData.getTaskSrc()));
+                    dagEdge.setTo(Integer.parseInt(taskName));
+                    dagEdge.setLabel(taskInputData.getDataName());
+                    edges.add(dagEdge);
+                }
+            }
         }
         dag.setNodes(nodes);
         dag.setEdges(edges);

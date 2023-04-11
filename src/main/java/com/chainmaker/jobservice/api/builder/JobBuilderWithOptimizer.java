@@ -236,7 +236,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // module
         Module module = new Module();
-        module.setModuleName("fl");
+        module.setModuleName("FL");
         JSONObject moduleParams = new JSONObject(true);
         moduleParams.put("intersection", parseFLParams(expression.getPsi()));
         moduleParams.put("fl", parseFLParams(expression.getFl()));
@@ -736,9 +736,21 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 } else {
                     fields = MPCProj.split("\\+|-|\\*|/|\\(|\\)");
                 }
-                for (String tableField : fields) {
+                HashMap<String, Integer> idxMap = new HashMap<>();
+                int cnt = 0;
+                for (int i = 0; i < fields.length; i++) {
+                    String tableField = fields[i];
                     if (tableField.length() == 0) {
                         continue;
+                    }
+                    if (idxMap.containsKey(tableField)) {
+                        int pos = idxMap.get(tableField);
+                        List<Integer> list = (List<Integer>) inputDatas.get(pos).getParams().get("index");
+                        list.add(i);
+//                        inputDatas.get(pos).getParams().put("index", list);
+                        continue;
+                    } else {
+                        idxMap.put(tableField, cnt++);
                     }
                     String table = tableField.split("\\.")[0];
                     String field = tableField.split("\\.")[1];
@@ -764,6 +776,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     JSONObject jsonObjectParams = new JSONObject(true);
                     jsonObjectParams.put("table", table);
                     jsonObjectParams.put("field", field);
+                    List<Integer> list = new ArrayList<>();
+                    list.add(i);
+                    jsonObjectParams.put("index", list);
 
 
                     inputdata.setDomainID(getFieldDomainID(jsonObjectParams.get("table") + "." + jsonObjectParams.get("field")));
@@ -900,12 +915,44 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             jobParties.add(party.getPartyID());
         }
 
-        // select /*+ BRAODCASTJOIN(B), TEEJOIN(A) */ adata.a1 from adata join bdata on adata.id=bdata.id 修正
-        if (task.getModule().getModuleName().equals("PSI") && hint != null) {
-            logicalHintFix(task);
-        }
+
+        moduleNameCorrect(task);
 
         return task;
+    }
+
+    public void moduleNameCorrect(Task task) {
+        switch (task.getModule().getModuleName()) {
+            case "PSI":
+                if (hint != null) {
+                    logicalHintFix(task);
+                } else {
+                    if (task.getParties().size() > 1) {
+                        task.getModule().setModuleName("OTPSI");
+                    } else {
+                        task.getModule().setModuleName("LOCALJOIN");
+                    }
+                }
+                break;
+            case "ConstantFilter":
+                task.getModule().setModuleName("LOCALFILTER");
+                break;
+            case "QUERY":
+                task.getModule().setModuleName("QUERY");
+                break;
+            case "MPC":
+                if (task.getModule().getParams().get("function").equals("base")) {
+                    // 算术表达式
+                    task.getModule().setModuleName("MPCEXP");
+                } else {
+                    // 聚合表达式
+                    task.getModule().setModuleName("AGG" + task.getModule().getParams().get("function").toString().toUpperCase());
+                }
+                break;
+            default:
+                break;
+        }
+
     }
 
     public void logicalHintFix(Task task) {
@@ -915,9 +962,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 List<String> values = kv.getValues();
                 task.getModule().setModuleName("TEEPSI");
                 JSONObject params = task.getModule().getParams();
-//                for (String p : values) {
-//                    params.put(p, null);
-//                }
                 params.put("teeHost", values.get(0));
                 params.put("teePort", values.get(1));
                 break;
