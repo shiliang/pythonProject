@@ -12,6 +12,7 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -149,6 +150,8 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         return ans;
     }
 
+
+
     /**
      * 处理Project节点
      * @param node
@@ -199,7 +202,6 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         builder.project(projections, projectionNames);
         ans = builder.build();
         multiTableList.clear();
-        long end = System.currentTimeMillis();
 //        System.out.println(
 //                RelOptUtil.dumpPlan("[Logical plan]", ans, SqlExplainFormat.TEXT,
 //                        SqlExplainLevel.ALL_ATTRIBUTES));
