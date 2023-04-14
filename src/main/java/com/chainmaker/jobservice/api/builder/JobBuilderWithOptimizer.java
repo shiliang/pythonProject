@@ -46,7 +46,21 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         FQ, FQS, FL, FLS, CC, CCS
     }
     private enum TaskType {
-        QUERY, PSI, MPC, TEE, FL
+        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, RSAPSI, TEEPSI, AGG, MPCEXP, FL, TEE
+    }
+
+    private class TaskNode {
+        int taskID;
+        List<Party> parties;
+        List<TaskNode> inputs;
+
+        TaskNode (int id) {
+            taskID = id;
+        }
+
+        public boolean isLocal() {
+            return parties.size() == 1;
+        }
     }
 
     private final Integer modelType;
@@ -58,6 +72,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private Job job = new Job();
     private List<ServiceVo> services = new ArrayList<>();
     private List<Task> tasks = new ArrayList<>();
+    private List<Task> mergedTasks = new ArrayList<>();
     private HashSet<String> jobParties = new HashSet<>();
     private LogicalPlan OriginPlan;
     private LogicalHint hint;
@@ -82,7 +97,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         JobTemplate jobTemplate = new JobTemplate();
         jobTemplate.setJob(job);
         jobTemplate.setServices(services);
-        jobTemplate.setTasks(tasks);
+//        jobTemplate.setTasks(tasks);
+        jobTemplate.setTasks(mergedTasks);
         return jobTemplate;
     }
 
@@ -110,6 +126,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         generateFLTasks(OriginPlan);
 
+        mergeLocalTasks();
+
         job.setJobID(jobID);
         job.setJobType(jobType);
         job.setStatus(jobStatus);
@@ -117,6 +135,40 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         job.setUpdateTime(createTime);
         job.setTasksDAG(taskDAG);
         job.setParties(new ArrayList<>(jobParties));
+    }
+
+    /**
+     * 合并本地Task，将它们批量交给spark进行处理
+     */
+    public void mergeLocalTasks() {
+        // 1、构建Task调用关系树
+        TaskNode root = buildTaskTree();
+        // 2、遍历该树，对LocalTask节点进行merge
+        dfsTaskTree(root);
+        // 3、记录mergedTasks
+
+    }
+
+    public void dfsTaskTree(TaskNode root) {
+        if (root.taskID != -1 && root.isLocal()) {
+            mergeTaskTree(root);
+        }
+        if (root.taskID != -1) {
+            mergedTasks.add(tasks.get(root.taskID));
+        }
+        for (int i = 0; i < root.inputs.size(); i++) {
+            dfsTaskTree(root.inputs.get(i));
+        }
+    }
+
+    public void mergeTaskTree(TaskNode root) {
+
+    }
+
+    public TaskNode buildTaskTree() {
+        TaskNode root = new TaskNode(-1);
+
+        return root;
     }
 
     /**
@@ -166,7 +218,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // module
         Module module = new Module();
-        module.setModuleName("TEE");
+        module.setModuleName(TaskType.TEE.name());
         JSONObject moduleParams = new JSONObject(true);
         moduleParams.put("methodName", expr.getFunction().toString());
         moduleParams.put("domainID", "");
@@ -236,7 +288,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // module
         Module module = new Module();
-        module.setModuleName("FL");
+        module.setModuleName(TaskType.FL.name());
         JSONObject moduleParams = new JSONObject(true);
         moduleParams.put("intersection", parseFLParams(expression.getPsi()));
         moduleParams.put("fl", parseFLParams(expression.getFl()));
@@ -928,25 +980,26 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     logicalHintFix(task);
                 } else {
                     if (task.getParties().size() > 1) {
-                        task.getModule().setModuleName("OTPSI");
+                        task.getModule().setModuleName(TaskType.OTPSI.name());
                     } else {
-                        task.getModule().setModuleName("LOCALJOIN");
+                        task.getModule().setModuleName(TaskType.LOCALJOIN.name());
                     }
                 }
                 break;
             case "ConstantFilter":
-                task.getModule().setModuleName("LOCALFILTER");
+                task.getModule().setModuleName(TaskType.LOCALFILTER.name());
                 break;
             case "QUERY":
-                task.getModule().setModuleName("QUERY");
+                task.getModule().setModuleName(TaskType.QUERY.name());
                 break;
             case "MPC":
-                if (task.getModule().getParams().get("function").equals("base")) {
+                String funcName = task.getModule().getParams().get("function").toString();
+                if (funcName.equals("base")) {
                     // 算术表达式
-                    task.getModule().setModuleName("MPCEXP");
+                    task.getModule().setModuleName(TaskType.MPCEXP.name());
                 } else {
                     // 聚合表达式
-                    task.getModule().setModuleName("AGG" + task.getModule().getParams().get("function").toString().toUpperCase());
+                    task.getModule().setModuleName(TaskType.AGG.name() + funcName.toUpperCase());
                 }
                 break;
             default:
@@ -960,7 +1013,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         for (HintExpression kv : list) {
             if (kv.getKey().equals("TEEJOIN")) {
                 List<String> values = kv.getValues();
-                task.getModule().setModuleName("TEEPSI");
+                task.getModule().setModuleName(TaskType.TEEPSI.name());
                 JSONObject params = task.getModule().getParams();
                 params.put("teeHost", values.get(0));
                 params.put("teePort", values.get(1));
