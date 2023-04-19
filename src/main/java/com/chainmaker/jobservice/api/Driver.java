@@ -35,7 +35,7 @@ public class Driver {
         // isStream：
         // 0: 任务类型
         // 1: 服务类型
-        Integer isStream = 0, modelType = 1;
+        Integer isStream = 0, modelType = 0;
         String sql = query.toUpperCase().replace("\"", "");
         SqlParser sqlParser = new SqlParser(sql, modelType, isStream);
         sqlParser.setCatalogConfig(catalogConfig);

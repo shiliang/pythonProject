@@ -51,15 +51,19 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
     private class TaskNode {
         int taskID;
-        List<Party> parties;
+        boolean isMerged;
+        HashSet<String> partyIds;
         List<TaskNode> inputs;
 
         TaskNode (int id) {
             taskID = id;
+            isMerged = false;
+            partyIds = new HashSet<>();
+            inputs = new ArrayList<>();
         }
 
         public boolean isLocal() {
-            return parties.size() == 1;
+            return partyIds.size() == 1;
         }
     }
 
@@ -149,11 +153,37 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
     }
 
+    /**
+     * 具体merge操作的实现
+     * @param root
+     * @return
+     */
+    public Task mergeTaskTree(TaskNode root) {
+        Task ans = new Task();
+//        String sql = "select ProjectString from TableJoinString where PredicateString"
+        String projectString = "", TableJoinString = "", PredicateString = "";
+        Queue<TaskNode> q = new ArrayDeque<>();
+
+        ans = tasks.get(root.taskID);
+        return ans;
+    }
+
+    /**
+     * 遍历Task调用关系树，对Local节点进行merge
+     * @param root
+     */
     public void dfsTaskTree(TaskNode root) {
+        if (root.isMerged) {
+            return;
+        }
+        root.isMerged = true;
         if (root.taskID != -1 && root.isLocal()) {
-            mergeTaskTree(root);
+            System.out.println("mergedTask ID = " + root.taskID);
+            mergedTasks.add(mergeTaskTree(root));
+            return;
         }
         if (root.taskID != -1) {
+            System.out.println("notMergedTask ID = " + root.taskID);
             mergedTasks.add(tasks.get(root.taskID));
         }
         for (int i = 0; i < root.inputs.size(); i++) {
@@ -161,13 +191,34 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
     }
 
-    public void mergeTaskTree(TaskNode root) {
-
-    }
-
+    /**
+     * 构建Task调用关系树
+     * @return
+     */
     public TaskNode buildTaskTree() {
         TaskNode root = new TaskNode(-1);
-
+        List<TaskNode> nodes = new ArrayList<>();
+        for (int i = 0; i < tasks.size(); i++) {
+            Task t = tasks.get(i);
+            TaskNode node = new TaskNode(i);
+            List<TaskInputData> list = t.getInput().getData();
+            // 通过input构建父子节点之间的联系
+            for (TaskInputData inputData : list) {
+                if (!inputData.getTaskSrc().equals("")) {
+                    int idx = Integer.parseInt(inputData.getTaskSrc());
+                    node.inputs.add(nodes.get(idx));
+                    node.partyIds.addAll(nodes.get(idx).partyIds);
+                }
+            }
+            // merge parties
+            for (Party p : t.getParties()) {
+                node.partyIds.add(p.getPartyID());
+            }
+            nodes.add(node);
+            if (t.getOutput().getData().get(0).getFinalResult().equals("Y")) {
+                root.inputs.add(node);
+            }
+        }
         return root;
     }
 
