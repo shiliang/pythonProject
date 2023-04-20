@@ -150,7 +150,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         TaskNode root = buildTaskTree();
         // 2、遍历该树，对LocalTask节点进行merge
         dfsTaskTree(root);
-        // 3、记录mergedTasks
+        // 3、记录mergedTasks(第二步已经完成）
 
     }
 
