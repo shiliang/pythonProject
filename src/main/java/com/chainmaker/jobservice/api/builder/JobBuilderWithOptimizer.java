@@ -173,7 +173,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 q.add(tn.inputs.get(i));
             }
             switch (t.getModule().getModuleName()) {
-                case "LOCALFILTER":
+                case "LOCALFILTER": {
                     String op = t.getModule().getParams().getString("operator");
                     String constant = t.getModule().getParams().getString("constant");
                     String table = t.getInput().getData().get(0).getParams().getString("table");
@@ -186,14 +186,17 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                         PredicateString += " and " + predicate;
                     }
                     break;
-                case "LOCALJOIN":
+                }
+                case "LOCALJOIN": {
                     String joinType = t.getModule().getParams().getString("joinType");
                     String joinOp = t.getModule().getParams().getString("operator");
                     String leftTable = t.getInput().getData().get(0).getParams().getString("table");
-                    String leftField  = t.getInput().getData().get(0).getParams().getString("field");
+                    String leftField = t.getInput().getData().get(0).getParams().getString("field");
                     String rightTable = t.getInput().getData().get(1).getParams().getString("table");
                     String rightField = t.getInput().getData().get(1).getParams().getString("field");
                     String joinCond = leftTable + "." + leftField + joinOp + rightTable + "." + rightField;
+                    inputTables.add(leftTable);
+                    inputTables.add(rightTable);
                     if (TableJoinString.equals("")) {
                         TableJoinString += "(" + leftTable + " join " + rightTable + " on " + joinCond + ")";
                     } else {
@@ -206,7 +209,24 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                         }
                     }
                     break;
+                }
+                case "QUERY": {
+                    String table = t.getInput().getData().get(0).getParams().getString("table");
+                    String field = t.getInput().getData().get(0).getParams().getString("field");
+                    String proj = table + "." + field;
+                    inputTables.add(table);
+                    if (ProjectString.equals("")) {
+                        ProjectString += proj;
+                    } else {
+                        ProjectString += ", " + proj;
+                    }
+                    break;
+                }
+//                case "MPCEXEC":
+//
+//                    break;
                 default:
+
                     break;
             }
         }
@@ -244,7 +264,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             return;
         }
         root.isMerged = true;
-        if (root.taskID != -1 && root.isLocal()) {
+        if (root.taskID != -1 && root.isLocal() && root.inputs.size() > 0) {
             System.out.println("mergedTask ID = " + root.taskID);
             mergedTasks.add(mergeTaskTree(root));
             return;
