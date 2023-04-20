@@ -160,10 +160,28 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      */
     public Task mergeTaskTree(TaskNode root) {
         Task ans = new Task();
-//        String sql = "select ProjectString from TableJoinString where PredicateString"
+        String sql = "select ProjectString from TableJoinString where PredicateString";
         String projectString = "", TableJoinString = "", PredicateString = "";
+        HashSet<String> inputTables = new HashSet<>();
         Queue<TaskNode> q = new ArrayDeque<>();
+        q.add(root);
+        while (!q.isEmpty()) {
+            TaskNode tn = q.remove();
+            Task t = tasks.get(tn.taskID);
+            for (int i = 0; i < tn.inputs.size(); i++) {
+                q.add(tn.inputs.get(i));
+            }
+            switch (t.getModule().getModuleName()) {
+                case "LOCALFILTER":
 
+                    break;
+                case "LOCALJOIN":
+
+                    break;
+                default:
+                    break;
+            }
+        }
         ans = tasks.get(root.taskID);
         return ans;
     }
