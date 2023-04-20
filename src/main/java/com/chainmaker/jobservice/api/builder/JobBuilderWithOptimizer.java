@@ -222,7 +222,15 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // 反向生成sql并填写相关module信息
         ans.getModule().setModuleName(TaskType.MERGE.name());
-        sql = "select " + ProjectString + " from " + TableJoinString + " where " + PredicateString;
+        ans.getModule().getParams().clear();
+        if (ProjectString.equals("")) {
+            ProjectString = "*";
+        }
+        if (PredicateString.equals("")) {
+            sql = "select " + ProjectString + " from " + TableJoinString;
+        } else {
+            sql = "select " + ProjectString + " from " + TableJoinString + " where " + PredicateString;
+        }
         ans.getModule().getParams().put("sql", sql);
         return ans;
     }
