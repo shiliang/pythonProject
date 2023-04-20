@@ -6,6 +6,7 @@ import com.chainmaker.jobservice.api.model.bo.job.Job;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
 import com.chainmaker.jobservice.api.model.bo.job.task.*;
 import com.chainmaker.jobservice.api.model.bo.job.task.Module;
+import com.chainmaker.jobservice.api.model.po.contract.job.TaskInputDataPo;
 import com.chainmaker.jobservice.api.model.vo.ServiceVo;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
@@ -46,7 +47,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         FQ, FQS, FL, FLS, CC, CCS
     }
     private enum TaskType {
-        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, RSAPSI, TEEPSI, AGG, MPCEXP, FL, TEE
+        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, RSAPSI, TEEPSI, AGG, MPCEXP, FL, TEE, MERGE
     }
 
     private class TaskNode {
@@ -159,9 +160,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * @return
      */
     public Task mergeTaskTree(TaskNode root) {
-        Task ans = new Task();
+        Task ans = tasks.get(root.taskID);
         String sql = "select ProjectString from TableJoinString where PredicateString";
-        String projectString = "", TableJoinString = "", PredicateString = "";
+        String ProjectString = "", TableJoinString = "", PredicateString = "";
         HashSet<String> inputTables = new HashSet<>();
         Queue<TaskNode> q = new ArrayDeque<>();
         q.add(root);
@@ -173,16 +174,56 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             }
             switch (t.getModule().getModuleName()) {
                 case "LOCALFILTER":
-
+                    String op = t.getModule().getParams().getString("operator");
+                    String constant = t.getModule().getParams().getString("constant");
+                    String table = t.getInput().getData().get(0).getParams().getString("table");
+                    String field = t.getInput().getData().get(0).getParams().getString("field");
+                    inputTables.add(table);
+                    String predicate = table + "." + field + op + constant;
+                    if (PredicateString.equals("")) {
+                        PredicateString += predicate;
+                    } else {
+                        PredicateString += " and " + predicate;
+                    }
                     break;
                 case "LOCALJOIN":
-
+                    String joinType = t.getModule().getParams().getString("joinType");
+                    String joinOp = t.getModule().getParams().getString("operator");
+                    String leftTable = t.getInput().getData().get(0).getParams().getString("table");
+                    String leftField  = t.getInput().getData().get(0).getParams().getString("field");
+                    String rightTable = t.getInput().getData().get(1).getParams().getString("table");
+                    String rightField = t.getInput().getData().get(1).getParams().getString("field");
+                    String joinCond = leftTable + "." + leftField + joinOp + rightTable + "." + rightField;
+                    if (TableJoinString.equals("")) {
+                        TableJoinString += "(" + leftTable + " join " + rightTable + " on " + joinCond + ")";
+                    } else {
+                        TableJoinString = "(" + TableJoinString;
+                        boolean isLeftLocalJoin = tasks.get(Integer.parseInt(t.getInput().getData().get(0).getTaskSrc())).getModule().getModuleName().equals(TaskType.LOCALJOIN.name());
+                        if (isLeftLocalJoin) {
+                            TableJoinString += " join " + rightTable + " on " + joinCond + ")";
+                        } else {
+                            TableJoinString += " join " + leftTable + " on " + joinCond + ")";
+                        }
+                    }
                     break;
                 default:
                     break;
             }
         }
-        ans = tasks.get(root.taskID);
+
+        // 重新填写input内容
+        List<TaskInputData> inputDataList = new ArrayList<>();
+        for (String tbName : inputTables) {
+            TaskInputData inputData = new TaskInputData();
+            inputData.setDataName(tbName);
+            inputDataList.add(inputData);
+        }
+        ans.getInput().setData(inputDataList);
+
+        // 反向生成sql并填写相关module信息
+        ans.getModule().setModuleName(TaskType.MERGE.name());
+        sql = "select " + ProjectString + " from " + TableJoinString + " where " + PredicateString;
+        ans.getModule().getParams().put("sql", sql);
         return ans;
     }
 
