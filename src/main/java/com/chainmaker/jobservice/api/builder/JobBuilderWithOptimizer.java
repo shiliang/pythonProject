@@ -64,6 +64,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
 
         public boolean isLocal() {
+            if (tasks.get(taskID).getModule().getModuleName().equals(TaskType.FL.name()) ||
+                    tasks.get(taskID).getModule().getModuleName().equals(TaskType.TEE.name())) {
+                return false;
+            }
             return partyIds.size() == 1;
         }
     }
