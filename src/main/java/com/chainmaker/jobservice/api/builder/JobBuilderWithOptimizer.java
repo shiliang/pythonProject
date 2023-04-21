@@ -962,7 +962,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 List<String> values = kv.getValues();
                 task.getModule().setModuleName("TEEPSI");
                 JSONObject params = task.getModule().getParams();
-                params.put("teeHost", values.get(0));
+                params.put("teeHost", values.get(0).replaceAll("'", ""));
                 params.put("teePort", values.get(1));
                 break;
             }
