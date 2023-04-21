@@ -47,7 +47,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         FQ, FQS, FL, FLS, CC, CCS
     }
     private enum TaskType {
-        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, RSAPSI, TEEPSI, AGG, MPCEXP, FL, TEE, MERGE
+        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, RSAPSI, TEEPSI, AGG, MPCEXP, FL, TEE, MERGE, LOCALEXP, LOCALAGG
     }
 
     private class TaskNode {
@@ -166,8 +166,16 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         HashSet<String> inputTables = new HashSet<>();
         Queue<TaskNode> q = new ArrayDeque<>();
         q.add(root);
+        List<Boolean> vis = new ArrayList<>(root.taskID+1);
+        for (int i = 0; i <= root.taskID; i++) {
+            vis.add(false);
+        }
         while (!q.isEmpty()) {
             TaskNode tn = q.remove();
+            if (vis.get(tn.taskID)) {
+                continue;
+            }
+            vis.set(tn.taskID, true);
             Task t = tasks.get(tn.taskID);
             for (int i = 0; i < tn.inputs.size(); i++) {
                 q.add(tn.inputs.get(i));
@@ -200,6 +208,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     if (TableJoinString.equals("")) {
                         TableJoinString += "(" + leftTable + " join " + rightTable + " on " + joinCond + ")";
                     } else {
+                        // 还需要考虑四个Table，先两两Join，再Join的情况，暂时没有支持
                         TableJoinString = "(" + TableJoinString;
                         boolean isLeftLocalJoin = tasks.get(Integer.parseInt(t.getInput().getData().get(0).getTaskSrc())).getModule().getModuleName().equals(TaskType.LOCALJOIN.name());
                         if (isLeftLocalJoin) {
@@ -222,9 +231,75 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     }
                     break;
                 }
-//                case "MPCEXEC":
-//
-//                    break;
+                case "LOCALEXP": {
+                    String exp = t.getModule().getParams().getString("expression");
+                    String proj = "";
+                    int pos = 0;
+                    int xnum = 0;
+                    for (int i = 0; i < exp.length(); i++) {
+                        if (exp.charAt(i) == 'x') {
+                            xnum++;
+                        }
+                    }
+                    int xpos = exp.indexOf('x', 0);
+                    List<TaskInputData> list = t.getInput().getData();
+                    for (int i = 0; i < xnum; i++) {
+                        List<Integer> index = (List<Integer>) list.get(i).getParams().get("index");
+                        if (!index.contains(i)) {
+                            continue;
+                        }
+                        while (pos < xpos) {
+                            proj += exp.charAt(pos);
+                            pos++;
+                        }
+                        pos++;
+                        String table = list.get(i).getParams().getString("table");
+                        String field = list.get(i).getParams().getString("field");
+                        proj += table + "." + field;
+                        xpos = exp.indexOf('x', xpos+1);
+                    }
+                    if (ProjectString.equals("")) {
+                        ProjectString += proj;
+                    } else {
+                        ProjectString += ", " + proj;
+                    }
+                    break;
+                }
+                case "LOCALAGG": {
+                    String exp = t.getModule().getParams().getString("expression");
+                    String proj = "";
+                    int pos = 0;
+                    int xnum = 0;
+                    for (int i = 0; i < exp.length(); i++) {
+                        if (exp.charAt(i) == 'x') {
+                            xnum++;
+                        }
+                    }
+                    int xpos = exp.indexOf('x', 0);
+                    List<TaskInputData> list = t.getInput().getData();
+                    for (int i = 0; i < xnum; i++) {
+                        List<Integer> index = (List<Integer>) list.get(i).getParams().get("index");
+                        if (!index.contains(i)) {
+                            continue;
+                        }
+                        while (pos < xpos) {
+                            proj += exp.charAt(pos);
+                            pos++;
+                        }
+                        pos++;
+                        String table = list.get(i).getParams().getString("table");
+                        String field = list.get(i).getParams().getString("field");
+                        proj += table + "." + field;
+                        xpos = exp.indexOf('x', xpos+1);
+                    }
+                    proj = t.getModule().getParams().getString("function") + "(" + proj + ")";
+                    if (ProjectString.equals("")) {
+                        ProjectString += proj;
+                    } else {
+                        ProjectString += ", " + proj;
+                    }
+                    break;
+                }
                 default:
 
                     break;
@@ -937,7 +1012,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                         int pos = idxMap.get(tableField);
                         List<Integer> list = (List<Integer>) inputDatas.get(pos).getParams().get("index");
                         list.add(i);
-//                        inputDatas.get(pos).getParams().put("index", list);
                         continue;
                     } else {
                         idxMap.put(tableField, cnt++);
@@ -1111,6 +1185,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         return task;
     }
 
+    /**
+     *
+     * @param task
+     */
     public void moduleNameCorrect(Task task) {
         switch (task.getModule().getModuleName()) {
             case "PSI":
@@ -1132,12 +1210,20 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 break;
             case "MPC":
                 String funcName = task.getModule().getParams().get("function").toString();
-                if (funcName.equals("base")) {
-                    // 算术表达式
-                    task.getModule().setModuleName(TaskType.MPCEXP.name());
+                if (task.getParties().size() > 1) {
+                    if (funcName.equals("base")) {
+                        // 算术表达式
+                        task.getModule().setModuleName(TaskType.MPCEXP.name());
+                    } else {
+                        // 聚合表达式
+                        task.getModule().setModuleName(TaskType.AGG.name() + funcName.toUpperCase());
+                    }
                 } else {
-                    // 聚合表达式
-                    task.getModule().setModuleName(TaskType.AGG.name() + funcName.toUpperCase());
+                    if (funcName.equals("base")) {
+                        task.getModule().setModuleName(TaskType.LOCALEXP.name());
+                    } else {
+                        task.getModule().setModuleName(TaskType.LOCALAGG.name());
+                    }
                 }
                 break;
             default:
