@@ -137,7 +137,7 @@ public class ContractController {
         return new ResponseEntity<String>(response, responseStatus);
     }
 
-//    @WebLog(description = "更新TASK参与方信息")
+    @WebLog(description = "更新TASK参与方信息")
     @RequestMapping(value = "/jobs/{jobID}/tasks/{taskName}/party", method = RequestMethod.POST)
     public ResponseEntity<String> setTaskPtyInfo(@PathVariable String jobID, @PathVariable String taskName,
                                                  @RequestBody String req) {
@@ -157,7 +157,7 @@ public class ContractController {
         return new ResponseEntity<String>(response, responseStatus);
     }
 
-//    @WebLog(description = "更新TASK输出")
+    @WebLog(description = "更新TASK输出")
     @RequestMapping(value = "/jobs/{jobID}/tasks/{taskName}/output", method = RequestMethod.POST)
     public ResponseEntity<String> setTaskOutput(@PathVariable String jobID, @PathVariable String taskName, @RequestBody String req) {
         JSONObject request = JSON.parseObject(req);
