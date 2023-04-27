@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.core.calcite.adapter;
 
 import com.chainmaker.jobservice.core.calcite.cost.MPCCost;
+import com.chainmaker.jobservice.core.calcite.cost.MPCRelMetaDataProvider;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
 import com.chainmaker.jobservice.core.parser.plans.*;
@@ -12,12 +13,8 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.*;
@@ -29,8 +26,6 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.tools.RelBuilderFactory;
-import org.apache.tomcat.util.http.LegacyCookieProcessor;
 
 import java.util.*;
 
@@ -51,7 +46,6 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
     private FrameworkConfig config;             // 创建builder的一些配置
     private RelBuilder builder;                 // RelNode生成器
     private Integer modelType;                      // 需要处理的任务类型
-//    private RelBuilderFactory relBuilderFactory;
 
     List<String> multiTableList = new ArrayList<>(); // 用于存储参加join的属性名
 
@@ -103,6 +97,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
      */
     public void CastToRelNode() {
         builder = RelBuilder.create(config);
+        builder.getCluster().setMetadataProvider(MPCRelMetaDataProvider.relMetaDataProvider);
         root = visit(originLogicalPlan);
 
     }
@@ -150,7 +145,33 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         return ans;
     }
 
+    /**
+     * 处理Union节点
+     * @param node
+     * @return
+     */
+//    @Override
+//    public RelNode visit(LogicalUnion node) {
+//
+//    }
 
+    /**
+     * 处理Sort节点
+     * 暂时并没有用到，之后会随着解析部分的更新再加入新的处理
+     * @param node
+     * @return
+     */
+    @Override
+    public RelNode visit(LogicalSort node) {
+        RelNode ans = null;
+        RelNode child = node.getChild().accept(this);
+        builder.push(child);
+        RexNode sortCond = dealWithExpression(node.getExpression());
+        builder.sort(sortCond);
+        ans = builder.build();
+
+        return ans;
+    }
 
     /**
      * 处理Project节点
@@ -316,23 +337,6 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
 //                RelOptUtil.dumpPlan("[Logical plan]", ans, SqlExplainFormat.TEXT,
 //                        SqlExplainLevel.EXPPLAN_ATTRIBUTES));
 
-        return ans;
-    }
-
-    /**
-     * 处理Sort节点
-     * 暂时并没有用到，之后会随着解析部分的更新再加入新的处理
-     * @param node
-     * @return
-     */
-    @Override
-    public RelNode visit(LogicalSort node) {
-        RelNode ans = null;
-        RelNode child = node.getChild().accept(this);
-        builder.push(child);
-        RexNode sortCond = dealWithExpression(node.getExpression());
-        builder.sort(sortCond);
-        ans = builder.build();
         return ans;
     }
 

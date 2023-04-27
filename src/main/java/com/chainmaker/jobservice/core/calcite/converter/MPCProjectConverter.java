@@ -24,8 +24,8 @@ public class MPCProjectConverter extends ConverterRule {
             "MPCProject"
     );
 
-    public MPCProjectConverter(Class<LogicalProject> logicalProjectClass, Convention none, EnumerableConvention instance, String mpcFilter) {
-        super(logicalProjectClass, none, instance, mpcFilter);
+    public MPCProjectConverter(Class<LogicalProject> logicalProjectClass, Convention none, EnumerableConvention instance, String description) {
+        super(logicalProjectClass, none, instance, description);
     }
 
     @Override

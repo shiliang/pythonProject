@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.core.calcite.relnode;
 
 import com.chainmaker.jobservice.core.calcite.cost.MPCCost;
+import com.chainmaker.jobservice.core.calcite.cost.MPCRelMetaDataProvider;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.*;

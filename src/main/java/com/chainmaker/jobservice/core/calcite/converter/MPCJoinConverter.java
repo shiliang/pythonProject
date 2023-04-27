@@ -33,8 +33,8 @@ public class MPCJoinConverter extends ConverterRule {
             "MPCJoin"
     );
 
-    public MPCJoinConverter(Class<LogicalJoin> logicalJoinClass, Convention none, EnumerableConvention instance, String mpcJoin) {
-        super(logicalJoinClass, none, instance, mpcJoin);
+    public MPCJoinConverter(Class<LogicalJoin> logicalJoinClass, Convention none, EnumerableConvention instance, String description) {
+        super(logicalJoinClass, none, instance, description);
     }
 
     @Override

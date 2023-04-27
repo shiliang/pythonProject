@@ -17,11 +17,9 @@ import java.util.List;
  */
 public class MPCUnion extends Union implements EnumerableRel {
 
-    MPCUnion(RelOptCluster cluster, RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
+    public MPCUnion(RelOptCluster cluster, RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
         super(cluster, traitSet, inputs, all);
     }
-
-
 
     @Override
     public Result implement(EnumerableRelImplementor enumerableRelImplementor, Prefer prefer) {
