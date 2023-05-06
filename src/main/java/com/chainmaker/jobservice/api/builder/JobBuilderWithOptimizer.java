@@ -26,13 +26,16 @@ import com.chainmaker.jobservice.core.parser.plans.LogicalHint;
 import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
 import com.chainmaker.jobservice.core.parser.plans.LogicalProject;
 import com.chainmaker.jobservice.core.parser.tree.*;
+import com.google.gson.Gson;
 import io.lettuce.core.output.StatusOutput;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlExplainFormat;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.commons.lang3.SerializationUtils;
 import org.chainmaker.pb.tee.EnclaveOutcall;
+import org.springframework.beans.BeanUtils;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -224,7 +227,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * @return
      */
     public Task mergeTaskTree(TaskNode root) {
-        Task ans = tasks.get(root.taskID);
+        Task ori = tasks.get(root.taskID);
+        Gson gson = new Gson();
+        Task ans = gson.fromJson(gson.toJson(ori), Task.class);
+//        TaskCp(ori, ans);
         String sql = "select ProjectString from TableJoinString where PredicateString";
         String ProjectString = "", TableJoinString = "", PredicateString = "";
         HashSet<String> inputTables = new HashSet<>();
@@ -392,6 +398,26 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
         ans.getModule().getParams().put("sql", sql);
         return ans;
+    }
+
+    /**
+     * 深拷贝一个Task，最好是调用深拷贝方法或者实现clone，这是暂时解决方法
+     * @param source
+     * @param target
+     */
+    private void TaskCp(Task source, Task target) {
+        target.setVersion(source.getVersion());
+        target.setJobID(source.getJobID());
+        target.setCreateTime(source.getCreateTime());
+        target.setUpdateTime(source.getUpdateTime());
+        target.setStatus(source.getStatus());
+        target.setTaskName(source.getTaskName());
+        target.setParties(source.getParties());
+        target.setModule(new Module());
+        target.getModule().setParams(new JSONObject());
+        target.setInput(new Input());
+        target.setOutput(new Output());
+        target.getOutput().setData(source.getOutput().getData());
     }
 
     /**
