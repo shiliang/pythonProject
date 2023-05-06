@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.core.calcite.relnode;
 
 import com.chainmaker.jobservice.core.calcite.cost.MPCCost;
+import com.chainmaker.jobservice.core.calcite.cost.MPCRelMetaDataProvider;
 import com.chainmaker.jobservice.core.calcite.cost.MPCRelMetadataQuery;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
@@ -18,6 +19,8 @@ import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMdDistribution;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+
+import java.util.function.Supplier;
 
 /**
  * MPCFilter类，仿照EnumerableFilter类设计，具有EnumerableConvention物理属性
@@ -38,12 +41,15 @@ public class MPCFilter extends Filter implements EnumerableRel {
 
     public static MPCFilter create(final RelNode input, RexNode condition) {
         RelOptCluster cluster = input.getCluster();
-        RelMetadataQuery mq = MPCRelMetadataQuery.INSTANCE;
-        RelTraitSet traitSet = cluster.traitSetOf(EnumerableConvention.INSTANCE).replaceIfs(RelCollationTraitDef.INSTANCE, () -> {
-            return RelMdCollation.filter(mq, input);
-        }).replaceIf(RelDistributionTraitDef.INSTANCE, () -> {
-            return RelMdDistribution.filter(mq, input);
-        });
+//        RelMetadataQuery mq = MPCRelMetadataQuery.INSTANCE;
+        RelMetadataQuery mq = cluster.getMetadataQuery();
+        final RelTraitSet traitSet =
+                cluster.traitSetOf(EnumerableConvention.INSTANCE)
+                        .replaceIfs(
+                                RelCollationTraitDef.INSTANCE,
+                                () -> RelMdCollation.filter(mq, input))
+                        .replaceIf(RelDistributionTraitDef.INSTANCE,
+                                () -> RelMdDistribution.filter(mq, input));
         return new MPCFilter(cluster, traitSet, input, condition);
     }
 

@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.core.calcite.relnode;
 
 import com.chainmaker.jobservice.core.calcite.cost.MPCCost;
+import com.chainmaker.jobservice.core.calcite.cost.MPCRelMetaDataProvider;
 import com.chainmaker.jobservice.core.calcite.cost.MPCRelMetadataQuery;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import lombok.SneakyThrows;
@@ -36,8 +37,8 @@ public class MPCJoin extends Join implements EnumerableRel {
 
     public static MPCJoin create(RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) throws InvalidRelException {
         RelOptCluster cluster = left.getCluster();
-//        RelMetadataQuery mq = cluster.getMetadataQuery();
-        RelMetadataQuery mq = MPCRelMetadataQuery.INSTANCE;
+//        RelMetadataQuery mq = MPCRelMetadataQuery.INSTANCE;
+        RelMetadataQuery mq = cluster.getMetadataQuery();
         RelTraitSet traitSet = cluster.traitSetOf(EnumerableConvention.INSTANCE).replaceIfs(RelCollationTraitDef.INSTANCE, () -> RelMdCollation.enumerableHashJoin(mq, left, right, joinType));
         return new MPCJoin(cluster, traitSet, left, right, condition, variablesSet, joinType);
     }
@@ -72,7 +73,7 @@ public class MPCJoin extends Join implements EnumerableRel {
         String leftOrg = null;
         for (String tableField : (this.getLeft().getRowType().getFieldNames())) {
             String tableName = tableField.split("\\.")[0];
-            if (leftOrg != null && leftOrg != metadata.getTableOrgId(tableName)) {
+            if (leftOrg != null && !leftOrg.equals(metadata.getTableOrgId(tableName))) {
                 isSameSource = false;
                 break;
             }
@@ -86,7 +87,7 @@ public class MPCJoin extends Join implements EnumerableRel {
                 break;
             }
             String tableName = tableField.split("\\.")[0];
-            if (rightOrg != null && rightOrg != metadata.getTableOrgId(tableName)) {
+            if (rightOrg != null && !rightOrg.equals(metadata.getTableOrgId(tableName))) {
                 isSameSource = false;
                 break;
             }
@@ -94,7 +95,7 @@ public class MPCJoin extends Join implements EnumerableRel {
                 rightOrg = metadata.getTableOrgId(tableName);
             }
         }
-        if (leftOrg != rightOrg) {
+        if (!leftOrg.equals(rightOrg)) {
             isSameSource = false;
         }
 //        System.out.println("isSameSource ? " + isSameSource);
@@ -120,7 +121,8 @@ public class MPCJoin extends Join implements EnumerableRel {
             cost = planner.getCostFactory().makeCost(rowCount, rowCount, rowCount);
         } else {
             // 位于不同数据源，需要隐私求交
-            cost = planner.getCostFactory().makeCost(rowCount*5, rowCount*5, rowCount*5);
+            cost = planner.getCostFactory().makeCost(rowCount, rowCount, rowCount);
+            cost = cost.multiplyBy(5);
         }
 
         return cost;

@@ -55,12 +55,14 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         boolean isMerged;
         HashSet<String> partyIds;
         List<TaskNode> inputs;
+        List<TaskNode> fathers;
 
         TaskNode (int id) {
             taskID = id;
             isMerged = false;
             partyIds = new HashSet<>();
             inputs = new ArrayList<>();
+            fathers = new ArrayList<>();
         }
 
         public boolean isLocal() {
@@ -147,15 +149,73 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     }
 
     /**
+     * 将LocalJoin中output数量超过一个的都改成一个，并修改上位依赖
+     * @param root
+     */
+    public void LocalJoincorrect(TaskNode root) {
+        Queue<TaskNode> q = new ArrayDeque<>();
+        for (TaskNode node : root.inputs) {
+            q.add(node);
+        }
+        List<Boolean> vis = new ArrayList<>(tasks.size());
+        for (int i = 0; i < tasks.size(); i++) {
+            vis.add(false);
+        }
+        while (!q.isEmpty()) {
+            TaskNode tn = q.remove();
+            if (vis.get(tn.taskID)) {
+                continue;
+            }
+            vis.set(tn.taskID, true);
+            Task t = tasks.get(tn.taskID);
+            for (int i = 0; i < tn.inputs.size(); i++) {
+                q.add(tn.inputs.get(i));
+            }
+            if (t.getModule().getModuleName().equals(TaskType.LOCALJOIN.name()) && tn.partyIds.size() == 1) {
+                // 记录旧的outputName
+                HashSet<String> outputNames = new HashSet<>();
+                int n = t.getOutput().getData().size();
+                for (int i = 0; i < n; i++) {
+                    outputNames.add(t.getOutput().getData().get(i).getDataName());
+                }
+                // 删除多余的output，修改outputName
+                for (int i = 1; i < n; i++) {
+                    t.getOutput().getData().remove(i);
+                }
+                String outName = "LOCAL-" + t.getTaskName();
+                t.getOutput().getData().get(0).setDataName(outName);
+
+                // 修改上位依赖项
+                for (int i = 0; i < tn.fathers.size(); i++) {
+                    Task ft = tasks.get(tn.fathers.get(i).taskID);
+                    for (TaskInputData inputData : ft.getInput().getData()) {
+                        String inputName = inputData.getDataName();
+                        if (outputNames.contains(inputName)) {
+                            inputData.setDataName(outName);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * 合并本地Task，将它们批量交给spark进行处理
      */
     public void mergeLocalTasks() {
         // 1、构建Task调用关系树
         TaskNode root = buildTaskTree();
-        // 2、遍历该树，对LocalTask节点进行merge
+        // 2、修正LocalJoin的output数量
+        LocalJoincorrect(root);
+        // 3、遍历该树，对LocalTask节点进行merge
         dfsTaskTree(root);
-        // 3、记录mergedTasks(第二步已经完成）
-
+        // 4、排序mergedTasks
+        mergedTasks.sort(new Comparator<Task>() {
+            @Override
+            public int compare(Task o1, Task o2) {
+                return Integer.parseInt(o1.getTaskName()) - Integer.parseInt(o2.getTaskName());
+            }
+        });
     }
 
     /**
@@ -373,6 +433,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 if (!inputData.getTaskSrc().equals("")) {
                     int idx = Integer.parseInt(inputData.getTaskSrc());
                     node.inputs.add(nodes.get(idx));
+                    nodes.get(idx).fathers.add(node);
                     node.partyIds.addAll(nodes.get(idx).partyIds);
                 }
             }

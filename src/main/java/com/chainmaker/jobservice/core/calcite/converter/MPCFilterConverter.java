@@ -5,6 +5,7 @@ import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
+import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.logical.LogicalFilter;
 
 /**
@@ -31,14 +32,18 @@ public class MPCFilterConverter extends ConverterRule {
     }
 
     @Override
-    public RelNode convert(RelNode relNode) {
-        final LogicalFilter filter = (LogicalFilter) relNode;
-
-        return new MPCFilter(filter.getCluster(),
-                filter.getTraitSet().replace(EnumerableConvention.INSTANCE),
+    public RelNode convert(RelNode rel) {
+        final Filter filter = (Filter) rel;
+        return MPCFilter.create(
                 convert(filter.getInput(),
                         filter.getInput().getTraitSet()
-                                .replace(EnumerableConvention.INSTANCE)),
+                            .replace(EnumerableConvention.INSTANCE)),
                 filter.getCondition());
+//        return new MPCFilter(rel.getCluster(),
+//                rel.getTraitSet().replace(EnumerableConvention.INSTANCE),
+//                convert(filter.getInput(),
+//                        filter.getInput().getTraitSet()
+//                                .replace(EnumerableConvention.INSTANCE)),
+//                filter.getCondition());
     }
 }

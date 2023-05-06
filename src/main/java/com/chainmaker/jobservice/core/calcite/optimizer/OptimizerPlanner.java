@@ -1,9 +1,6 @@
 package com.chainmaker.jobservice.core.calcite.optimizer;
 
-import com.chainmaker.jobservice.core.calcite.converter.MPCFilterConverter;
-import com.chainmaker.jobservice.core.calcite.converter.MPCJoinConverter;
-import com.chainmaker.jobservice.core.calcite.converter.MPCProjectConverter;
-import com.chainmaker.jobservice.core.calcite.converter.MPCTableScanConverter;
+import com.chainmaker.jobservice.core.calcite.converter.*;
 import com.chainmaker.jobservice.core.optimizer.RuleBasedOptimizer;
 import org.apache.calcite.adapter.enumerable.*;
 import org.apache.calcite.plan.*;
@@ -63,6 +60,8 @@ public class OptimizerPlanner {
             planner.addRule(MPCFilterConverter.INSTANCE);
             planner.addRule(MPCProjectConverter.INSTANCE);
             planner.addRule(MPCJoinConverter.INSTANCE);
+            planner.addRule(MPCUnionConverter.INSTANCE);
+            planner.addRule(MPCSortConverter.INSTANCE);
 
 //            planner.removeRule(EnumerableRules.ENUMERABLE_PROJECT_RULE);
 //            planner.removeRule(EnumerableRules.ENUMERABLE_FILTER_RULE);
@@ -93,6 +92,8 @@ public class OptimizerPlanner {
             planner.addRule(CoreRules.JOIN_COMMUTE);
             planner.addRule(CoreRules.PROJECT_MERGE);
             planner.addRule(CoreRules.PROJECT_SET_OP_TRANSPOSE);
+            planner.addRule(CoreRules.UNION_MERGE);
+
 //            planner.addRule(JoinAssociateRule.INSTANCE);
 //            planner.addRule(FilterJoinRule.FILTER_ON_JOIN);
 //            planner.addRule(ReduceExpressionsRule.PROJECT_INSTANCE);

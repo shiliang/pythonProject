@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.core.calcite.relnode;
 
 import com.chainmaker.jobservice.core.calcite.cost.MPCCost;
+import com.chainmaker.jobservice.core.calcite.cost.MPCRelMetaDataProvider;
 import com.chainmaker.jobservice.core.calcite.cost.MPCRelMetadataQuery;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
@@ -48,8 +49,8 @@ public class MPCProject extends Project implements EnumerableRel {
 
     public static MPCProject create(RelNode input, List<? extends RexNode> projects, RelDataType rowType) {
         final RelOptCluster cluster = input.getCluster();
-//        cluster.setMetadataProvider(MPCRelMetaDataProvider.relMetaDataProvider);
-        RelMetadataQuery mq = MPCRelMetadataQuery.INSTANCE;
+//        RelMetadataQuery mq = MPCRelMetadataQuery.INSTANCE;
+        RelMetadataQuery mq = cluster.getMetadataQuery();
             final RelTraitSet traitSet =
                     cluster.traitSet().replace(EnumerableConvention.INSTANCE)
                             .replaceIfs(RelCollationTraitDef.INSTANCE,
