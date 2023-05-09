@@ -156,6 +156,16 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
 //    }
 
     /**
+     * 处理Aggregate节点
+     * @param node
+     * @return
+     */
+//    @Override
+//    public RelNode visit(LogicalAggregate node) {
+//
+//    }
+
+    /**
      * 处理Sort节点
      * 暂时并没有用到，之后会随着解析部分的更新再加入新的处理
      * @param node
