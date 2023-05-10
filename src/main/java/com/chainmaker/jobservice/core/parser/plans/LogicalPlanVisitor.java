@@ -1,5 +1,7 @@
 package com.chainmaker.jobservice.core.parser.plans;
 
+import org.apache.calcite.rel.RelNode;
+
 public abstract class LogicalPlanVisitor {
 
     public void visit(LogicalPlan node) {
@@ -23,5 +25,9 @@ public abstract class LogicalPlanVisitor {
     }
 
     public void visit(NonRelation node) {
+    }
+
+    public void visit(LogicalAggregate node) {
+
     }
 }

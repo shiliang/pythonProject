@@ -12,6 +12,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.*;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -160,10 +161,32 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
      * @param node
      * @return
      */
-//    @Override
-//    public RelNode visit(LogicalAggregate node) {
-//
-//    }
+    @Override
+    public RelNode visit(LogicalAggregate node) {
+        RelNode ans = null;
+        int childNum = node.getChildren().size();
+        RelNode[] childs = new RelNode[childNum];
+        for (int i = 0; i < childNum; i++) {
+            childs[i] = node.getChildren().get(i).accept(this);
+            builder.push(childs[i]);
+        }
+
+        // 解析groupKey
+        List<RexNode> rexkeys = new ArrayList<>();
+        for (Expression e : node.getGroupKeys()) {
+            rexkeys.add(dealWithExpression(e));
+        }
+        RelBuilder.GroupKey groupKeys = builder.groupKey(rexkeys);
+
+        // 解析AggCalls
+        List<RelBuilder.AggCall> aggregateCalls = new ArrayList<>();
+        RexNode rexNode = dealWithExpression(node.getAggCalls());
+
+        aggregateCalls.add(builder.aggregateCall(SqlStdOperatorTable.SUM, rexNode));
+        builder.aggregate(groupKeys, aggregateCalls);
+        ans = builder.build();
+        return ans;
+    }
 
     /**
      * 处理Sort节点
