@@ -315,16 +315,25 @@ public class JobParserServiceImpl implements JobParserService {
         String sqltext = sqlVo.getSqltext().toUpperCase().replace("\"", "");
         SqlParser sqlParser = new SqlParser(sqltext, sqlVo.getModelType(), sqlVo.getIsStream());
         sqlParser.setCatalogConfig(catalogConfig);
-//        JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser());
-//        jobBuilder.build();
-        JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parserWithOptimizer());
-        jobBuilder.build();
-        JobMissionDetail jobMissionDetail = new JobMissionDetail();
-        jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
-        jobMissionDetail.setMissionDetailVOList(sqlParser.getMissionDetailVOs());
-        jobMissionDetail.setModelParamsVoList(sqlParser.getModelParamsVos());
-        System.out.println(jobMissionDetail);
-        return jobMissionDetail;
+        if (sqlVo.getModelType() == 2 && sqlVo.getIsStream() == 1) {
+            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser());
+            jobBuilder.build();
+            JobMissionDetail jobMissionDetail = new JobMissionDetail();
+            jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
+            jobMissionDetail.setMissionDetailVOList(sqlParser.getMissionDetailVOs());
+            jobMissionDetail.setModelParamsVoList(sqlParser.getModelParamsVos());
+            System.out.println(jobMissionDetail);
+            return jobMissionDetail;
+        } else {
+            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parserWithOptimizer());
+            jobBuilder.build();
+            JobMissionDetail jobMissionDetail = new JobMissionDetail();
+            jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
+            jobMissionDetail.setMissionDetailVOList(sqlParser.getMissionDetailVOs());
+            jobMissionDetail.setModelParamsVoList(sqlParser.getModelParamsVos());
+            System.out.println(jobMissionDetail);
+            return jobMissionDetail;
+        }
     }
 
 
