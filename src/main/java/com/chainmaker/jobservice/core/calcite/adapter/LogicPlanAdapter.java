@@ -180,9 +180,9 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
 
         // 解析AggCalls
         List<RelBuilder.AggCall> aggregateCalls = new ArrayList<>();
-        RexNode rexNode = dealWithExpression(node.getAggCalls());
+        Expression expr = node.getAggCalls();
 
-        aggregateCalls.add(builder.aggregateCall(SqlStdOperatorTable.SUM, rexNode));
+
         builder.aggregate(groupKeys, aggregateCalls);
         ans = builder.build();
         return ans;

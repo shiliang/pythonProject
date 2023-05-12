@@ -26,8 +26,8 @@ public class Driver {
 //        String query = "select /*+ TEEJOIN(1,2) */ METHODSNAME(adata.a1, bdata.b1), adata.a2 from adata join bdata on adata.id=bdata.id";
 //        String query = "SELECT AVG(ADATA.A1+BDATA.B1), ADATA.A2+ADATA.A1, CDATA.C1+CDATA.C1, ADATA.A1, BDATA.B1 FROM (ADATA JOIN BDATA ON ADATA.A1=BDATA.B1) " +
 //                "JOIN CDATA ON ADATA.A2=CDATA.C2 WHERE BDATA.B1>3 AND ADATA.A2<10";
-        String query = "SELECT ADATA.A1, SUM(BDATA.B1) FROM (ADATA JOIN BDATA ON ADATA.A1=BDATA.B1) WHERE ADATA.A2<10 GROUP BY ADATA.A1 HAVING SUM(BDATA.B1) > 5";
-//        String query = "select adata.a1 from adata join bdata on adata.a1=bdata.b1";
+//        String query = "SELECT ADATA.A1, SUM(BDATA.B1) FROM (ADATA JOIN BDATA ON ADATA.A1=BDATA.B1) WHERE ADATA.A2<10 GROUP BY ADATA.A1 HAVING SUM(BDATA.B1) > 5 AND COUNT(BDATA.B1) > 1";
+        String query = "select adata.a1 from (adata join bdata on adata.a1=bdata.b1) join cdata on adata.a2=cdata.c2";
 //        String query = "select avg(adata.a1) from adata join bdata on adata.a1=bdata.b1 where adata.a1>10 and bdata.b1>5";
 //        String query = "select adata.a1 from (adata join bdata on adata.a1=bdata.b1) join cdata on adata.a2=cdata.c2 where adata.a1>5";
 //        String query = "select adata.a1 from (adata join cdata on adata.a1=cdata.c1) join bdata on adata.a2=bdata.b2 where adata.a1>5";
