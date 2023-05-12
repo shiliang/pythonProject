@@ -111,8 +111,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         JobTemplate jobTemplate = new JobTemplate();
         jobTemplate.setJob(job);
         jobTemplate.setServices(services);
-//        jobTemplate.setTasks(tasks);
-        jobTemplate.setTasks(mergedTasks);
+        jobTemplate.setTasks(tasks);
+//        jobTemplate.setTasks(mergedTasks);
         return jobTemplate;
     }
 
