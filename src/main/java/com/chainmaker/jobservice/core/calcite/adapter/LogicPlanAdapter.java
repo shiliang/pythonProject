@@ -12,6 +12,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.*;
+import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
@@ -180,8 +181,10 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
 
         // 解析AggCalls
         List<RelBuilder.AggCall> aggregateCalls = new ArrayList<>();
-        Expression expr = node.getAggCalls();
 
+        RelBuilder.AggCall sumB1 = builder.sum(builder.field("BDATA.B1"));
+
+        builder.aggregate(groupKeys, sumB1);
 
         builder.aggregate(groupKeys, aggregateCalls);
         ans = builder.build();

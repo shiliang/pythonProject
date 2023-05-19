@@ -1,29 +1,35 @@
 package com.chainmaker.jobservice.core.parser.plans;
 
+import com.chainmaker.jobservice.core.parser.tree.DereferenceExpression;
 import com.chainmaker.jobservice.core.parser.tree.Expression;
 import com.chainmaker.jobservice.core.parser.tree.Node;
 import org.apache.calcite.rel.RelNode;
 
+import java.util.HashSet;
 import java.util.List;
 
 public class LogicalAggregate extends LogicalPlan{
 
-    private final List<Expression> groupKeys;
-    private final Expression aggCalls;
+    private final List<Expression> groupKeys;   // 分组键
+    private final List<Expression> aggCallList;          // 聚合列
     private final List<LogicalPlan> children;
 
     public List<Expression> getGroupKeys() {
         return groupKeys;
     }
 
-    public Expression getAggCalls() {
-        return aggCalls;
+    public List<Expression> getAggCallList() {
+        return aggCallList;
     }
 
-    public LogicalAggregate(List<Expression> groupKeys, Expression aggCalls, List<LogicalPlan> children) {
+    public LogicalAggregate(List<Expression> groupKeys, List<Expression> aggCallList, List<LogicalPlan> children) {
         this.groupKeys = groupKeys;
-        this.aggCalls = aggCalls;
+        this.aggCallList = aggCallList;
         this.children = children;
+    }
+
+    public void addAggCallAll(HashSet<Expression> calls) {
+        aggCallList.addAll(calls);
     }
 
     @Override
@@ -40,9 +46,12 @@ public class LogicalAggregate extends LogicalPlan{
         }
         ans = ans.substring(0, ans.length()-2);
         ans += " ] ";
-        if (aggCalls != null) {
-            ans += "Having [ " + aggCalls + " ]";
+
+        ans += "agg = [ ";
+        for (Expression e : aggCallList) {
+            ans += e;
         }
+        ans += " ]";
         return ans;
     }
 

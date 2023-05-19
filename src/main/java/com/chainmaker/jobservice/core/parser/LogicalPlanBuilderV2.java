@@ -6,6 +6,7 @@ import com.chainmaker.jobservice.core.antlr4.gen.SqlBaseParser;
 import com.chainmaker.jobservice.core.antlr4.gen.SqlBaseParserBaseVisitor;
 import com.chainmaker.jobservice.core.parser.plans.*;
 import com.chainmaker.jobservice.core.parser.tree.*;
+import com.google.common.collect.ImmutableList;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
@@ -13,6 +14,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -24,6 +26,7 @@ import java.util.List;
 public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     private HashMap<String, String> tableNameMap = new HashMap<>();
     public List<String> modelNameList = new ArrayList<>();
+//    HashSet<Expression> aggCallList = new HashSet<>();
     private static final String DEFAULT_ERROR = "SQL语法暂不支持";
     private LogicalPlan logicalPlan;
 
@@ -48,6 +51,23 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         parser.removeErrorListeners();
         parser.addErrorListener(customErrorListener);
         this.logicalPlan = this.visitSingleStatement(parser.singleStatement());
+//        if (aggCallList != null) {
+//            backFillGroupBy(logicalPlan);
+//        }
+    }
+
+    /**
+     * 回填group by中空缺的需要聚合的列信息
+     */
+    public void backFillGroupBy(LogicalPlan root) {
+        if (root instanceof LogicalAggregate) {
+//            ((LogicalAggregate) root).addAggCallAll(aggCallList);
+            return;
+        } else {
+            for (Node child : root.getChildren()) {
+                backFillGroupBy((LogicalPlan) child);
+            }
+        }
     }
 
     @Override
@@ -111,7 +131,6 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     @Override
     public LogicalPlan visitRegularQuerySpecification(SqlBaseParser.RegularQuerySpecificationContext context) {
 //        System.out.println(context.selectClause().hint.hintStatement(0).getText());
-        List<LogicalPlan> children = new ArrayList<>();
 
 //        if (context.fromClause() == null) {
 //            throw new ParserException(DEFAULT_ERROR + ": " + "缺少From");
@@ -123,11 +142,14 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
 //        }
 
         // add aggregate
+        List<LogicalPlan> children = new ArrayList<>();
+
         if (context.fromClause() == null) {
             throw new ParserException(DEFAULT_ERROR + ": " + "缺少From");
         }
 
         if (context.aggregationClause() == null) {
+//            aggCallList = null;
             if (context.whereClause() == null) {
                 List<LogicalPlan> fromList = visitFrom(context.fromClause());
                 children.addAll(fromList);
@@ -135,7 +157,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
                 children.add(visitWhere(context));
             }
         } else if (context.havingClause() == null) {
-            children.add(visitAggregate(context, null));
+            children.add(visitAggregate(context));
         } else {
             children.add(visitHaving(context));
         }
@@ -150,11 +172,19 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     }
 
     private LogicalPlan visitHaving(SqlBaseParser.RegularQuerySpecificationContext context) {
-        Expression aggCalls = visitBooleanExpression(context.havingClause().booleanExpression());
-        return visitAggregate(context, aggCalls);
+        Expression havingCond = visitBooleanExpression(context.havingClause().booleanExpression());
+//        System.out.println(havingCond);
+//        String[] sp = havingCond.toString().split(" |=|\\(|\\)|>|<|\\+|-|\\*|/|!=|,|\\[|]");
+//        for (String s : sp) {
+//            if (s.contains(".")) {
+//                System.out.println(s);
+//            }
+//        }
+        LogicalPlan children = visitAggregate(context);
+        return new LogicalFilter(havingCond, List.of(children));
     }
 
-    public LogicalPlan visitAggregate(SqlBaseParser.RegularQuerySpecificationContext context, Expression aggCalls) {
+    public LogicalPlan visitAggregate(SqlBaseParser.RegularQuerySpecificationContext context) {
         List<LogicalPlan> children = new ArrayList<>();
         if (context.whereClause() == null) {
             List<LogicalPlan> fromList = visitFrom(context.fromClause());
@@ -164,11 +194,12 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         }
 
         List<Expression> groupKeys = new ArrayList<>();
-        System.out.println(context.aggregationClause().groupByClause());
+//        System.out.println(context.aggregationClause().groupByClause());
         for (SqlBaseParser.GroupByClauseContext ctx : context.aggregationClause().groupByClause()) {
             groupKeys.add(visitExpression(ctx.expression()));
         }
-        return new LogicalAggregate(groupKeys, aggCalls, children);
+        List<Expression> aggCallList = new ArrayList<>();
+        return new LogicalAggregate(groupKeys, aggCallList, children);
     }
 
     public LogicalPlan visitWhere(SqlBaseParser.RegularQuerySpecificationContext context) {
