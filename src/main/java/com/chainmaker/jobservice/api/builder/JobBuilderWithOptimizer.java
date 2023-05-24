@@ -123,11 +123,18 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             throw new ParserException("暂不支持的任务类型");
         }
 
+        // 生成tasks
         tasks.addAll(PhyPlan2Task());
-
+        // 特殊处理机器学习相关的tasks
         generateFLTasks(OriginPlan);
-
-        mergeLocalTasks();
+        // 修改localJoin的输出数量
+        localJoinCorrect();
+        // 合并OTPSI，暂时放弃
+//        mergeOTPSI();
+        // PSI后通知所有参与表
+        notifyPSIOthers();
+        // 合并本地tasks
+//        mergeLocalTasks();
 
         job.setJobID(jobID);
         job.setJobType(jobType);
@@ -138,41 +145,87 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         job.setParties(new ArrayList<>(jobParties));
     }
 
+    /**
+     * 最后一次PSI中的任意一方通知其他所有表最后的求交结果
+     */
+    public void notifyPSIOthers() {
+
+    }
 
     /**
-     * 这是没有触发Merge的情况
-     * 即将单独LocalJoin中的output数量超过一个的都改成一个，并修改上位依赖
-     * @param root
-     * @return 返回outName
+     * 合并tasks中的所有OTPSI，可以适配更多的底层实现方法
+     * 暂时弃用，改用添加额外的通知task
      */
-    public String LocalJoinCorrect(TaskNode root) {
-        Task t = tasks.get(root.taskID);
-
-        // 记录旧的outputName
+    @Deprecated
+    public void mergeOTPSI() {
+        // 找出所有的OTPSI 的 input、output、parties信息
+        List<TaskInputData> inputDataList = new ArrayList<>();
+        HashSet<Party> parties = new HashSet<>();
         HashSet<String> outputNames = new HashSet<>();
-        int n = t.getOutput().getData().size();
-        for (int i = 0; i < n; i++) {
-            outputNames.add(t.getOutput().getData().get(i).getDataName());
+        int lastOTPSItaskId = -1;
+        for (int i = 0; i < tasks.size(); i++) {
+            Task t = tasks.get(i);
+            if (!t.getModule().getModuleName().equals(TaskType.OTPSI.name())) {
+                continue;
+            }
+            inputDataList.addAll(t.getInput().getData());
+            parties.addAll(t.getParties());
+            for (int j = 0; i < t.getOutput().getData().size(); i++) {
+                outputNames.add(t.getOutput().getData().get(i).getDataName().split("-")[0]);
+            }
+            lastOTPSItaskId = i;
         }
-        // 删除多余的output，修改outputName
-        for (int i = 1; i < n; i++) {
-            t.getOutput().getData().remove(i);
-        }
-        String outName = "LOCALJOIN-" + t.getTaskName();
-        t.getOutput().getData().get(0).setDataName(outName);
 
-        // 修改上位依赖项
-        for (int i = root.taskID+1; i < tasks.size(); i++) {
-            Task ft = tasks.get(i);
-            for (TaskInputData inputData : ft.getInput().getData()) {
-                String inputName = inputData.getDataName();
-                if (outputNames.contains(inputName)) {
-                    inputData.setDataName(outName);
+        // 修改最后一个OTPSI的task信息
+        if (inputDataList.size() <= 2) {
+            return;
+        }
+        Task t = tasks.get(lastOTPSItaskId);
+        t.setParties(List.copyOf(parties));
+        List<TaskInputData> newInputDataList = new ArrayList<>();
+        for (int i = 0; i < inputDataList.size(); i += 2) {
+
+        }
+
+        // 改变上位依赖项
+
+    }
+
+
+    /**
+     * 修改LocalJoin中的output数量 超过一个的都改成一个，并修改上位依赖
+     * @param
+     */
+    public void localJoinCorrect() {
+        for (int taskID = 0; taskID < tasks.size(); taskID++) {
+            Task t = tasks.get(taskID);
+            if (!t.getModule().getModuleName().equals(TaskType.LOCALJOIN.name())) {
+                continue;
+            }
+            // 记录旧的outputName
+            HashSet<String> outputNames = new HashSet<>();
+            int n = t.getOutput().getData().size();
+            for (int i = 0; i < n; i++) {
+                outputNames.add(t.getOutput().getData().get(i).getDataName());
+            }
+            // 删除多余的output，修改outputName
+            for (int i = 1; i < n; i++) {
+                t.getOutput().getData().remove(i);
+            }
+            String outName = "LOCALJOIN-" + t.getTaskName();
+            t.getOutput().getData().get(0).setDataName(outName);
+
+            // 修改上位依赖项
+            for (int i = taskID + 1; i < tasks.size(); i++) {
+                Task ft = tasks.get(i);
+                for (TaskInputData inputData : ft.getInput().getData()) {
+                    String inputName = inputData.getDataName();
+                    if (outputNames.contains(inputName)) {
+                        inputData.setDataName(outName);
+                    }
                 }
             }
         }
-
-        return outName;
     }
 
     /**
@@ -282,8 +335,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                             TableJoinString += " join " + leftTable + " on " + joinCond + ")";
                         }
                     }
-
-                    outputTables.add(LocalJoinCorrect(tn));
                     break;
                 }
                 case "QUERY": {
@@ -437,8 +488,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 System.out.println("mergedTask ID = " + root.taskID);
                 mergedTasks.add(mergeTaskTree(root));
                 return;
-            } else if (taskcp.get(root.taskID).getModule().getModuleName().equals(TaskType.LOCALJOIN.name())) {
-                LocalJoinCorrect(root);
             }
         }
         if (root.taskID != -1) {
@@ -1287,14 +1336,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             jobParties.add(party.getPartyID());
         }
 
-
         moduleNameCorrect(task);
 
         return task;
     }
 
     /**
-     *
+     * 细分ModuleName
      * @param task
      */
     public void moduleNameCorrect(Task task) {

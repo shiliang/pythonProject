@@ -26,7 +26,6 @@ import java.util.List;
 public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     private HashMap<String, String> tableNameMap = new HashMap<>();
     public List<String> modelNameList = new ArrayList<>();
-//    HashSet<Expression> aggCallList = new HashSet<>();
     private static final String DEFAULT_ERROR = "SQL语法暂不支持";
     private LogicalPlan logicalPlan;
 
@@ -130,48 +129,52 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
 
     @Override
     public LogicalPlan visitRegularQuerySpecification(SqlBaseParser.RegularQuerySpecificationContext context) {
-//        System.out.println(context.selectClause().hint.hintStatement(0).getText());
 
-//        if (context.fromClause() == null) {
-//            throw new ParserException(DEFAULT_ERROR + ": " + "缺少From");
-//        } else if (context.whereClause() == null) {
-//            List<LogicalPlan> fromList = visitFrom(context.fromClause());
-//            children.addAll(fromList);
-//        } else {
-//            children.add(visitWhere(context));
-//        }
-
-        // add aggregate
         List<LogicalPlan> children = new ArrayList<>();
 
         if (context.fromClause() == null) {
             throw new ParserException(DEFAULT_ERROR + ": " + "缺少From");
         }
 
-        if (context.aggregationClause() == null) {
-//            aggCallList = null;
+//        if (context.aggregationClause() == null) {
+//            if (context.whereClause() == null) {
+//                List<LogicalPlan> fromList = visitFrom(context.fromClause());
+//                children.addAll(fromList);
+//            } else {
+//                children.add(visitWhere(context));
+//            }
+//        } else if (context.havingClause() == null) {
+//            children.add(visitAggregate(context));
+//        } else {
+//            children.add(visitHaving(context));
+//        }
+
+        if (context.selectClause().namedExpressionSeq() instanceof SqlBaseParser.FederatedLearningExpressionContext) {
+            FederatedLearningExpression expression = visitFederatedLearningExpression((SqlBaseParser.FederatedLearningExpressionContext) context.selectClause().namedExpressionSeq());
+            return new FederatedLearning(expression, children);
+        } else {
             if (context.whereClause() == null) {
                 List<LogicalPlan> fromList = visitFrom(context.fromClause());
                 children.addAll(fromList);
             } else {
                 children.add(visitWhere(context));
             }
-        } else if (context.havingClause() == null) {
-            children.add(visitAggregate(context));
-        } else {
-            children.add(visitHaving(context));
-        }
-
-        if (context.selectClause().namedExpressionSeq() instanceof SqlBaseParser.FederatedLearningExpressionContext) {
-            FederatedLearningExpression expression = visitFederatedLearningExpression((SqlBaseParser.FederatedLearningExpressionContext) context.selectClause().namedExpressionSeq());
-            return new FederatedLearning(expression, children);
-        } else {
             FaderatedQueryExpression projectList = visitFederatedQueryExpression((SqlBaseParser.FederatedQueryExpressionContext) context.selectClause().namedExpressionSeq());
-            return new LogicalProject(projectList, children);
+
+            if (context.aggregationClause() == null) {
+                return new LogicalProject(projectList, children);
+            } else {
+                LogicalProject child = new LogicalProject(projectList, children);
+                if (context.havingClause() == null) {
+                    return visitAggregate(context, List.of(child));
+                } else {
+                    return visitHaving(context, List.of(child));
+                }
+            }
         }
     }
 
-    private LogicalPlan visitHaving(SqlBaseParser.RegularQuerySpecificationContext context) {
+    private LogicalPlan visitHaving(SqlBaseParser.RegularQuerySpecificationContext context, List<LogicalPlan> children) {
         Expression havingCond = visitBooleanExpression(context.havingClause().booleanExpression());
 //        System.out.println(havingCond);
 //        String[] sp = havingCond.toString().split(" |=|\\(|\\)|>|<|\\+|-|\\*|/|!=|,|\\[|]");
@@ -180,18 +183,11 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
 //                System.out.println(s);
 //            }
 //        }
-        LogicalPlan children = visitAggregate(context);
-        return new LogicalFilter(havingCond, List.of(children));
+        LogicalPlan child = visitAggregate(context, children);
+        return new LogicalFilter(havingCond, List.of(child));
     }
 
-    public LogicalPlan visitAggregate(SqlBaseParser.RegularQuerySpecificationContext context) {
-        List<LogicalPlan> children = new ArrayList<>();
-        if (context.whereClause() == null) {
-            List<LogicalPlan> fromList = visitFrom(context.fromClause());
-            children.addAll(fromList);
-        } else {
-            children.add(visitWhere(context));
-        }
+    public LogicalPlan visitAggregate(SqlBaseParser.RegularQuerySpecificationContext context, List<LogicalPlan> children) {
 
         List<Expression> groupKeys = new ArrayList<>();
 //        System.out.println(context.aggregationClause().groupByClause());
