@@ -1133,7 +1133,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     jsonObjectParams.put("field", field);
                     List<Integer> list = new ArrayList<>();
                     list.add(i);
-                    jsonObjectParams.put("index", list);
+                    jsonObjectParams.put("index", Arrays.toString(list.toArray()));
 
 
                     inputdata.setDomainID(getFieldDomainID(jsonObjectParams.get("table") + "." + jsonObjectParams.get("field")));
