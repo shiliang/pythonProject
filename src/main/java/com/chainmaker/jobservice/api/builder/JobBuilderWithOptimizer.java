@@ -20,6 +20,7 @@ import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
 import com.chainmaker.jobservice.core.parser.plans.LogicalProject;
 import com.chainmaker.jobservice.core.parser.tree.*;
 import com.google.gson.Gson;
+import com.sun.jna.WString;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 
@@ -125,7 +126,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // 生成tasks
         tasks.addAll(PhyPlan2Task());
-        // 特殊处理机器学习相关的tasks
+        // 特殊处理联邦学习相关的tasks
         generateFLTasks(OriginPlan);
         // 修改localJoin的输出数量
         localJoinCorrect();
@@ -149,7 +150,23 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * 最后一次PSI中的任意一方通知其他所有表最后的求交结果
      */
     public void notifyPSIOthers() {
+        int n = tasks.size();
+        HashSet<String> notifyList = new HashSet<>();
+        HashSet<String> affectedOutputNames = new HashSet<>();
+        String leader;
+        for (int i = 0; i < n; i++) {
+            if (tasks.get(i).getModule().getModuleName().equals(TaskType.OTPSI.name())) {
+                leader = tasks.get(i).getInput().getData().get(0).getParams().getString("table");
+                notifyList.add(tasks.get(i).getInput().getData().get(1).getParams().getString("table"));
+                notifyList.add(leader);
+                for (TaskOutputData outputData : tasks.get(i).getOutput().getData()) {
+                    affectedOutputNames.add(outputData.getDataName());
+                }
+            }
+        }
+        Task task = basicTask(String.valueOf(cnt));
 
+        tasks.add(task);
     }
 
     /**
