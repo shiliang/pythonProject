@@ -242,6 +242,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             for (TaskInputData inputData : tasks.get(i).getInput().getData()) {
                 String oldDataName = inputData.getDataName();
                 String[] tmp = oldDataName.split("-");
+                if (tmp[0].equals(leader1) || tmp[0].equals(leader2)) {
+                    continue;
+                }
                 String oldID = affectedOutputNames.get(tmp[0]);
                 if (tmp[1].equals(oldID)) {
                     inputData.setDataName(tmp[0] + "-" + task.getTaskName());
