@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import com.sun.jna.WString;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
+import org.aspectj.apache.bcel.classfile.ModulePackages;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -37,7 +38,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         FQ, FQS, FL, FLS, CC, CCS
     }
     private enum TaskType {
-        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, RSAPSI, TEEPSI, AGG, MPCEXP, FL, TEE, MERGE, LOCALEXP, LOCALAGG
+        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, RSAPSI, TEEPSI, AGG, MPCEXP, FL, TEE, MERGE, LOCALEXP, LOCALAGG, NOTIFY
     }
 
     private class TaskNode {
@@ -152,21 +153,101 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     public void notifyPSIOthers() {
         int n = tasks.size();
         HashSet<String> notifyList = new HashSet<>();
-        HashSet<String> affectedOutputNames = new HashSet<>();
-        String leader;
+        HashMap<String, String> affectedOutputNames = new HashMap<>();
+        int maxPSIid = 0;
+        String leader1 = null;  // 多方PSI后最后的通知方，选择一个即可，留两个是为了之后可能会选择更优的那个来进行通知
+        String leader2 = null;
         for (int i = 0; i < n; i++) {
             if (tasks.get(i).getModule().getModuleName().equals(TaskType.OTPSI.name())) {
-                leader = tasks.get(i).getInput().getData().get(0).getParams().getString("table");
-                notifyList.add(tasks.get(i).getInput().getData().get(1).getParams().getString("table"));
-                notifyList.add(leader);
+                maxPSIid = i;
+                leader1 = tasks.get(i).getInput().getData().get(0).getParams().getString("table");
+                leader2 = tasks.get(i).getInput().getData().get(1).getParams().getString("table");
+                notifyList.add(leader1);
+                notifyList.add(leader2);
                 for (TaskOutputData outputData : tasks.get(i).getOutput().getData()) {
-                    affectedOutputNames.add(outputData.getDataName());
+                    String[] tmp = outputData.getDataName().split("-");
+                    affectedOutputNames.put(tmp[0], tmp[1]);
                 }
             }
         }
+        // 如果PSI次数小于等于1次，则不需要进行额外通知
+        if (affectedOutputNames.size() <= 2) {
+            return;
+        }
+
+        // 基本信息
         Task task = basicTask(String.valueOf(cnt));
 
+        // module信息（即进行什么操作）
+        Module module = new Module();
+        module.setModuleName(TaskType.NOTIFY.name());
+        JSONObject moduleparams = new JSONObject(true);
+        moduleparams.put("leader", leader1);
+        module.setParams(moduleparams);
+        task.setModule(module);
+
+        // 输入信息
+        Input input = new Input();
+        List<TaskInputData> inputDatas = new ArrayList<>();
+        for (String table : notifyList) {
+            if (table.equals(leader1) || table.equals(leader2)) {
+                continue;
+            }
+            TaskInputData inputData = new TaskInputData();
+            inputData.setRole("follower");
+            inputData.setDataName(table + "-" + affectedOutputNames.get(table));
+            inputData.setTaskSrc(affectedOutputNames.get(table));
+            inputData.setDomainID(metadata.getTableOrgId(table));
+            JSONObject inputDataParams = new JSONObject(true);
+            inputDataParams.put("table", table);
+            inputData.setParams(inputDataParams);
+            inputDatas.add(inputData);
+        }
+        input.setData(inputDatas);
+        task.setInput(input);
+
+
+        // 输出信息
+        Output output = new Output();
+        List<TaskOutputData> outputDatas = new ArrayList<>();
+        for (TaskInputData inputData : inputDatas) {
+            TaskOutputData outputData = new TaskOutputData();
+            outputData.setDataName(inputData.getParams().get("table") + "-" + task.getTaskName());
+            outputData.setDomainID(inputData.getDomainID());
+            outputData.setFinalResult("N");
+            outputDatas.add(outputData);
+        }
+        output.setData(outputDatas);
+        task.setOutput(output);
+
+        // parties信息
+        List<Party> parties = new ArrayList<>();
+        HashSet<String> partySet = new HashSet<>();
+        for (TaskInputData inputData : inputDatas) {
+            partySet.add(inputData.getDomainID());
+        }
+        for (String value : partySet) {
+            Party party = new Party();
+            party.setServerInfo(null);
+            party.setStatus(null);
+            party.setTimestamp(null);
+            party.setPartyID(value);
+            parties.add(party);
+        }
+        task.setParties(parties);
         tasks.add(task);
+
+        // 通知上位依赖，outputDataName的修改
+        for (int i = maxPSIid+1; i < n; i++) {
+            for (TaskInputData inputData : tasks.get(i).getInput().getData()) {
+                String oldDataName = inputData.getDataName();
+                String[] tmp = oldDataName.split("-");
+                String oldID = affectedOutputNames.get(tmp[0]);
+                if (tmp[1].equals(oldID)) {
+                    inputData.setDataName(tmp[0] + "-" + task.getTaskName());
+                }
+            }
+        }
     }
 
     /**

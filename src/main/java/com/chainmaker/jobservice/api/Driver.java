@@ -26,7 +26,7 @@ public class Driver {
 //        String query = "select /*+ TEEJOIN(1,2) */ METHODSNAME(adata.a1, bdata.b1), adata.a2 from adata join bdata on adata.id=bdata.id";
 //        String query = "SELECT AVG(ADATA.A1+BDATA.B1), ADATA.A2+ADATA.A1, CDATA.C1+CDATA.C1, ADATA.A1, BDATA.B1 FROM (ADATA JOIN BDATA ON ADATA.A1=BDATA.B1) " +
 //                "JOIN CDATA ON ADATA.A2=CDATA.C2 WHERE BDATA.B1>3 AND ADATA.A2<10";
-        String query = "SELECT ADATA.A1 FROM (ADATA JOIN BDATA ON ADATA.A1=BDATA.B1) JOIN TABLEC ON ADATA.A2=TABLEC.C2 WHERE TABLEC.ID < 20 AND BDATA.B1 > 10";
+        String query = "SELECT TABLEC.C1 FROM (ADATA JOIN BDATA ON ADATA.A1=BDATA.B1) JOIN TABLEC ON ADATA.A2=TABLEC.C2 WHERE TABLEC.ID < 20 AND BDATA.B1 > 10";
 //        String query = "SELECT ADATA.A1, SUM(BDATA.B1) FROM (ADATA JOIN BDATA ON ADATA.A1=BDATA.B1) WHERE ADATA.A2<10 GROUP BY ADATA.A1 HAVING SUM(BDATA.B1) > 5 AND COUNT(BDATA.B1) > 1";
 //        String query = "select adata.a1 from (adata join cdata on adata.a1=cdata.c1) join bdata on bdata.b2=cdata.c2";
 
