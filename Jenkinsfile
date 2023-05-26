@@ -26,7 +26,7 @@ node('jenkins-slave-k8s') {
     }
     stage('Deploy') {
         container('helm') {
-            withCredentials([file(credentialsId: 'k3s-112', variable: 'KUBECONFIG')]) {
+            withCredentials([file(credentialsId: 'k3s-243', variable: 'KUBECONFIG')]) {
                 echo "4. 部署阶段"
                 sh "mkdir -p /root/.kube && cp ${KUBECONFIG} /root/.kube/config"
                 sh "helm upgrade --install job-service ./job-service --set image.repository=${image} --set image.tag=${imageTag} --namespace=mpc"

@@ -868,11 +868,7 @@ flModelSeq
     ;
 
 flModel
-    : HESB '(' flExpressionSeq ')'  // hetero secure boost
-    | HOSB '(' flExpressionSeq ')'  // hetero secure boost
-    | HELR '(' flExpressionSeq ')'  // hetero logistic regression
-    | HEKMS '(' flExpressionSeq ')' // hetero kmeans
-    | HELNR '(' flExpressionSeq ')' // hetero linear regression
+    : model=(HESB | HOSB | HELR | HEKMS | HELNR)  '(' flExpressionSeq ')'  // hetero secure boost
     ;
 
 // evaluation
