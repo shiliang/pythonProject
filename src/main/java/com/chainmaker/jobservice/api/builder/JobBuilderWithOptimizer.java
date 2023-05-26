@@ -926,17 +926,30 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 //                List<String> lefts = operands.pop();
 //                List<String> rights = operands.pop();
 
-                // 完成string到Task的转换
-//                Task PSITask = str2Task(s, cnt, "PSI", lefts, rights, false);
-                Task PSITask = str2Task(s, cnt, "PSI", operands, false);
-                tasks.add(PSITask);
+                if (params.get(4).startsWith("AND")) {
+                    // 如果是多个JOIN的AND情况，则把它们分为多个单独的JOIN加入Task栈
+                    String[] conds = params.get(4).substring(4, params.get(4).length() - 1).split("\\),");
+                    conds[0] += ")";
+                    for (int i = 0; i < conds.length; i++) {
+                        conds[i] = conds[i].trim();
+                        String newCond = s.substring(0, s.indexOf("AND"));
+                        newCond += conds[i] + "] ";
+                        newCond += s.substring(s.lastIndexOf("$"));
+//                        System.out.println(newFilter);
+                        stk.add(newCond);
+                    }
+                } else {
+                    // 完成string到Task的转换
+                    Task PSITask = str2Task(s, cnt, "PSI", operands, false);
+                    tasks.add(PSITask);
 
-                // 该task的输出作为下一个的输入加入操作数栈
-                Output PSIOutput = PSITask.getOutput();
-                for (TaskOutputData outputData : PSIOutput.getData()) {
-                    operands.add(0, outputData.getDataName());
+                    // 该task的输出作为下一个的输入加入操作数栈
+                    Output PSIOutput = PSITask.getOutput();
+                    for (TaskOutputData outputData : PSIOutput.getData()) {
+                        operands.add(0, outputData.getDataName());
+                    }
+                    cnt++;
                 }
-                cnt++;
             } else if (s.startsWith("MPCFilter")) {
                 // MPCFilter [FilterCond[AND(>($0, 10), <($1, 50))] $ from [TA.ID, TA.AGE]]
                 // 需求只有AND或者单一Cond两种情况，如后续添加OR，可再增加
@@ -1033,7 +1046,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             case "PSI": {
                 String joinType = params.get(2);
                 moduleparams.put("joinType", joinType);
-                String joinOp = params.get(4).substring(0, 1);
+                String joinOp = "";
+                if (params.get(4).equals("true")) {
+                    joinOp = "true";
+                } else {
+                    joinOp = params.get(4).substring(0, 1);
+                }
                 moduleparams.put("operator", joinOp);
                 break;
             }
@@ -1108,27 +1126,44 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
                 // 如果是无条件求交
                 if (params.get(4).equals("true")) {
-//                    if (leftDataName != null) {
-//                        inputdata1.setDataName(leftDataName);
-//                        inputdata1.setTaskSrc(leftDataName.split("-")[1]);
-//                    } else {
-//                        inputdata1.setDataName(fields.get(0).split("\\.")[0].trim());
-//                        inputdata1.setTaskSrc("0");
-//                    }
-//                    if (rightDataName != null) {
-//                        inputdata2.setDataName(rightDataName);
-//                        inputdata2.setTaskSrc(rightDataName.split("-")[1]);
-//                    } else {
-//                        inputdata2.setDataName(fields.get(fields.size()-1).split("\\.")[0].trim());
-//                        inputdata2.setTaskSrc("0");
-//                    }
-//
-//                    if (!inputdata1.getDataName().contains("-")) {
-//                        inputdata1.setDataID(inputdata1.getDataName());
-//                    }
-//                    if (!inputdata2.getDataName().contains("-")) {
-//                        inputdata2.setDataID(inputdata2.getDataName());
-//                    }
+                    String rightDataName = inputTables.get(0);
+                    String leftDataName = inputTables.get(1);
+                    if (leftDataName.contains("-")) {
+                        String table = leftDataName.split("-")[0];
+                        inputdata1.setDataName(leftDataName);
+                        inputdata1.setTaskSrc(leftDataName.split("-")[1]);
+                        inputdata1.setDomainID(metadata.getTableOrgId(table));
+                        inputData1Params.put("table", table);
+                    } else {
+                        inputdata1.setDataName(leftDataName);
+                        inputdata1.setTaskSrc("0");
+                        inputdata1.setDomainID(metadata.getTableOrgId(leftDataName));
+                        inputData1Params.put("table", leftDataName);
+                    }
+                    if (rightDataName.contains("-")) {
+                        String table = leftDataName.split("-")[0];
+                        inputdata2.setDataName(rightDataName);
+                        inputdata2.setTaskSrc(rightDataName.split("-")[1]);
+                        inputdata2.setDomainID(metadata.getTableOrgId(table));
+                        inputData2Params.put("table", table);
+                    } else {
+                        inputdata2.setDataName(rightDataName);
+                        inputdata2.setTaskSrc("0");
+                        inputdata2.setDomainID(metadata.getTableOrgId(rightDataName));
+                        inputData2Params.put("table", rightDataName);
+                    }
+
+                    if (!inputdata1.getDataName().contains("-")) {
+                        inputdata1.setDataID(inputdata1.getDataName());
+                    }
+                    if (!inputdata2.getDataName().contains("-")) {
+                        inputdata2.setDataID(inputdata2.getDataName());
+                    }
+
+                    inputdata1.setRole("client");
+                    inputdata2.setRole("server");
+                    inputdata1.setParams(inputData1Params);
+                    inputdata2.setParams(inputData2Params);
 
                 } else {
                     // 正常求交 on TA.id=TB.id
@@ -1188,14 +1223,15 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
                     inputData2Params.put("table", rightTable);
                     inputData2Params.put("field", rightField);
+
+                    inputdata1.setDomainID(getFieldDomainID(inputData1Params.get("table") + "." + inputData1Params.get("field")));
+                    inputdata2.setDomainID(getFieldDomainID(inputData2Params.get("table") + "." + inputData2Params.get("field")));
+                    inputdata1.setRole("client");
+                    inputdata2.setRole("server");
+                    inputdata1.setParams(inputData1Params);
+                    inputdata2.setParams(inputData2Params);
                 }
 
-                inputdata1.setDomainID(getFieldDomainID(inputData1Params.get("table") + "." + inputData1Params.get("field")));
-                inputdata2.setDomainID(getFieldDomainID(inputData2Params.get("table") + "." + inputData2Params.get("field")));
-                inputdata1.setRole("client");
-                inputdata2.setRole("server");
-                inputdata1.setParams(inputData1Params);
-                inputdata2.setParams(inputData2Params);
                 inputDatas.add(inputdata1);
                 inputDatas.add(inputdata2);
                 break;
