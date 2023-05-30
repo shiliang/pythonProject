@@ -1,4 +1,4 @@
-node('jenkins-slave-230') {
+node('jenkins-worker-k8s') {
     def myRepo = checkout scm
     def gitCommit = myRepo.GIT_COMMIT
     def gitBranch = myRepo.GIT_BRANCH
