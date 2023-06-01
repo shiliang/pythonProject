@@ -392,9 +392,11 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         }
 
         List<FlExpression> psi = new ArrayList<>();
-        for (int i=0; i<context.flPSISeq(0).flPSI(0).flExpressionSeq().flExpression().size(); i++) {
-            FlExpression flExpression = visitFlExpression(context.flPSISeq(0).flPSI(0).flExpressionSeq().flExpression(i));
-            psi.add(flExpression);
+        if (context.flPSISeq().size() != 0) {
+            for (int i = 0; i < context.flPSISeq(0).flPSI(0).flExpressionSeq().flExpression().size(); i++) {
+                FlExpression flExpression = visitFlExpression(context.flPSISeq(0).flPSI(0).flExpressionSeq().flExpression(i));
+                psi.add(flExpression);
+            }
         }
 
         // feat 暂不处理
