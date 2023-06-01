@@ -134,6 +134,11 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
 
         if (context.fromClause() == null) {
             throw new ParserException(DEFAULT_ERROR + ": " + "缺少From");
+        } else if (context.whereClause() == null) {
+            List<LogicalPlan> fromList = visitFrom(context.fromClause());
+            children.addAll(fromList);
+        } else {
+            children.add(visitWhere(context));
         }
 
 //        if (context.aggregationClause() == null) {
@@ -153,12 +158,6 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             FederatedLearningExpression expression = visitFederatedLearningExpression((SqlBaseParser.FederatedLearningExpressionContext) context.selectClause().namedExpressionSeq());
             return new FederatedLearning(expression, children);
         } else {
-            if (context.whereClause() == null) {
-                List<LogicalPlan> fromList = visitFrom(context.fromClause());
-                children.addAll(fromList);
-            } else {
-                children.add(visitWhere(context));
-            }
             FaderatedQueryExpression projectList = visitFederatedQueryExpression((SqlBaseParser.FederatedQueryExpressionContext) context.selectClause().namedExpressionSeq());
 
             if (context.aggregationClause() == null) {
