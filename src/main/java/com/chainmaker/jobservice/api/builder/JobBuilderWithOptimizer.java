@@ -608,6 +608,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         for (int i = 0; i < labels.size(); i++) {
             inputDataList.add(parseFLLabel(labels.get(i)));
         }
+        if (inputDataList.get(0).getRole().equals(inputDataList.get(1).getRole())) {
+            if (inputDataList.get(0).getRole().equals("guest")) {
+                inputDataList.get(0).setRole("host");
+            } else {
+                inputDataList.get(0).setRole("guest");
+            }
+        }
         input.setData(inputDataList);
         task.setInput(input);
 

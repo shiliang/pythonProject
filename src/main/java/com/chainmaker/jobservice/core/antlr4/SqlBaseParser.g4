@@ -846,7 +846,7 @@ flPSISeq
     ;
 
 flPSI
-    : INTERSECTION '(' flExpressionSeq ')'
+    : INTERSECTION* '(' flExpressionSeq ')'
     ;
 
 // feature engineer
@@ -868,7 +868,7 @@ flModelSeq
     ;
 
 flModel
-    : model=(HESB | HOSB | HELR | HEKMS | HELNR)  '(' flExpressionSeq ')'  // hetero secure boost
+    : model=(HESB | HOSB | HELR | HEKMS | HELNR | HOLR)  '(' flExpressionSeq ')'  // hetero secure boost
     ;
 
 // evaluation
