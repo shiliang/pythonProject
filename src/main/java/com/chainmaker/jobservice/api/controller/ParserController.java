@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 
@@ -312,12 +313,30 @@ public class ParserController {
         String result = "v1";
         return result;
     }
-    @RequestMapping(value = "/ports", method = RequestMethod.POST)
-    public String portManager(@RequestBody String req) {
-        JSONObject request = JSON.parseObject(req);
-        String jobID = request.getString("jobID");
-        String taskName = request.getString("taskName");
-        String partyID = request.getString("partyID");
-        return "3333";
+    @RequestMapping(value = "/did/address/{name}", method = RequestMethod.GET)
+    public ResponseEntity<JSONObject> getAddressFromDID(@PathVariable String name) {
+        System.out.println("===SAVE DataCatalog===");
+        Map<String, byte[]> params = new HashMap<>();
+        params.put("orgDID", name.getBytes(StandardCharsets.UTF_8));
+        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_address_from_did", params);
+        JSONObject res = csr.toJSON(false);
+        HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+        System.out.println(responseStatus);
+        return new ResponseEntity<JSONObject>(res, responseStatus);
+    }
+    @RequestMapping(value = "/jobs/address/{jobID}", method = RequestMethod.GET)
+    public ResponseEntity<JSONObject> getAddress(@PathVariable String jobID) {
+        JobGetPo jobGetPo = new JobGetPo();
+        jobGetPo.setJobID(jobID);
+        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
+        System.out.println("csr: " + csr);
+        JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class, Feature.OrderedField);
+        String submitter = jobInfoPo.getJob().getSubmitter();
+        Map<String, byte[]> params = new HashMap<>();
+        params.put("orgDID", submitter.getBytes(StandardCharsets.UTF_8));
+        ContractServiceResponse res_csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_address_from_did", params);
+        JSONObject res = res_csr.toJSON(false);
+        HttpStatus responseStatus = res_csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+        return new ResponseEntity<JSONObject>(res, responseStatus);
     }
 }
