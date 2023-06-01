@@ -12,12 +12,15 @@ public abstract class LogicalPlanRelVisitor {
     public RelNode visit(LogicalPlan node) {
         return null;
     }
+
     public RelNode visit(LogicalHint node) {
         return null;
     }
+
     public RelNode visit(LogicalProject node) {
         return null;
     }
+
     public RelNode visit(FederatedLearning node) {
         return null;
     }
@@ -43,4 +46,6 @@ public abstract class LogicalPlanRelVisitor {
     }
 
     public RelNode visit(LogicalSort node) { return null; }
+
+    public RelNode visit(LogicalAggregate node) { return null; }
 }

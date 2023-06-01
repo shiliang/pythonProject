@@ -1,12 +1,10 @@
 package com.chainmaker.jobservice.api.builder;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.model.bo.job.Job;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
 import com.chainmaker.jobservice.api.model.bo.job.task.*;
 import com.chainmaker.jobservice.api.model.bo.job.task.Module;
-import com.chainmaker.jobservice.api.model.po.contract.job.TaskInputDataPo;
 import com.chainmaker.jobservice.api.model.vo.ServiceVo;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
@@ -15,11 +13,6 @@ import com.chainmaker.jobservice.core.calcite.relnode.MPCJoin;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCProject;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCTableScan;
 import com.chainmaker.jobservice.core.calcite.utils.parserWithOptimizerReturnValue;
-import com.chainmaker.jobservice.core.optimizer.model.FL.FlInputData;
-import com.chainmaker.jobservice.core.optimizer.model.InputData;
-import com.chainmaker.jobservice.core.optimizer.model.OutputData;
-import com.chainmaker.jobservice.core.optimizer.model.TeeModel;
-import com.chainmaker.jobservice.core.optimizer.nodes.DAG;
 import com.chainmaker.jobservice.core.optimizer.plans.*;
 import com.chainmaker.jobservice.core.parser.plans.FederatedLearning;
 import com.chainmaker.jobservice.core.parser.plans.LogicalHint;
@@ -27,15 +20,10 @@ import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
 import com.chainmaker.jobservice.core.parser.plans.LogicalProject;
 import com.chainmaker.jobservice.core.parser.tree.*;
 import com.google.gson.Gson;
-import io.lettuce.core.output.StatusOutput;
-import org.apache.calcite.plan.RelOptUtil;
+import com.sun.jna.WString;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.sql.SqlExplainFormat;
-import org.apache.calcite.sql.SqlExplainLevel;
-import org.apache.commons.lang3.SerializationUtils;
-import org.chainmaker.pb.tee.EnclaveOutcall;
-import org.springframework.beans.BeanUtils;
+import org.aspectj.apache.bcel.classfile.ModulePackages;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -50,7 +38,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         FQ, FQS, FL, FLS, CC, CCS
     }
     private enum TaskType {
-        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, RSAPSI, TEEPSI, AGG, MPCEXP, FL, TEE, MERGE, LOCALEXP, LOCALAGG
+        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, RSAPSI, TEEPSI, AGG, MPCEXP, FL, TEE, MERGE, LOCALEXP, LOCALAGG, NOTIFY
     }
 
     private class TaskNode {
@@ -87,6 +75,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private List<ServiceVo> services = new ArrayList<>();
     private List<Task> tasks = new ArrayList<>();
     private List<Task> mergedTasks = new ArrayList<>();
+    private List<Task> taskcp = new ArrayList<>();
     private HashSet<String> jobParties = new HashSet<>();
     private LogicalPlan OriginPlan;
     private LogicalHint hint;
@@ -136,11 +125,18 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             throw new ParserException("暂不支持的任务类型");
         }
 
+        // 生成tasks
         tasks.addAll(PhyPlan2Task());
-
+        // 特殊处理联邦学习相关的tasks
         generateFLTasks(OriginPlan);
-
-        mergeLocalTasks();
+        // 修改localJoin的输出数量
+        localJoinCorrect();
+        // 合并OTPSI，暂时放弃
+//        mergeOTPSI();
+        // PSI后通知所有参与表
+        notifyPSIOthers();
+        // 合并本地tasks
+//        mergeLocalTasks();
 
         job.setJobID(jobID);
         job.setJobType(jobType);
@@ -152,50 +148,181 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     }
 
     /**
-     * 将LocalJoin中output数量超过一个的都改成一个，并修改上位依赖
-     * @param root
+     * 最后一次PSI中的任意一方通知其他所有表最后的求交结果
      */
-    public void LocalJoincorrect(TaskNode root) {
-        Queue<TaskNode> q = new ArrayDeque<>();
-        for (TaskNode node : root.inputs) {
-            q.add(node);
+    public void notifyPSIOthers() {
+        int n = tasks.size();
+        HashSet<String> notifyList = new HashSet<>();
+        HashMap<String, String> affectedOutputNames = new HashMap<>();
+        int maxPSIid = 0;
+        String leader1 = null;  // 多方PSI后最后的通知方，选择一个即可，留两个是为了之后可能会选择更优的那个来进行通知
+        String leader2 = null;
+        for (int i = 0; i < n; i++) {
+            if (tasks.get(i).getModule().getModuleName().equals(TaskType.OTPSI.name())) {
+                maxPSIid = i;
+                leader1 = tasks.get(i).getInput().getData().get(0).getParams().getString("table");
+                leader2 = tasks.get(i).getInput().getData().get(1).getParams().getString("table");
+                notifyList.add(leader1);
+                notifyList.add(leader2);
+                for (TaskOutputData outputData : tasks.get(i).getOutput().getData()) {
+                    String[] tmp = outputData.getDataName().split("-");
+                    affectedOutputNames.put(tmp[0], tmp[1]);
+                }
+            }
         }
-        List<Boolean> vis = new ArrayList<>(tasks.size());
-        for (int i = 0; i < tasks.size(); i++) {
-            vis.add(false);
+        // 如果PSI次数小于等于1次，则不需要进行额外通知
+        if (affectedOutputNames.size() <= 2) {
+            return;
         }
-        while (!q.isEmpty()) {
-            TaskNode tn = q.remove();
-            if (vis.get(tn.taskID)) {
+
+        // 基本信息
+        Task task = basicTask(String.valueOf(cnt));
+
+        // module信息（即进行什么操作）
+        Module module = new Module();
+        module.setModuleName(TaskType.NOTIFY.name());
+        JSONObject moduleparams = new JSONObject(true);
+        moduleparams.put("leader", leader1);
+        module.setParams(moduleparams);
+        task.setModule(module);
+
+        // 输入信息
+        Input input = new Input();
+        List<TaskInputData> inputDatas = new ArrayList<>();
+        for (String table : notifyList) {
+            if (table.equals(leader1) || table.equals(leader2)) {
                 continue;
             }
-            vis.set(tn.taskID, true);
-            Task t = tasks.get(tn.taskID);
-            for (int i = 0; i < tn.inputs.size(); i++) {
-                q.add(tn.inputs.get(i));
-            }
-            if (t.getModule().getModuleName().equals(TaskType.LOCALJOIN.name()) && tn.partyIds.size() == 1) {
-                // 记录旧的outputName
-                HashSet<String> outputNames = new HashSet<>();
-                int n = t.getOutput().getData().size();
-                for (int i = 0; i < n; i++) {
-                    outputNames.add(t.getOutput().getData().get(i).getDataName());
-                }
-                // 删除多余的output，修改outputName
-                for (int i = 1; i < n; i++) {
-                    t.getOutput().getData().remove(i);
-                }
-                String outName = "LOCAL-" + t.getTaskName();
-                t.getOutput().getData().get(0).setDataName(outName);
+            TaskInputData inputData = new TaskInputData();
+            inputData.setRole("follower");
+            inputData.setDataName(table + "-" + affectedOutputNames.get(table));
+            inputData.setTaskSrc(affectedOutputNames.get(table));
+            inputData.setDomainID(metadata.getTableOrgId(table));
+            JSONObject inputDataParams = new JSONObject(true);
+            inputDataParams.put("table", table);
+            inputData.setParams(inputDataParams);
+            inputDatas.add(inputData);
+        }
+        input.setData(inputDatas);
+        task.setInput(input);
 
-                // 修改上位依赖项
-                for (int i = 0; i < tn.fathers.size(); i++) {
-                    Task ft = tasks.get(tn.fathers.get(i).taskID);
-                    for (TaskInputData inputData : ft.getInput().getData()) {
-                        String inputName = inputData.getDataName();
-                        if (outputNames.contains(inputName)) {
-                            inputData.setDataName(outName);
-                        }
+
+        // 输出信息
+        Output output = new Output();
+        List<TaskOutputData> outputDatas = new ArrayList<>();
+        for (TaskInputData inputData : inputDatas) {
+            TaskOutputData outputData = new TaskOutputData();
+            outputData.setDataName(inputData.getParams().get("table") + "-" + task.getTaskName());
+            outputData.setDomainID(inputData.getDomainID());
+            outputData.setFinalResult("N");
+            outputDatas.add(outputData);
+        }
+        output.setData(outputDatas);
+        task.setOutput(output);
+
+        // parties信息
+        List<Party> parties = new ArrayList<>();
+        HashSet<String> partySet = new HashSet<>();
+        for (TaskInputData inputData : inputDatas) {
+            partySet.add(inputData.getDomainID());
+        }
+        for (String value : partySet) {
+            Party party = new Party();
+            party.setServerInfo(null);
+            party.setStatus(null);
+            party.setTimestamp(null);
+            party.setPartyID(value);
+            parties.add(party);
+        }
+        task.setParties(parties);
+        tasks.add(task);
+
+        // 通知上位依赖，outputDataName的修改
+        for (int i = maxPSIid+1; i < n; i++) {
+            for (TaskInputData inputData : tasks.get(i).getInput().getData()) {
+                String oldDataName = inputData.getDataName();
+                String[] tmp = oldDataName.split("-");
+                if (tmp[0].equals(leader1) || tmp[0].equals(leader2)) {
+                    continue;
+                }
+                String oldID = affectedOutputNames.get(tmp[0]);
+                if (tmp[1].equals(oldID)) {
+                    inputData.setDataName(tmp[0] + "-" + task.getTaskName());
+                }
+            }
+        }
+    }
+
+    /**
+     * 合并tasks中的所有OTPSI，可以适配更多的底层实现方法
+     * 暂时弃用，改用添加额外的通知task
+     */
+    @Deprecated
+    public void mergeOTPSI() {
+        // 找出所有的OTPSI 的 input、output、parties信息
+        List<TaskInputData> inputDataList = new ArrayList<>();
+        HashSet<Party> parties = new HashSet<>();
+        HashSet<String> outputNames = new HashSet<>();
+        int lastOTPSItaskId = -1;
+        for (int i = 0; i < tasks.size(); i++) {
+            Task t = tasks.get(i);
+            if (!t.getModule().getModuleName().equals(TaskType.OTPSI.name())) {
+                continue;
+            }
+            inputDataList.addAll(t.getInput().getData());
+            parties.addAll(t.getParties());
+            for (int j = 0; i < t.getOutput().getData().size(); i++) {
+                outputNames.add(t.getOutput().getData().get(i).getDataName().split("-")[0]);
+            }
+            lastOTPSItaskId = i;
+        }
+
+        // 修改最后一个OTPSI的task信息
+        if (inputDataList.size() <= 2) {
+            return;
+        }
+        Task t = tasks.get(lastOTPSItaskId);
+        t.setParties(List.copyOf(parties));
+        List<TaskInputData> newInputDataList = new ArrayList<>();
+        for (int i = 0; i < inputDataList.size(); i += 2) {
+
+        }
+
+        // 改变上位依赖项
+
+    }
+
+
+    /**
+     * 修改LocalJoin中的output数量 超过一个的都改成一个，并修改上位依赖
+     * @param
+     */
+    public void localJoinCorrect() {
+        for (int taskID = 0; taskID < tasks.size(); taskID++) {
+            Task t = tasks.get(taskID);
+            if (!t.getModule().getModuleName().equals(TaskType.LOCALJOIN.name())) {
+                continue;
+            }
+            // 记录旧的outputName
+            HashSet<String> outputNames = new HashSet<>();
+            int n = t.getOutput().getData().size();
+            for (int i = 0; i < n; i++) {
+                outputNames.add(t.getOutput().getData().get(i).getDataName());
+            }
+            // 删除多余的output，修改outputName
+            for (int i = 1; i < n; i++) {
+                t.getOutput().getData().remove(i);
+            }
+            String outName = "LOCALJOIN-" + t.getTaskName();
+            t.getOutput().getData().get(0).setDataName(outName);
+
+            // 修改上位依赖项
+            for (int i = taskID + 1; i < tasks.size(); i++) {
+                Task ft = tasks.get(i);
+                for (TaskInputData inputData : ft.getInput().getData()) {
+                    String inputName = inputData.getDataName();
+                    if (outputNames.contains(inputName)) {
+                        inputData.setDataName(outName);
                     }
                 }
             }
@@ -208,8 +335,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     public void mergeLocalTasks() {
         // 1、构建Task调用关系树
         TaskNode root = buildTaskTree();
-        // 2、修正LocalJoin的output数量
-        LocalJoincorrect(root);
+        // 2、先复制一份tasks
+        makeTackCp();
         // 3、遍历该树，对LocalTask节点进行merge
         dfsTaskTree(root);
         // 4、排序mergedTasks
@@ -222,18 +349,37 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     }
 
     /**
+     * 深拷贝tasks
+     */
+    private void makeTackCp() {
+        Gson gson = new Gson();
+        for (int i = 0; i < tasks.size(); i++) {
+            taskcp.add(gson.fromJson(gson.toJson(tasks.get(i)), Task.class));
+            String moduleName = taskcp.get(i).getModule().getModuleName();
+            if (moduleName.equals(TaskType.LOCALEXP.name()) || moduleName.equals(TaskType.LOCALAGG.name()) || moduleName.startsWith(TaskType.AGG.name())) {
+                for (TaskInputData inputData : taskcp.get(i).getInput().getData()) {
+                    List<Double> doubleList = (List<Double>) inputData.getParams().get("index");
+                    List<Integer> integerList = new ArrayList<>();
+                    for (double j : doubleList) {
+                        integerList.add((int) j);
+                    }
+                    inputData.getParams().put("index", integerList);
+                }
+            }
+        }
+    }
+
+    /**
      * 具体merge操作的实现
      * @param root
      * @return
      */
     public Task mergeTaskTree(TaskNode root) {
-        Task ori = tasks.get(root.taskID);
-        Gson gson = new Gson();
-        Task ans = gson.fromJson(gson.toJson(ori), Task.class);
-//        TaskCp(ori, ans);
+        Task ans = taskcp.get(root.taskID);
         String sql = "select ProjectString from TableJoinString where PredicateString";
         String ProjectString = "", TableJoinString = "", PredicateString = "";
         HashSet<String> inputTables = new HashSet<>();
+        HashSet<String> outputTables = new HashSet<>();
         Queue<TaskNode> q = new ArrayDeque<>();
         q.add(root);
         List<Boolean> vis = new ArrayList<>(root.taskID+1);
@@ -246,7 +392,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 continue;
             }
             vis.set(tn.taskID, true);
-            Task t = tasks.get(tn.taskID);
+            Task t = taskcp.get(tn.taskID);
             for (int i = 0; i < tn.inputs.size(); i++) {
                 q.add(tn.inputs.get(i));
             }
@@ -257,6 +403,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     String table = t.getInput().getData().get(0).getParams().getString("table");
                     String field = t.getInput().getData().get(0).getParams().getString("field");
                     inputTables.add(table);
+                    outputTables.add(t.getOutput().getData().get(0).getDataName());
                     String predicate = table + "." + field + op + constant;
                     if (PredicateString.equals("")) {
                         PredicateString += predicate;
@@ -275,12 +422,14 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     String joinCond = leftTable + "." + leftField + joinOp + rightTable + "." + rightField;
                     inputTables.add(leftTable);
                     inputTables.add(rightTable);
+                    outputTables.add(t.getOutput().getData().get(0).getDataName());
+                    outputTables.add(t.getOutput().getData().get(1).getDataName());
                     if (TableJoinString.equals("")) {
                         TableJoinString += "(" + leftTable + " join " + rightTable + " on " + joinCond + ")";
                     } else {
                         // 还需要考虑四个Table，先两两Join，再Join的情况，暂时没有支持
                         TableJoinString = "(" + TableJoinString;
-                        boolean isLeftLocalJoin = tasks.get(Integer.parseInt(t.getInput().getData().get(0).getTaskSrc())).getModule().getModuleName().equals(TaskType.LOCALJOIN.name());
+                        boolean isLeftLocalJoin = taskcp.get(Integer.parseInt(t.getInput().getData().get(0).getTaskSrc())).getModule().getModuleName().equals(TaskType.LOCALJOIN.name());
                         if (isLeftLocalJoin) {
                             TableJoinString += " join " + rightTable + " on " + joinCond + ")";
                         } else {
@@ -294,6 +443,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     String field = t.getInput().getData().get(0).getParams().getString("field");
                     String proj = table + "." + field;
                     inputTables.add(table);
+                    outputTables.add(t.getOutput().getData().get(0).getDataName());
                     if (ProjectString.equals("")) {
                         ProjectString += proj;
                     } else {
@@ -314,19 +464,24 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     int xpos = exp.indexOf('x', 0);
                     List<TaskInputData> list = t.getInput().getData();
                     for (int i = 0; i < xnum; i++) {
-                        List<Integer> index = (List<Integer>) list.get(i).getParams().get("index");
-                        if (!index.contains(i)) {
-                            continue;
-                        }
-                        while (pos < xpos) {
-                            proj += exp.charAt(pos);
+                        for (TaskInputData inputData : list) {
+                            List<Integer> index = (List<Integer>) inputData.getParams().get("index");
+                            if (!index.contains(i)) {
+                                continue;
+                            }
+                            while (pos < xpos) {
+                                proj += exp.charAt(pos);
+                                pos++;
+                            }
                             pos++;
+                            String table = inputData.getParams().getString("table");
+                            String field = inputData.getParams().getString("field");
+                            inputTables.add(table);
+                            outputTables.add(t.getOutput().getData().get(0).getDataName());
+                            proj += table + "." + field;
+                            xpos = exp.indexOf('x', xpos + 1);
+                            break;
                         }
-                        pos++;
-                        String table = list.get(i).getParams().getString("table");
-                        String field = list.get(i).getParams().getString("field");
-                        proj += table + "." + field;
-                        xpos = exp.indexOf('x', xpos+1);
                     }
                     if (ProjectString.equals("")) {
                         ProjectString += proj;
@@ -359,6 +514,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                         pos++;
                         String table = list.get(i).getParams().getString("table");
                         String field = list.get(i).getParams().getString("field");
+                        inputTables.add(table);
+                        outputTables.add(t.getOutput().getData().get(0).getDataName());
                         proj += table + "." + field;
                         xpos = exp.indexOf('x', xpos+1);
                     }
@@ -385,6 +542,24 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
         ans.getInput().setData(inputDataList);
 
+        // 删除多余的output，修改outputName
+        for (int i = 1; i < ans.getOutput().getData().size(); i++) {
+            ans.getOutput().getData().remove(i);
+        }
+        String outName = "LOCAL-" + ans.getTaskName();
+        ans.getOutput().getData().get(0).setDataName(outName);
+
+        // 修改上位依赖
+        for (int i = root.taskID+1; i < tasks.size(); i++) {
+            Task ft = taskcp.get(i);
+            for (TaskInputData inputData : ft.getInput().getData()) {
+                String inputName = inputData.getDataName();
+                if (outputTables.contains(inputName)) {
+                    inputData.setDataName(outName);
+                }
+            }
+        }
+
         // 反向生成sql并填写相关module信息
         ans.getModule().setModuleName(TaskType.MERGE.name());
         ans.getModule().getParams().clear();
@@ -401,26 +576,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     }
 
     /**
-     * 深拷贝一个Task，最好是调用深拷贝方法或者实现clone，这是暂时解决方法
-     * @param source
-     * @param target
-     */
-    private void TaskCp(Task source, Task target) {
-        target.setVersion(source.getVersion());
-        target.setJobID(source.getJobID());
-        target.setCreateTime(source.getCreateTime());
-        target.setUpdateTime(source.getUpdateTime());
-        target.setStatus(source.getStatus());
-        target.setTaskName(source.getTaskName());
-        target.setParties(source.getParties());
-        target.setModule(new Module());
-        target.getModule().setParams(new JSONObject());
-        target.setInput(new Input());
-        target.setOutput(new Output());
-        target.getOutput().setData(source.getOutput().getData());
-    }
-
-    /**
      * 遍历Task调用关系树，对Local节点进行merge
      * @param root
      */
@@ -429,14 +584,16 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             return;
         }
         root.isMerged = true;
-        if (root.taskID != -1 && root.isLocal() && root.inputs.size() > 0) {
-            System.out.println("mergedTask ID = " + root.taskID);
-            mergedTasks.add(mergeTaskTree(root));
-            return;
+        if (root.taskID != -1 && root.isLocal()) {
+            if (root.inputs.size() > 0) {
+                System.out.println("mergedTask ID = " + root.taskID);
+                mergedTasks.add(mergeTaskTree(root));
+                return;
+            }
         }
         if (root.taskID != -1) {
             System.out.println("notMergedTask ID = " + root.taskID);
-            mergedTasks.add(tasks.get(root.taskID));
+            mergedTasks.add(taskcp.get(root.taskID));
         }
         for (int i = 0; i < root.inputs.size(); i++) {
             dfsTaskTree(root.inputs.get(i));
@@ -450,6 +607,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     public TaskNode buildTaskTree() {
         TaskNode root = new TaskNode(-1);
         List<TaskNode> nodes = new ArrayList<>();
+        HashSet<String> PSIPartyIds = new HashSet<>();
         for (int i = 0; i < tasks.size(); i++) {
             Task t = tasks.get(i);
             TaskNode node = new TaskNode(i);
@@ -463,10 +621,16 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     node.partyIds.addAll(nodes.get(idx).partyIds);
                 }
             }
+            // 如果发生PSI，则后续partyIds将至少包含该node的partyIds（这里的partyIds专用于判断是否可以merge，和task本身的有区别）
+            if (t.getModule().getModuleName().equals(TaskType.OTPSI.name())) {
+                PSIPartyIds.addAll(node.partyIds);
+            }
             // merge parties
             for (Party p : t.getParties()) {
                 node.partyIds.add(p.getPartyID());
             }
+            node.partyIds.addAll(PSIPartyIds);
+
             nodes.add(node);
             if (t.getOutput().getData().get(0).getFinalResult().equals("Y")) {
                 root.inputs.add(node);
@@ -758,33 +922,32 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     public List<Task> generateTasks(Stack<String> stk) {
         List<Task> tasks = new ArrayList<>();
 
-        Stack<List<String>> operands = new Stack<>();
+//        Stack<List<String>> operands = new Stack<>();
+        List<String> operands = new ArrayList<>();
         while (!stk.isEmpty()) {
             String s = stk.pop().trim();
 //            System.out.println("current str = " + s);
             List<String> params = List.of(s.split("\\[|]"));
             if (s.startsWith("MPCTableScan")) {
                 // MPCTableScan [TC], 直接加入操作栈
-                List<String> tslist = new ArrayList<>();
-                tslist.add(params.get(1));
-                operands.add(tslist);
+                String table = params.get(1);
+                operands.add(0, table);
             } else if (s.startsWith("MPCJoin")) {
                 // MPCJoin [JoinType[INNER], JoinCond[=($0, $2)], $ from [TA.ID, TA.AGE, TC.ID]]
-                // 默认都是两两PSI，所以取两个操作数
-                List<String> lefts = operands.pop();
-                List<String> rights = operands.pop();
+//                // 默认都是两两PSI，所以取两个操作数
+//                List<String> lefts = operands.pop();
+//                List<String> rights = operands.pop();
 
                 // 完成string到Task的转换
-                Task PSITask = str2Task(s, cnt, "PSI", lefts, rights, false);
+//                Task PSITask = str2Task(s, cnt, "PSI", lefts, rights, false);
+                Task PSITask = str2Task(s, cnt, "PSI", operands, false);
                 tasks.add(PSITask);
 
                 // 该task的输出作为下一个的输入加入操作数栈
                 Output PSIOutput = PSITask.getOutput();
-                List<String> outputDataNames = new ArrayList<>();
                 for (TaskOutputData outputData : PSIOutput.getData()) {
-                    outputDataNames.add(outputData.getDataName());
+                    operands.add(0, outputData.getDataName());
                 }
-                operands.add(outputDataNames);
                 cnt++;
             } else if (s.startsWith("MPCFilter")) {
                 // MPCFilter [FilterCond[AND(>($0, 10), <($1, 50))] $ from [TA.ID, TA.AGE]]
@@ -804,19 +967,20 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 } else {
                     // 如果是单独Cond的情况，则直接生成Task
                     // MPCFilter [FilterCond[>($0, 10)] $ from [TA.ID, TA.AGE]]
-                    List<String> childTaskNames = operands.pop();
+//                    List<String> childTaskNames = operands.pop();
                     Task FilterTask;
                     String cond = params.get(2);
                     if (cond.substring(0, cond.indexOf(",")).contains("$") && cond.substring(cond.indexOf(",")).contains("$")) {
-                        FilterTask = str2Task(s, cnt, "VariableFilter", childTaskNames, null, false);
+//                        FilterTask = str2Task(s, cnt, "VariableFilter", childTaskNames, null, false);
+                        FilterTask = str2Task(s, cnt, "VariableFilter", operands, false);
                     } else {
-                        FilterTask = str2Task(s, cnt, "ConstantFilter", childTaskNames, null, false);
+//                        FilterTask = str2Task(s, cnt, "ConstantFilter", childTaskNames, null, false);
+                        FilterTask = str2Task(s, cnt, "ConstantFilter", operands, false);
                     }
                     tasks.add(FilterTask);
                     Output FilterOutput = FilterTask.getOutput();
-                    List<String> outputDataNames = new ArrayList<>();
-                    outputDataNames.add(FilterOutput.getData().get(0).getDataName());
-                    operands.add(outputDataNames);
+                    String outputDataName = FilterOutput.getData().get(0).getDataName();
+                    operands.add(0, outputDataName);
                     cnt++;
                 }
             } else if (s.startsWith("MPCProject")) {
@@ -838,19 +1002,22 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     }
                 } else {
                     // 已经是单独的Project
-                    List<String> childNames = operands.pop();
+//                    List<String> childNames = operands.pop();
                     Task ProjectTask;
 
                     if (s.contains("MAX") || s.contains("MIN") || s.contains("COUNT") ||
                             s.contains("AVG") || s.contains("SUM") || s.contains("+") || s.contains("-") || s.contains("*") || s.contains("/")) {
-                        ProjectTask = str2Task(s, cnt, "MPC", childNames, null, true);
+//                        ProjectTask = str2Task(s, cnt, "MPC", childNames, null, true);
+                        ProjectTask = str2Task(s, cnt, "MPC", operands, true);
                     } else {
-                        ProjectTask = str2Task(s, cnt, "QUERY", childNames, null, true);
+//                        ProjectTask = str2Task(s, cnt, "QUERY", childNames, null, true);
+                        ProjectTask = str2Task(s, cnt, "QUERY", operands, true);
                     }
                     tasks.add(ProjectTask);
 //                    Output ProjectOutput = ProjectTask.getOutput();
-//                    String outputDataName = ProjectOutput.getData().get(0).getDataName();
-                    operands.add(childNames);
+//                    for (TaskOutputData outputData : ProjectOutput.getData()) {
+//                        operands.add(0, outputData.getDataName());
+//                    }
                     cnt++;
                 }
             } else {
@@ -865,7 +1032,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * @param str
      * @return
      */
-    public Task str2Task(String str, int curTaskName, String moduleName, List<String> leftDataName, List<String> rightDataName, boolean isFinalResult) {
+    public Task str2Task(String str, int curTaskName, String moduleName, List<String> inputTables, boolean isFinalResult) {
         // 生成具有基本信息的Task对象
         Task task = basicTask(String.valueOf(curTaskName));
         List<String> params = List.of(str.split("\\[|]"));
@@ -983,7 +1150,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     String leftTable = tableField.split("\\.")[0];
                     String leftField = tableField.split("\\.")[1];
 
-                    for (String dataName : leftDataName) {
+                    for (String dataName : inputTables) {
                         if (dataName.startsWith(leftTable)) {
                             inputdata1.setDataName(dataName);
                             if (dataName.contains("-")) {
@@ -1011,7 +1178,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     String rightTable = tableField.split("\\.")[0];
                     String rightField = tableField.split("\\.")[1];
 
-                    for (String dataName : rightDataName) {
+                    for (String dataName : inputTables) {
                         if (dataName.startsWith(rightTable)) {
                             inputdata2.setDataName(dataName);
                             if (dataName.contains("-")) {
@@ -1060,7 +1227,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 String tableField = params.get(4).split(",")[index].trim();
                 String table = tableField.split("\\.")[0];
                 String field = tableField.split("\\.")[1];
-                for (String dataName : leftDataName) {
+                for (String dataName : inputTables) {
                     if (dataName.startsWith(table)) {
                         inputdata.setDataName(dataName);
                         if (dataName.contains("-")) {
@@ -1119,7 +1286,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     String table = tableField.split("\\.")[0];
                     String field = tableField.split("\\.")[1];
                     TaskInputData inputdata = new TaskInputData();
-                    for (String dataName : leftDataName) {
+                    for (String dataName : inputTables) {
                         if (dataName.startsWith(table)) {
                             inputdata.setDataName(dataName);
                             if (dataName.contains("-")) {
@@ -1157,7 +1324,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 String table = tableField.split("\\.")[0];
                 String field = tableField.split("\\.")[1];
                 TaskInputData inputdata = new TaskInputData();
-                for (String dataName : leftDataName) {
+                for (String dataName : inputTables) {
                     if (dataName.startsWith(table)) {
                         inputdata.setDataName(dataName);
                         if (dataName.contains("-")) {
@@ -1279,14 +1446,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             jobParties.add(party.getPartyID());
         }
 
-
         moduleNameCorrect(task);
 
         return task;
     }
 
     /**
-     *
+     * 细分ModuleName
      * @param task
      */
     public void moduleNameCorrect(Task task) {
