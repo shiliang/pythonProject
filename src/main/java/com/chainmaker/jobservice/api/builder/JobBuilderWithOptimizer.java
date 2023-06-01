@@ -38,7 +38,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         FQ, FQS, FL, FLS, CC, CCS
     }
     private enum TaskType {
-        QUERY, LOCALFILTER, LOCALJOIN, PSIVOLE, PSIRSA, TEEPSI, AGG, MPCEXP, FL, TEE, LOCALMERGE, LOCALEXP, LOCALAGG, NOTIFY
+        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, PSIRSA, TEEPSI, AGG, MPCEXP, FL, TEE, LOCALMERGE, LOCALEXP, LOCALAGG, NOTIFY
     }
 
     private class TaskNode {
@@ -158,7 +158,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         String leader1 = null;  // 多方PSI后最后的通知方，选择一个即可，留两个是为了之后可能会选择更优的那个来进行通知
         String leader2 = null;
         for (int i = 0; i < n; i++) {
-            if (tasks.get(i).getModule().getModuleName().equals(TaskType.PSIVOLE.name())) {
+            if (tasks.get(i).getModule().getModuleName().equals(TaskType.OTPSI.name())) {
                 maxPSIid = i;
                 leader1 = tasks.get(i).getInput().getData().get(0).getParams().getString("table");
                 leader2 = tasks.get(i).getInput().getData().get(1).getParams().getString("table");
@@ -266,7 +266,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         int lastOTPSItaskId = -1;
         for (int i = 0; i < tasks.size(); i++) {
             Task t = tasks.get(i);
-            if (!t.getModule().getModuleName().equals(TaskType.PSIVOLE.name())) {
+            if (!t.getModule().getModuleName().equals(TaskType.OTPSI.name())) {
                 continue;
             }
             inputDataList.addAll(t.getInput().getData());
@@ -622,7 +622,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 }
             }
             // 如果发生PSI，则后续partyIds将至少包含该node的partyIds（这里的partyIds专用于判断是否可以merge，和task本身的有区别）
-            if (t.getModule().getModuleName().equals(TaskType.PSIVOLE.name())) {
+            if (t.getModule().getModuleName().equals(TaskType.OTPSI.name())) {
                 PSIPartyIds.addAll(node.partyIds);
             }
             // merge parties
@@ -1462,7 +1462,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     logicalHintFix(task);
                 } else {
                     if (task.getParties().size() > 1) {
-                        task.getModule().setModuleName(TaskType.PSIVOLE.name());
+                        task.getModule().setModuleName(TaskType.OTPSI.name());
                     } else {
                         task.getModule().setModuleName(TaskType.LOCALJOIN.name());
                     }
