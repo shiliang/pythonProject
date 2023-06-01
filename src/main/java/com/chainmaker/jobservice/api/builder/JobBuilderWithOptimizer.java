@@ -100,8 +100,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         JobTemplate jobTemplate = new JobTemplate();
         jobTemplate.setJob(job);
         jobTemplate.setServices(services);
-        jobTemplate.setTasks(tasks);
-//        jobTemplate.setTasks(mergedTasks);
+//        jobTemplate.setTasks(tasks);
+        jobTemplate.setTasks(mergedTasks);
         return jobTemplate;
     }
 
@@ -136,7 +136,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         // PSI后通知所有参与表
         notifyPSIOthers();
         // 合并本地tasks
-//        mergeLocalTasks();
+        mergeLocalTasks();
 
         job.setJobID(jobID);
         job.setJobType(jobType);
@@ -423,7 +423,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     inputTables.add(leftTable);
                     inputTables.add(rightTable);
                     outputTables.add(t.getOutput().getData().get(0).getDataName());
-                    outputTables.add(t.getOutput().getData().get(1).getDataName());
+//                    outputTables.add(t.getOutput().getData().get(1).getDataName());
                     if (TableJoinString.equals("")) {
                         TableJoinString += "(" + leftTable + " join " + rightTable + " on " + joinCond + ")";
                     } else {
