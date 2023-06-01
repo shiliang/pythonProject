@@ -28,10 +28,10 @@ public class Driver {
 //        String query = "SELECT AVG(ADATA.A1), ADATA.A2+ADATA.A1, CDATA.C3+CDATA.C3, ADATA.A1 FROM (ADATA JOIN BDATA ON ADATA.A1=BDATA.B1) JOIN CDATA ON ADATA.A2=CDATA.C2 WHERE BDATA.B1>3 AND ADATA.A2<10";
 //        String query = "select avg(adata.a1) from adata join bdata on adata.a1=bdata.b1 where adata.a1>10 and bdata.b1>5";
 //        String query = "select adata.a1 from (adata join bdata on adata.a1=bdata.b1) join cdata on adata.a2=cdata.c2 where adata.a1>5";
-//        String query = "select adata.a1 from (adata join cdata on adata.a1=cdata.c1) join bdata on adata.a2=bdata.b2 where adata.a1>5";
+        String query = "select adata.a1 from (adata join cdata on adata.a1=cdata.c1) join bdata on adata.a2=bdata.b2 where adata.a1>5";
 //        String query = "select adata.a1, adata.a2 from adata join bdata on adata.a1=bdata.b1 where adata.a1>10 and bdata.b1>5";   strange test
 //        String query = "select adata.a1 from adata union select bdata.b1 from bdata";
-        String query = "select adata.a1 from (adata join cdata on adata.a1=cdata.c1) join bdata on adata.id=bdata.id";
+//        String query = "select adata.a1 from (adata join cdata on adata.a1=cdata.c1) join bdata on adata.id=bdata.id";
 
         // modelType:
         // 0： 联邦查询
