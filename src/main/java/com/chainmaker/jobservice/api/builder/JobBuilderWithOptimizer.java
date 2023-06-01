@@ -594,7 +594,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         Module module = new Module();
         module.setModuleName(TaskType.FL.name());
         JSONObject moduleParams = new JSONObject(true);
-        moduleParams.put("intersection", parseFLParams(expression.getPsi()));
+        if (expression.getPsi().size() != 0) {
+            moduleParams.put("intersection", parseFLParams(expression.getPsi()));
+        }
         moduleParams.put("fl", parseFLParams(expression.getFl()));
         moduleParams.put("model", parseFLParams(expression.getModel()));
         moduleParams.put("eval", parseFLParams(expression.getEval()));
