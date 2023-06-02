@@ -100,8 +100,11 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         JobTemplate jobTemplate = new JobTemplate();
         jobTemplate.setJob(job);
         jobTemplate.setServices(services);
-//        jobTemplate.setTasks(tasks);
-        jobTemplate.setTasks(mergedTasks);
+        if (modelType == 1) {
+            jobTemplate.setTasks(tasks);
+        } else {
+            jobTemplate.setTasks(mergedTasks);
+        }
         return jobTemplate;
     }
 
@@ -137,6 +140,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         notifyPSIOthers();
         // 合并本地tasks
         mergeLocalTasks();
+        System.out.println("task: " + tasks);
 
         job.setJobID(jobID);
         job.setJobType(jobType);
