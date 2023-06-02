@@ -1505,8 +1505,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 List<String> values = kv.getValues();
                 task.getModule().setModuleName(TaskType.TEEPSI.name());
                 JSONObject params = task.getModule().getParams();
-                params.put("teeHost", "127.0.0.1");
-                params.put("teePort", "80");
+                params.put("teeHost", "172.16.12.230");
+                params.put("teePort", "30091");
                 for (TaskOutputData output : task.getOutput().getData()) {
                     output.setDomainID("");
                 }
