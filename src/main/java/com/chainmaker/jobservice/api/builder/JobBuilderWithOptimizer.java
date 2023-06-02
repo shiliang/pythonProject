@@ -21,8 +21,11 @@ import com.chainmaker.jobservice.core.parser.plans.LogicalProject;
 import com.chainmaker.jobservice.core.parser.tree.*;
 import com.google.gson.Gson;
 import com.sun.jna.WString;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.sql.SqlExplainFormat;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.aspectj.apache.bcel.classfile.ModulePackages;
 
 import java.io.BufferedReader;
@@ -100,8 +103,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         JobTemplate jobTemplate = new JobTemplate();
         jobTemplate.setJob(job);
         jobTemplate.setServices(services);
-//        jobTemplate.setTasks(tasks);
-        jobTemplate.setTasks(mergedTasks);
+        jobTemplate.setTasks(tasks);
+//        jobTemplate.setTasks(mergedTasks);
         return jobTemplate;
     }
 
@@ -125,18 +128,19 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             throw new ParserException("暂不支持的任务类型");
         }
 
+
         // 生成tasks
         tasks.addAll(PhyPlan2Task());
         // 特殊处理联邦学习相关的tasks
-        generateFLTasks(OriginPlan);
+//        generateFLTasks(OriginPlan);
         // 修改localJoin的输出数量
-        localJoinCorrect();
+//        localJoinCorrect();
         // 合并OTPSI，暂时放弃
 //        mergeOTPSI();
         // PSI后通知所有参与表
-        notifyPSIOthers();
+//        notifyPSIOthers();
         // 合并本地tasks
-        mergeLocalTasks();
+//        mergeLocalTasks();
 
         job.setJobID(jobID);
         job.setJobType(jobType);
@@ -896,21 +900,22 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * 将物理计划转化成Task列表
      */
     public List<Task> PhyPlan2Task() {
-//        System.out.println(
-//                RelOptUtil.dumpPlan("[Physical plan] TEXT", phyPlan, SqlExplainFormat.TEXT,
-//                        SqlExplainLevel.ALL_ATTRIBUTES));
-        String str = tidyPhyPlan(phyPlan, 0);
-        System.out.println(str);
+        System.out.println(
+                RelOptUtil.dumpPlan("[Physical plan] TEXT", phyPlan, SqlExplainFormat.TEXT,
+                        SqlExplainLevel.ALL_ATTRIBUTES));
+        System.out.println(phyPlan.getRowType().getFieldNames());
+//        String str = tidyPhyPlan(phyPlan, 0);
+//        System.out.println(str);
         Stack<String> stk = new Stack<>();
-        BufferedReader br = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(str.getBytes(StandardCharsets.UTF_8))));
-        String line;
-        try {
-            while ((line = br.readLine()) != null) {
-                stk.add(line);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        BufferedReader br = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(str.getBytes(StandardCharsets.UTF_8))));
+//        String line;
+//        try {
+//            while ((line = br.readLine()) != null) {
+//                stk.add(line);
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
         return generateTasks(stk);
     }
 
