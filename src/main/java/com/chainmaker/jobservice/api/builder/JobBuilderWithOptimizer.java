@@ -38,7 +38,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         FQ, FQS, FL, FLS, CC, CCS
     }
     private enum TaskType {
-        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, RSAPSI, TEEPSI, AGG, MPCEXP, FL, TEE, MERGE, LOCALEXP, LOCALAGG, NOTIFY
+        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, PSIRSA, TEEPSI, AGG, MPCEXP, FL, TEE, LOCALMERGE, LOCALEXP, LOCALAGG, NOTIFY
     }
 
     private class TaskNode {
@@ -100,8 +100,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         JobTemplate jobTemplate = new JobTemplate();
         jobTemplate.setJob(job);
         jobTemplate.setServices(services);
-        jobTemplate.setTasks(tasks);
-//        jobTemplate.setTasks(mergedTasks);
+//        jobTemplate.setTasks(tasks);
+        jobTemplate.setTasks(mergedTasks);
         return jobTemplate;
     }
 
@@ -136,7 +136,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         // PSI后通知所有参与表
         notifyPSIOthers();
         // 合并本地tasks
-//        mergeLocalTasks();
+        mergeLocalTasks();
 
         job.setJobID(jobID);
         job.setJobType(jobType);
@@ -423,7 +423,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     inputTables.add(leftTable);
                     inputTables.add(rightTable);
                     outputTables.add(t.getOutput().getData().get(0).getDataName());
-                    outputTables.add(t.getOutput().getData().get(1).getDataName());
+//                    outputTables.add(t.getOutput().getData().get(1).getDataName());
                     if (TableJoinString.equals("")) {
                         TableJoinString += "(" + leftTable + " join " + rightTable + " on " + joinCond + ")";
                     } else {
@@ -561,7 +561,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
 
         // 反向生成sql并填写相关module信息
-        ans.getModule().setModuleName(TaskType.MERGE.name());
+        ans.getModule().setModuleName(TaskType.LOCALMERGE.name());
         ans.getModule().getParams().clear();
         if (ProjectString.equals("")) {
             ProjectString = "*";
@@ -758,7 +758,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         Module module = new Module();
         module.setModuleName(TaskType.FL.name());
         JSONObject moduleParams = new JSONObject(true);
-        moduleParams.put("intersection", parseFLParams(expression.getPsi()));
+        if (expression.getPsi().size() != 0) {
+            moduleParams.put("intersection", parseFLParams(expression.getPsi()));
+        }
         moduleParams.put("fl", parseFLParams(expression.getFl()));
         moduleParams.put("model", parseFLParams(expression.getModel()));
         moduleParams.put("eval", parseFLParams(expression.getEval()));
@@ -771,6 +773,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         List<List<FlExpression>> labels = expression.getLabels();
         for (int i = 0; i < labels.size(); i++) {
             inputDataList.add(parseFLLabel(labels.get(i)));
+        }
+        if (inputDataList.get(0).getRole().equals(inputDataList.get(1).getRole())) {
+            if (inputDataList.get(0).getRole().equals("guest")) {
+                inputDataList.get(0).setRole("host");
+            } else {
+                inputDataList.get(0).setRole("guest");
+            }
         }
         input.setData(inputDataList);
         task.setInput(input);
@@ -1532,8 +1541,11 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 List<String> values = kv.getValues();
                 task.getModule().setModuleName(TaskType.TEEPSI.name());
                 JSONObject params = task.getModule().getParams();
-                params.put("teeHost", values.get(0).replaceAll("'", ""));
-                params.put("teePort", values.get(1));
+                params.put("teeHost", "172.16.12.230");
+                params.put("teePort", "30091");
+                for (TaskOutputData output : task.getOutput().getData()) {
+                    output.setDomainID("");
+                }
                 break;
             }
         }

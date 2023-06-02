@@ -93,6 +93,7 @@ HOSB: 'HOSB';
 HELR: 'HELR';
 HEKMS: 'HEKMS';
 HELNR: 'HELNR';
+HOLR: 'HOLR';
 EVAL: 'EVAL';
 
 // NOTE: If you add a new token in the list below, you should update the list of keywords
