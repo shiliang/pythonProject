@@ -16,7 +16,6 @@ import com.chainmaker.jobservice.core.calcite.utils.parserWithOptimizerReturnVal
 import com.chainmaker.jobservice.core.optimizer.PlanOptimizer;
 import com.chainmaker.jobservice.core.optimizer.nodes.DAG;
 import com.chainmaker.jobservice.core.optimizer.plans.PhysicalPlan;
-import com.chainmaker.jobservice.core.parser.LogicalPlanBuilder;
 import com.chainmaker.jobservice.core.parser.LogicalPlanBuilderV2;
 import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
 import com.chainmaker.jobservice.core.parser.printer.LogicalPlanPrinter;

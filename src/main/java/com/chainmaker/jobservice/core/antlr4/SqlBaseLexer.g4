@@ -83,11 +83,20 @@ RIGHT_BRACKET: ']';
 FL: 'FL';
 FLLABEL: 'FLLABEL';
 INTERSECTION: 'INTERSECTION';
-HEFB: 'HEFB';    // feature binning
-HEFSL: 'HEFSL';  // feature selection
-HEFSP: 'HEFSP';  // sampling
-HEFSC: 'HEFSC';  // feature scale
+
+
 HEDS: 'HEDS';   // data statistic
+
+HEFSL: 'HEFSL';
+HOFSL: 'HOFSL';
+HEFB: 'HEFB';
+HOFB: 'HOFB';
+HEFSC: 'HEFSC';
+HEFSP: 'HEFSP';
+HEFIM: 'HEFIM';
+HEPEAR: 'HEPEAR';
+HO1HOT: 'HO1HOT';
+
 HESB: 'HESB';
 HOSB: 'HOSB';
 HELR: 'HELR';

@@ -7,11 +7,11 @@ public class FederatedLearningExpression extends Expression {
     private final List<FlExpression> fl;
     private final List<List<FlExpression>> labels;
     private final List<FlExpression>  psi;
-    private final List<List<FlExpression>> feat;
+    private final List<FlExpression> feat;
     private final List<FlExpression> model;
     private final List<FlExpression> eval;
 
-    public FederatedLearningExpression(List<FlExpression> fl, List<List<FlExpression>> labels, List<FlExpression> psi, List<List<FlExpression>> feat, List<FlExpression> model, List<FlExpression> eval) {
+    public FederatedLearningExpression(List<FlExpression> fl, List<List<FlExpression>> labels, List<FlExpression> psi, List<FlExpression> feat, List<FlExpression> model, List<FlExpression> eval) {
         this.fl = fl;
         this.labels = labels;
         this.psi = psi;
@@ -32,7 +32,7 @@ public class FederatedLearningExpression extends Expression {
         return psi;
     }
 
-    public List<List<FlExpression>> getFeat() {
+    public List<FlExpression> getFeat() {
         return feat;
     }
 

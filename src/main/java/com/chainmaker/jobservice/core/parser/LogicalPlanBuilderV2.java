@@ -467,8 +467,13 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         }
 
         // feat 暂不处理
-        List<List<FlExpression>> feat = new ArrayList<>();
-
+        List<FlExpression> feat = new ArrayList<>();
+        if (context.flFeatSeq().size() != 0) {
+            for (int i = 0; i < context.flFeatSeq(0).flFeat(0).flExpressionSeq().flExpression().size(); i++) {
+                FlExpression flExpression = visitFlExpression(context.flFeatSeq(0).flFeat(0).flExpressionSeq().flExpression(i));
+                feat.add(flExpression);
+            }
+        }
         List<FlExpression> model = new ArrayList<>();
         Identifier key = new Identifier("model_name");
         Identifier value = new Identifier(context.flModelSeq(0).flModel(0).model.getText());

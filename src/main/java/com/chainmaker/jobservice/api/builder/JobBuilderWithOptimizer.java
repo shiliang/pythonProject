@@ -763,6 +763,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             moduleParams.put("intersection", parseFLParams(expression.getPsi()));
         }
         moduleParams.put("fl", parseFLParams(expression.getFl()));
+        moduleParams.put("feat", parseFLParams(expression.getFeat()));
         moduleParams.put("model", parseFLParams(expression.getModel()));
         moduleParams.put("eval", parseFLParams(expression.getEval()));
         module.setParams(moduleParams);

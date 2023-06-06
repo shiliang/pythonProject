@@ -855,11 +855,7 @@ flFeatSeq
     ;
 
 flFeat
-    : HEFB '(' flExpressionSeq ')'   // feature binning
-    | HEFSL '(' flExpressionSeq ')'  // feature selection
-    | HEFSP '(' flExpressionSeq ')'  // sampling
-    | HEFSC '(' flExpressionSeq ')'  // feature scale
-    | HEDS '(' flExpressionSeq ')'   // data statistic
+    : feat=(HEFSL | HOFSL | HEFB | HOFB | HEFSC | HEFSP | HEFIM | HEPEAR | HO1HOT | HEDS) '(' flExpressionSeq ')'
     ;
 
 // model
