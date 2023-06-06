@@ -763,7 +763,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             moduleParams.put("intersection", parseFLParams(expression.getPsi()));
         }
         moduleParams.put("fl", parseFLParams(expression.getFl()));
-        moduleParams.put("feat", parseFLParams(expression.getFeat()));
+        if (expression.getFeat().size() != 0) {
+            moduleParams.put("feat", parseFLParams(expression.getFeat()));
+        }
         moduleParams.put("model", parseFLParams(expression.getModel()));
         moduleParams.put("eval", parseFLParams(expression.getEval()));
         module.setParams(moduleParams);
@@ -1368,12 +1370,40 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         input.setData(inputDatas);
         task.setInput(input);
 
+
+        // parties信息
+        List<Party> parties = new ArrayList<>();
+        HashSet<String> partySet = new HashSet<>();
+        for (TaskInputData inputData : inputDatas) {
+            partySet.add(inputData.getDomainID());
+        }
+        for (String value : partySet) {
+            Party party = new Party();
+            party.setServerInfo(null);
+            party.setStatus(null);
+            party.setTimestamp(null);
+            party.setPartyID(value);
+            parties.add(party);
+        }
+        task.setParties(parties);
+
+        for (Party party : parties) {
+            jobParties.add(party.getPartyID());
+        }
+
         // 输出信息
         Output output = new Output();
         List<TaskOutputData> outputDatas = new ArrayList<>();
         TaskOutputData outputdata1 = new TaskOutputData();
         TaskOutputData outputdata2 = new TaskOutputData();
-        String inputDataName1 = inputDatas.get(0).getDataName();
+        String inputDataName1 = "";
+        String outputDomainID = "";
+        for (TaskInputData taskInputData : inputDatas) {
+            if (taskInputData.getDomainID().equals(parties.get(0).getPartyID())) {
+                inputDataName1 = taskInputData.getDataName();
+                outputDomainID = taskInputData.getDomainID();
+            }
+        }
         String outputPrefix = "";
         if (inputDataName1.contains("-")) {
             outputPrefix = inputDataName1.substring(0, inputDataName1.indexOf('-'));
@@ -1414,7 +1444,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             case "QUERY":
                 outputdata1.setDataName(outputPrefix+"-"+curTaskName);
                 outputdata1.setFinalResult("N");
-                outputdata1.setDomainID(inputDatas.get(0).getDomainID());
+                outputdata1.setDomainID(outputDomainID);
                 outputdata1.setDataID("");
                 if (isFinalResult) {
                     outputdata1.setFinalResult("Y");
@@ -1428,25 +1458,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         output.setData(outputDatas);
         task.setOutput(output);
 
-        // parties信息
-        List<Party> parties = new ArrayList<>();
-        HashSet<String> partySet = new HashSet<>();
-        for (TaskInputData inputData : inputDatas) {
-            partySet.add(inputData.getDomainID());
-        }
-        for (String value : partySet) {
-            Party party = new Party();
-            party.setServerInfo(null);
-            party.setStatus(null);
-            party.setTimestamp(null);
-            party.setPartyID(value);
-            parties.add(party);
-        }
-        task.setParties(parties);
 
-        for (Party party : parties) {
-            jobParties.add(party.getPartyID());
-        }
 
         moduleNameCorrect(task);
 
