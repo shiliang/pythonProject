@@ -2726,6 +2726,18 @@ public interface SqlBaseParserListener extends ParseTreeListener {
 	 */
 	void exitLambda(SqlBaseParser.LambdaContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code featureReference}
+	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
+	 * @param ctx the parse tree
+	 */
+	void enterFeatureReference(SqlBaseParser.FeatureReferenceContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code featureReference}
+	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
+	 * @param ctx the parse tree
+	 */
+	void exitFeatureReference(SqlBaseParser.FeatureReferenceContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code parenthesizedExpression}
 	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
 	 * @param ctx the parse tree
@@ -2965,6 +2977,16 @@ public interface SqlBaseParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitFirst(SqlBaseParser.FirstContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SqlBaseParser#featureExpression}.
+	 * @param ctx the parse tree
+	 */
+	void enterFeatureExpression(SqlBaseParser.FeatureExpressionContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SqlBaseParser#featureExpression}.
+	 * @param ctx the parse tree
+	 */
+	void exitFeatureExpression(SqlBaseParser.FeatureExpressionContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code nullLiteral}
 	 * labeled alternative in {@link SqlBaseParser#constant}.

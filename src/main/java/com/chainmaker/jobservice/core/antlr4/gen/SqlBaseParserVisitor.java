@@ -1617,6 +1617,13 @@ public interface SqlBaseParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitLambda(SqlBaseParser.LambdaContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code featureReference}
+	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFeatureReference(SqlBaseParser.FeatureReferenceContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code parenthesizedExpression}
 	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
 	 * @param ctx the parse tree
@@ -1756,6 +1763,12 @@ public interface SqlBaseParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitFirst(SqlBaseParser.FirstContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SqlBaseParser#featureExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFeatureExpression(SqlBaseParser.FeatureExpressionContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code nullLiteral}
 	 * labeled alternative in {@link SqlBaseParser#constant}.

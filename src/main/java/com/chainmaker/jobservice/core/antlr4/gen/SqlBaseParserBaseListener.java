@@ -2981,6 +2981,18 @@ public class SqlBaseParserBaseListener implements SqlBaseParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterFeatureReference(SqlBaseParser.FeatureReferenceContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitFeatureReference(SqlBaseParser.FeatureReferenceContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterParenthesizedExpression(SqlBaseParser.ParenthesizedExpressionContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -3216,6 +3228,18 @@ public class SqlBaseParserBaseListener implements SqlBaseParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitFirst(SqlBaseParser.FirstContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterFeatureExpression(SqlBaseParser.FeatureExpressionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitFeatureExpression(SqlBaseParser.FeatureExpressionContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

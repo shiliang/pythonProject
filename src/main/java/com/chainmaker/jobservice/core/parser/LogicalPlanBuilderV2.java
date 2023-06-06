@@ -285,6 +285,8 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             return visitParenthesizedExpression((SqlBaseParser.ParenthesizedExpressionContext) context);
         } else if (context instanceof SqlBaseParser.FunctionCallContext) {
             return visitFunctionCall((SqlBaseParser.FunctionCallContext) context);
+        } else if (context instanceof SqlBaseParser.FeatureReferenceContext) {
+            return visitFeatureReference((SqlBaseParser.FeatureReferenceContext) context);
         } else {
             throw new ParserException(DEFAULT_ERROR + ": " + context.getText());
         }
@@ -292,6 +294,11 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     @Override
     public Identifier visitColumnReference(SqlBaseParser.ColumnReferenceContext context) {
         String identifier = context.identifier().getChild(0).getText();
+        return new Identifier(identifier);
+    }
+    @Override
+    public Identifier visitFeatureReference(SqlBaseParser.FeatureReferenceContext context) {
+        String identifier = context.getText();
         return new Identifier(identifier);
     }
     @Override

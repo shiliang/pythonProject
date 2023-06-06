@@ -977,6 +977,7 @@ primaryExpression
     | LEFT_PAREN identifier (COMMA identifier)+ RIGHT_PAREN ARROW expression                   #lambda
     | value=primaryExpression LEFT_BRACKET index=valueExpression RIGHT_BRACKET                 #subscript
     | identifier                                                                               #columnReference
+    | LEFT_BRACKET featureExpression RIGHT_BRACKET                                             #featureReference
     | base=primaryExpression DOT fieldName=identifier                                          #dereference
     | LEFT_PAREN expression RIGHT_PAREN                                                        #parenthesizedExpression
     | EXTRACT LEFT_PAREN field=identifier FROM source=valueExpression RIGHT_PAREN              #extract
@@ -989,6 +990,10 @@ primaryExpression
     | name=(PERCENTILE_CONT | PERCENTILE_DISC) LEFT_PAREN percentage=valueExpression RIGHT_PAREN
         WITHIN GROUP LEFT_PAREN ORDER BY sortItem RIGHT_PAREN
         (FILTER LEFT_PAREN WHERE where=booleanExpression RIGHT_PAREN)? ( OVER windowSpec)?     #percentile
+    ;
+
+featureExpression
+    : identifier (COMMA identifier)?
     ;
 
 constant
