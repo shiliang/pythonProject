@@ -26,13 +26,13 @@ public class Driver {
 //        String query = "select /*+ TEEJOIN */ adata.a2 from adata join bdata on adata.id=bdata.id";
 //        String query = "SELECT TEST_C_1.C2+TEST_B_1.B2 FROM TEST_C_1 JOIN TEST_B_1 ON TEST_C_1.ID=TEST_B_1.ID WHERE TEST_B_1.ID<5";
 //        String query = "SELECT AVG(ADATA.A1), ADATA.A2+ADATA.A1, CDATA.C3+CDATA.C3, ADATA.A1 FROM (ADATA JOIN BDATA ON ADATA.A1=BDATA.B1) JOIN CDATA ON ADATA.A2=CDATA.C2 WHERE BDATA.B1>3 AND ADATA.A2<10";
-//        String query = "select avg(adata.a1) from adata join bdata on adata.a1=bdata.b1 where adata.a1>10 and bdata.b1>5";
+        String query = "select avg(adata.a1) from adata join bdata on adata.a1=bdata.b1 where adata.a1>10 and bdata.b1>5";
 //        String query = "select adata.a1 from (adata join bdata on adata.a1=bdata.b1) join cdata on adata.a2=cdata.c2 where adata.a1>5";
 //        String query = "select adata.a1 from (adata join cdata on adata.a1=cdata.c1) join bdata on adata.a2=bdata.b2 where adata.a1>5";
 //        String query = "select adata.a1, adata.a2 from adata join bdata on adata.a1=bdata.b1 where adata.a1>10 and bdata.b1>5";   strange test
 //        String query = "select adata.a1 from adata union select bdata.b1 from bdata";
 //        String query = "select adata.a1 from (adata join cdata on adata.a1=cdata.c1) join bdata on adata.id=bdata.id";
-        String query = "SELECT TA.A FROM TA WHERE TA.ID<3";
+//        String query = "SELECT TA.A FROM TA WHERE TA.ID<3";
 
         // modelType:
         // 0： 联邦查询

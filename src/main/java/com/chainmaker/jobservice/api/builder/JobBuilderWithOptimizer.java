@@ -38,7 +38,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         FQ, FQS, FL, FLS, CC, CCS
     }
     private enum TaskType {
-        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, PSIRSA, TEEPSI, AGG, MPCEXP, FL, TEE, LOCALMERGE, LOCALEXP, LOCALAGG, NOTIFY
+        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, PSIRSA, TEEPSI, MPC, MPCEXP, FL, TEE, LOCALMERGE, LOCALEXP, LOCALAGG, NOTIFY
     }
 
     private class TaskNode {
@@ -357,7 +357,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         for (int i = 0; i < tasks.size(); i++) {
             taskcp.add(gson.fromJson(gson.toJson(tasks.get(i)), Task.class));
             String moduleName = taskcp.get(i).getModule().getModuleName();
-            if (moduleName.equals(TaskType.LOCALEXP.name()) || moduleName.equals(TaskType.LOCALAGG.name()) || moduleName.startsWith(TaskType.AGG.name())) {
+            if (moduleName.equals(TaskType.LOCALEXP.name()) || moduleName.equals(TaskType.LOCALAGG.name()) || moduleName.startsWith(TaskType.MPC.name())) {
                 for (TaskInputData inputData : taskcp.get(i).getInput().getData()) {
                     List<Double> doubleList = (List<Double>) inputData.getParams().get("index");
                     List<Integer> integerList = new ArrayList<>();
@@ -1483,7 +1483,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                         task.getModule().setModuleName(TaskType.MPCEXP.name());
                     } else {
                         // 聚合表达式
-                        task.getModule().setModuleName(TaskType.AGG.name() + funcName.toUpperCase());
+                        task.getModule().setModuleName(TaskType.MPC.name() + funcName.toUpperCase());
                     }
                 } else {
                     if (funcName.equals("base")) {
