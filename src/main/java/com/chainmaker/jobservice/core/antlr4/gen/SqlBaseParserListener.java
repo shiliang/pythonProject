@@ -2834,6 +2834,18 @@ public interface SqlBaseParserListener extends ParseTreeListener {
 	 */
 	void exitLast(SqlBaseParser.LastContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code pirCase}
+	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
+	 * @param ctx the parse tree
+	 */
+	void enterPirCase(SqlBaseParser.PirCaseContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code pirCase}
+	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
+	 * @param ctx the parse tree
+	 */
+	void exitPirCase(SqlBaseParser.PirCaseContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code star}
 	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
 	 * @param ctx the parse tree

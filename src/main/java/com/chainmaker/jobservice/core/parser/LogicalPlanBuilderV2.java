@@ -161,7 +161,11 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             FaderatedQueryExpression projectList = visitFederatedQueryExpression((SqlBaseParser.FederatedQueryExpressionContext) context.selectClause().namedExpressionSeq());
 
             if (context.aggregationClause() == null) {
-                return new LogicalProject(projectList, children);
+                if (projectList.getValues().get(0).toString().equals("*")) {
+                    return children.get(0);
+                } else {
+                    return new LogicalProject(projectList, children);
+                }
             } else {
                 LogicalProject child = new LogicalProject(projectList, children);
                 if (context.havingClause() == null) {
@@ -287,9 +291,23 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             return visitFunctionCall((SqlBaseParser.FunctionCallContext) context);
         } else if (context instanceof SqlBaseParser.FeatureReferenceContext) {
             return visitFeatureReference((SqlBaseParser.FeatureReferenceContext) context);
+        } else if (context instanceof SqlBaseParser.PirCaseContext) {
+            return visitPirCase((SqlBaseParser.PirCaseContext) context);
+        } else if (context instanceof SqlBaseParser.StarContext) {
+            return visitStar((SqlBaseParser.StarContext) context);
         } else {
             throw new ParserException(DEFAULT_ERROR + ": " + context.getText());
         }
+    }
+    @Override
+    public Identifier visitPirCase(SqlBaseParser.PirCaseContext context) {
+        String identifier = context.getText();
+        return new Identifier(identifier);
+    }
+    @Override
+    public Identifier visitStar(SqlBaseParser.StarContext context) {
+        String identifier = context.getText();
+        return new Identifier(identifier);
     }
     @Override
     public Identifier visitColumnReference(SqlBaseParser.ColumnReferenceContext context) {

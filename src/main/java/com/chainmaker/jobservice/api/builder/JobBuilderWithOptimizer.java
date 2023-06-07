@@ -927,11 +927,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * @return
      */
     public List<Task> generateTasks(Stack<String> stk) {
+
         List<Task> tasks = new ArrayList<>();
 
 //        Stack<List<String>> operands = new Stack<>();
         List<String> operands = new ArrayList<>();
         while (!stk.isEmpty()) {
+            boolean isFinalResult = false;
             String s = stk.pop().trim();
 //            System.out.println("current str = " + s);
             List<String> params = List.of(s.split("\\[|]"));
@@ -940,6 +942,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 String table = params.get(1);
                 operands.add(0, table);
             } else if (s.startsWith("MPCJoin")) {
+                if (stk.isEmpty()) {
+                    isFinalResult = true;
+                }
                 // MPCJoin [JoinType[INNER], JoinCond[=($0, $2)], $ from [TA.ID, TA.AGE, TC.ID]]
 //                // 默认都是两两PSI，所以取两个操作数
 //                List<String> lefts = operands.pop();
@@ -947,7 +952,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
                 // 完成string到Task的转换
 //                Task PSITask = str2Task(s, cnt, "PSI", lefts, rights, false);
-                Task PSITask = str2Task(s, cnt, "PSI", operands, false);
+                Task PSITask = str2Task(s, cnt, "PSI", operands, isFinalResult);
                 tasks.add(PSITask);
 
                 // 该task的输出作为下一个的输入加入操作数栈
@@ -972,6 +977,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                         stk.add(newFilter);
                     }
                 } else {
+                    if (stk.isEmpty()) {
+                        isFinalResult = true;
+                    }
                     // 如果是单独Cond的情况，则直接生成Task
                     // MPCFilter [FilterCond[>($0, 10)] $ from [TA.ID, TA.AGE]]
 //                    List<String> childTaskNames = operands.pop();
@@ -979,10 +987,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     String cond = params.get(2);
                     if (cond.substring(0, cond.indexOf(",")).contains("$") && cond.substring(cond.indexOf(",")).contains("$")) {
 //                        FilterTask = str2Task(s, cnt, "VariableFilter", childTaskNames, null, false);
-                        FilterTask = str2Task(s, cnt, "VariableFilter", operands, false);
+                        FilterTask = str2Task(s, cnt, "VariableFilter", operands, isFinalResult);
                     } else {
 //                        FilterTask = str2Task(s, cnt, "ConstantFilter", childTaskNames, null, false);
-                        FilterTask = str2Task(s, cnt, "ConstantFilter", operands, false);
+                        FilterTask = str2Task(s, cnt, "ConstantFilter", operands, isFinalResult);
                     }
                     tasks.add(FilterTask);
                     Output FilterOutput = FilterTask.getOutput();
@@ -1008,6 +1016,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                         stk.add(newProject);
                     }
                 } else {
+                    isFinalResult = true;
                     // 已经是单独的Project
 //                    List<String> childNames = operands.pop();
                     Task ProjectTask;
@@ -1015,10 +1024,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     if (s.contains("MAX") || s.contains("MIN") || s.contains("COUNT") ||
                             s.contains("AVG") || s.contains("SUM") || s.contains("+") || s.contains("-") || s.contains("*") || s.contains("/")) {
 //                        ProjectTask = str2Task(s, cnt, "MPC", childNames, null, true);
-                        ProjectTask = str2Task(s, cnt, "MPC", operands, true);
+                        ProjectTask = str2Task(s, cnt, "MPC", operands, isFinalResult);
                     } else {
 //                        ProjectTask = str2Task(s, cnt, "QUERY", childNames, null, true);
-                        ProjectTask = str2Task(s, cnt, "QUERY", operands, true);
+                        ProjectTask = str2Task(s, cnt, "QUERY", operands, isFinalResult);
                     }
                     tasks.add(ProjectTask);
 //                    Output ProjectOutput = ProjectTask.getOutput();

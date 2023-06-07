@@ -966,6 +966,7 @@ primaryExpression
     | LAST LEFT_PAREN expression (IGNORE NULLS)? RIGHT_PAREN                                   #last
     | POSITION LEFT_PAREN substr=valueExpression IN str=valueExpression RIGHT_PAREN            #position
     | constant                                                                                 #constantDefault
+    | OCCULTATION                                                                              #pirCase
     | ASTERISK                                                                                 #star
     | qualifiedName DOT ASTERISK                                                               #star
     | LEFT_PAREN namedExpression (COMMA namedExpression)+ RIGHT_PAREN                          #rowConstructor
@@ -993,7 +994,7 @@ primaryExpression
     ;
 
 featureExpression
-    : primaryExpression (COMMA primaryExpression)?
+    : primaryExpression (COMMA primaryExpression)*
     ;
 
 constant

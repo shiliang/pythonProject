@@ -72,7 +72,9 @@ public class SqlParser {
     public DAG<PhysicalPlan> parser() {
         LogicalPlanBuilderV2 logicalPlanBuilder = new LogicalPlanBuilderV2(this.sql);
         LogicalPlan logicalPlan = logicalPlanBuilder.getLogicalPlan();
-
+        LogicalPlanPrinter printer = new LogicalPlanPrinter();
+        printer.visitTree(logicalPlan, 0);
+        System.out.println(printer.logicalPlanString);
         Analyzer analyzer = new Analyzer(this.catalogConfig);
 
         HashMap<String, String> tableOwnerMap = analyzer.getMetaData(logicalPlanBuilder.getTableNameMap(), logicalPlanBuilder.getModelNameList(), this.modelType);

@@ -3089,6 +3089,18 @@ public class SqlBaseParserBaseListener implements SqlBaseParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterPirCase(SqlBaseParser.PirCaseContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitPirCase(SqlBaseParser.PirCaseContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterStar(SqlBaseParser.StarContext ctx) { }
 	/**
 	 * {@inheritDoc}

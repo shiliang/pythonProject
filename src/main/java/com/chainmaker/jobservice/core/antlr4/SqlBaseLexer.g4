@@ -430,6 +430,7 @@ GTE : '>=' | '!<';
 PLUS: '+';
 MINUS: '-';
 ASTERISK: '*';
+OCCULTATION: '?';
 SLASH: '/';
 PERCENT: '%';
 TILDE: '~';

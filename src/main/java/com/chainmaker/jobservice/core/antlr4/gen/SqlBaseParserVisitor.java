@@ -1680,6 +1680,13 @@ public interface SqlBaseParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitLast(SqlBaseParser.LastContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code pirCase}
+	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPirCase(SqlBaseParser.PirCaseContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code star}
 	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
 	 * @param ctx the parse tree

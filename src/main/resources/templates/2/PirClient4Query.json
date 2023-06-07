@@ -1,0 +1,83 @@
+{
+  "id": "",
+  "version": "1.0.0",
+  "orgDID": "",
+  "serviceClass": "PirClient4Query",
+  "serviceName": "匿名查询接收方",
+  "nodePort": "",
+  "manual": "false",
+  "exposeEndpoints": [{
+    "name": "PirClient",
+    "form": [
+      {
+        "key": "description",
+        "values": "匿名查询接收方服务",
+        "labels": "服务描述",
+        "types": "INPUT"
+      },
+      {
+        "key": "tlsEnabled",
+        "values": true,
+        "labels": "通信加密",
+        "types": "CHECKBOX",
+        "desc":"启用TLS"
+      },
+      {
+        "key": "serviceCa",
+        "values": "",
+        "labels": "签名证书",
+        "types": "TEXTAREA"
+      },
+      {
+        "key": "serviceCert",
+        "values": "",
+        "labels": "加密证书",
+        "types": "TEXTAREA"
+      },
+      {
+        "key": "serviceKey",
+        "values": "",
+        "labels": "加密私钥",
+        "types": "TEXTAREA"
+      },
+      {
+        "key": "protocol",
+        "values": "HTTP",
+        "labels": "通信协议",
+        "types": "SELECT",
+        "options": [
+          {
+            "value": "HTTP",
+            "label": "HTTP"
+          },
+          {
+            "value": "GRPC",
+            "label": "GRPC"
+          }
+        ]
+      }]
+  }],
+  "referEndpoints": [
+    {
+      "name": "PirServer4Query",
+      "referServiceID": "",
+      "referEndpointName": "PirServer",
+      "protocol": "HTTP",
+      "serviceCa": "",
+      "serviceCert": ""
+    }
+  ],
+  "values": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "referValues": [
+    {
+      "key": "",
+      "referServiceID": "",
+      "referKey": ""
+    }
+  ]
+}
