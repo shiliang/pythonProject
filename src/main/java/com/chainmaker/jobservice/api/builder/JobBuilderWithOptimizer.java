@@ -1418,7 +1418,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         switch (moduleName) {
             case "PSI":
-                outputdata1.setDataName(outputPrefix+"-"+curTaskName);
+                String inputDataName0 = inputDatas.get(0).getDataName();
+                if (inputDataName0.contains("-")) {
+                    outputdata1.setDataName(inputDataName0.substring(0, inputDataName0.indexOf('-')) + "-" + curTaskName);
+                } else {
+                    outputdata1.setDataName(inputDataName0 + "-" + curTaskName);
+                }
                 outputdata1.setFinalResult("N");
                 outputdata1.setDomainID(inputDatas.get(0).getDomainID());
                 outputdata1.setDataID("");

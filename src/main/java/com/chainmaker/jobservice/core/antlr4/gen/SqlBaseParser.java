@@ -20854,11 +20854,11 @@ public class SqlBaseParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class FeatureExpressionContext extends ParserRuleContext {
-		public List<IdentifierContext> identifier() {
-			return getRuleContexts(IdentifierContext.class);
+		public List<PrimaryExpressionContext> primaryExpression() {
+			return getRuleContexts(PrimaryExpressionContext.class);
 		}
-		public IdentifierContext identifier(int i) {
-			return getRuleContext(IdentifierContext.class,i);
+		public PrimaryExpressionContext primaryExpression(int i) {
+			return getRuleContext(PrimaryExpressionContext.class,i);
 		}
 		public TerminalNode COMMA() { return getToken(SqlBaseParser.COMMA, 0); }
 		public FeatureExpressionContext(ParserRuleContext parent, int invokingState) {
@@ -20888,7 +20888,7 @@ public class SqlBaseParser extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(3304);
-			identifier();
+			primaryExpression(0);
 			setState(3307);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
@@ -20897,7 +20897,7 @@ public class SqlBaseParser extends Parser {
 				setState(3305);
 				match(COMMA);
 				setState(3306);
-				identifier();
+				primaryExpression(0);
 				}
 			}
 
@@ -28424,8 +28424,8 @@ public class SqlBaseParser extends Parser {
 		"\u0001\u0000\u0000\u0000\u0ce3\u0ce0\u0001\u0000\u0000\u0000\u0ce4\u0ce7"+
 		"\u0001\u0000\u0000\u0000\u0ce5\u0ce3\u0001\u0000\u0000\u0000\u0ce5\u0ce6"+
 		"\u0001\u0000\u0000\u0000\u0ce6\u0115\u0001\u0000\u0000\u0000\u0ce7\u0ce5"+
-		"\u0001\u0000\u0000\u0000\u0ce8\u0ceb\u0003\u0164\u00b2\u0000\u0ce9\u0cea"+
-		"\u0005\u0004\u0000\u0000\u0cea\u0cec\u0003\u0164\u00b2\u0000\u0ceb\u0ce9"+
+		"\u0001\u0000\u0000\u0000\u0ce8\u0ceb\u0003\u0114\u008a\u0000\u0ce9\u0cea"+
+		"\u0005\u0004\u0000\u0000\u0cea\u0cec\u0003\u0114\u008a\u0000\u0ceb\u0ce9"+
 		"\u0001\u0000\u0000\u0000\u0ceb\u0cec\u0001\u0000\u0000\u0000\u0cec\u0117"+
 		"\u0001\u0000\u0000\u0000\u0ced\u0cfc\u0005\u00c1\u0000\u0000\u0cee\u0cef"+
 		"\u0005\u015a\u0000\u0000\u0cef\u0cfc\u0003\u0164\u00b2\u0000\u0cf0\u0cfc"+

@@ -993,7 +993,7 @@ primaryExpression
     ;
 
 featureExpression
-    : identifier (COMMA identifier)?
+    : primaryExpression (COMMA primaryExpression)?
     ;
 
 constant
