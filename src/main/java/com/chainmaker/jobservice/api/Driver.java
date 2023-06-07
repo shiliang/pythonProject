@@ -55,7 +55,7 @@ public class Driver {
             System.out.println("Origin Plan: " + String.valueOf(end-start) + "ms");
         } else {    // 4758ms
             long start = System.currentTimeMillis();
-            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(modelType, isStream, sqlParser.parserWithOptimizer());     // 4000+ ms
+            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(modelType, isStream, sqlParser.parserWithOptimizer(), sqlParser.getColumnInfoMap());     // 4000+ ms
             jobBuilder.build(); // <50 ms
             long end = System.currentTimeMillis();
             System.out.println("Optimizer Plan: " + String.valueOf(end-start) + "ms");

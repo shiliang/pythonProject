@@ -40,6 +40,7 @@ public class SqlParser {
     private List<MissionDetailVO> missionDetailVOs = new ArrayList<>();
     private List<ModelParamsVo> modelParamsVos = new ArrayList<>();
     private CatalogConfig catalogConfig;
+    private HashMap<String, String> columnInfoMap;
 
     public void setCatalogConfig(CatalogConfig catalogConfig) {
         this.catalogConfig = catalogConfig;
@@ -51,6 +52,9 @@ public class SqlParser {
 
     public List<ModelParamsVo> getModelParamsVos() {
         return modelParamsVos;
+    }
+    public HashMap<String, String> getColumnInfoMap() {
+        return columnInfoMap;
     }
 
     public SqlParser(String sql, Integer modelType, Integer isStream) {
@@ -74,6 +78,7 @@ public class SqlParser {
         HashMap<String, String> tableOwnerMap = analyzer.getMetaData(logicalPlanBuilder.getTableNameMap(), logicalPlanBuilder.getModelNameList(), this.modelType);
         missionDetailVOs = analyzer.getMissionDetailVOs();
         modelParamsVos = analyzer.getModelParamsVos();
+        columnInfoMap = analyzer.getColumnInfoMap();
 
         PlanOptimizer optimizer = new PlanOptimizer(this.modelType, this.isStream, tableOwnerMap);
         optimizer.visit(logicalPlan);
@@ -98,6 +103,7 @@ public class SqlParser {
         HashMap<String, String> tableOwnerMap = analyzer.getMetaData(logicalPlanBuilder.getTableNameMap(), logicalPlanBuilder.getModelNameList(), this.modelType);
         missionDetailVOs = analyzer.getMissionDetailVOs();
         modelParamsVos = analyzer.getModelParamsVos();
+        columnInfoMap = analyzer.getColumnInfoMap();
 
         JSONArray dataCatalogInfoList = analyzer.getDataCatalogInfoList();
         HashMap<String, TableInfo> metadata = new HashMap<>();

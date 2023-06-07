@@ -79,8 +79,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private HashSet<String> jobParties = new HashSet<>();
     private LogicalPlan OriginPlan;
     private LogicalHint hint;
+    private HashMap<String, String> columnInfoMap;
 
-    public JobBuilderWithOptimizer(Integer modelType, Integer isStream, parserWithOptimizerReturnValue value) {
+    public JobBuilderWithOptimizer(Integer modelType, Integer isStream, parserWithOptimizerReturnValue value, HashMap<String, String> columnInfoMap) {
         this.modelType = modelType;
         this.isStream = isStream;
         this.phyPlan = value.getPhyPlan();
@@ -94,6 +95,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         } else {
             hint = null;
         }
+        this.columnInfoMap = columnInfoMap;
     }
 
     public JobTemplate getJobTemplate() {
@@ -710,6 +712,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             JSONObject dataParams = new JSONObject(true);
             dataParams.put("table", table);
             dataParams.put("field", field);
+            dataParams.put("type", columnInfoMap.get(table+field));
             data.setParams(dataParams);
             inputDataList.add(data);
         }
@@ -1311,6 +1314,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     JSONObject jsonObjectParams = new JSONObject(true);
                     jsonObjectParams.put("table", table);
                     jsonObjectParams.put("field", field);
+                    jsonObjectParams.put("type", columnInfoMap.get(table+field));
                     List<Integer> list = new ArrayList<>();
                     list.add(i);
                     jsonObjectParams.put("index", Arrays.toString(list.toArray()));

@@ -325,7 +325,7 @@ public class JobParserServiceImpl implements JobParserService {
             System.out.println(jobMissionDetail);
             return jobMissionDetail;
         } else {
-            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parserWithOptimizer());
+            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parserWithOptimizer(), sqlParser.getColumnInfoMap());
             jobBuilder.build();
             JobMissionDetail jobMissionDetail = new JobMissionDetail();
             jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
