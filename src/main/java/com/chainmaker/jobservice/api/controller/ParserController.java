@@ -83,6 +83,9 @@ public class ParserController {
     @RequestMapping(value = "/preview/dag", method = RequestMethod.POST)
     public Result jobPreview(@RequestBody String req) {
         SqlVo sqlVo = JSONObject.parseObject(req, SqlVo.class, Feature.OrderedField);
+        if (sqlVo.getSqltext().contains("?")) {
+            sqlVo.setIsStream(1);
+        }
         JobGraphVo jobGraphVo= jobParserService.jobPreview(sqlVo);
         return Result.success(jobGraphVo);
     }
