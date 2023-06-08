@@ -47,8 +47,10 @@ public class JobParserServiceImpl implements JobParserService {
     @Override
     public void save(List<ServiceValueParam> serviceValues) {
         String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/missions/services";
+        System.out.println("url: " + url);
         RestTemplate restTemplate = new RestTemplate();
         JSONObject response = restTemplate.postForObject(url, serviceValues, JSONObject.class);
+        System.out.println("response: " + response);
         if (response == null) {
             throw new ParserException("本地持久化失败");
         }
@@ -57,8 +59,10 @@ public class JobParserServiceImpl implements JobParserService {
     @Override
     public List<ServiceValueParam> get(String orgDID, String jobID) {
         String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/missions/serviceValues/" + orgDID + "/local/" + jobID;
+        System.out.println("url: " + url);
         RestTemplate restTemplate = new RestTemplate();
         JSONObject result = JSONObject.parseObject(restTemplate.getForObject(url, String.class), Feature.OrderedField);
+        System.out.println("result: " + result);
         ServiceValueParam[] serviceValueParams = JSONObject.parseObject(result.getString("data"), ServiceValueParam[].class, Feature.OrderedField);
         return new ArrayList<>(Arrays.asList(serviceValueParams));
     }
@@ -66,8 +70,10 @@ public class JobParserServiceImpl implements JobParserService {
     @Override
     public UserInfo getUserInfo(String userName) {
         String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/login/orgDID/" + userName;
+        System.out.println(("url: " + url));
         RestTemplate restTemplate = new RestTemplate();
         JSONObject result = JSONObject.parseObject(restTemplate.getForObject(url, String.class), Feature.OrderedField);
+        System.out.println("result: " + result);
         return JSONObject.parseObject(result.getString("data"), UserInfo.class, Feature.OrderedField);
     }
 
@@ -402,7 +408,7 @@ public class JobParserServiceImpl implements JobParserService {
                         edge.setSource(service.getId());
                         edge.setTarget(referEndpoint.getReferServiceID());
                         TopologyEdgeData topologyEdgeData = new TopologyEdgeData();
-                        topologyEdgeData.setType("tee");
+                        topologyEdgeData.setType("data");
                         edge.setData(topologyEdgeData);
                         edges.add(edge);
                     }
@@ -427,7 +433,7 @@ public class JobParserServiceImpl implements JobParserService {
 
         HashMap<String, HashMap<String, String>> exposeEndpointMap = new HashMap<>();
         HashMap<String, String> clientIdMap = new HashMap<>();
-        if (services != null) {
+        if (services.size() != 0) {
             for (Service service : services) {
                 clientIdMap.put(service.getId(), "");
             }

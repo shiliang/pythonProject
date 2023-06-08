@@ -139,6 +139,9 @@ public class JobBuilder extends PhysicalPlanVisitor {
             serviceVo.setOrgDID(defaultOdgDID);
             services.add(serviceVo);
         }
+        Map<String, String> model_method = new HashMap<>();
+        model_method.put("method_name", "pir");
+        job.setCommon(model_method);
     }
     @Override
     public void visit(TableScan plan) {
