@@ -59,7 +59,7 @@
   }],
   "referEndpoints": [
     {
-      "name": "PirServer4Query",
+      "name": "PirServer",
       "referServiceID": "",
       "referEndpointName": "PirServer",
       "protocol": "HTTP",

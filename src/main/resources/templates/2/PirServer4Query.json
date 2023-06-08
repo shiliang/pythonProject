@@ -77,7 +77,7 @@
   }],
   "referEndpoints": [
     {
-      "name": "PirClient4Query",
+      "name": "PirClient",
       "referServiceID": "",
       "referEndpointName": "PirClient",
       "protocol": "HTTP",

@@ -131,6 +131,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
             map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getId());
             serviceVos.add(serviceVo);
         }
+        System.out.println(map);
         for (ServiceVo serviceVo : serviceVos) {
             for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
                 referEndpoint.setReferServiceID(map.get(referEndpoint.getName()));
