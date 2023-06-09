@@ -433,7 +433,7 @@ public class JobParserServiceImpl implements JobParserService {
 
         HashMap<String, HashMap<String, String>> exposeEndpointMap = new HashMap<>();
         HashMap<String, String> clientIdMap = new HashMap<>();
-        if (services.size() != 0) {
+        if (services != null) {
             for (Service service : services) {
                 clientIdMap.put(service.getId(), "");
             }
