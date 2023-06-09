@@ -491,32 +491,37 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             }
         }
 
-        // feat 暂不处理
         List<FlExpression> feat = new ArrayList<>();
-        Identifier feature_key = new Identifier("feature_name");
-        Identifier feature_value = new Identifier(context.flFeatSeq(0).flFeat(0).feat.getText());
-        FlExpression featName = new FlExpression(feature_key, feature_value, FlExpression.Operator.EQUAL);
-        feat.add(featName);
         if (context.flFeatSeq().size() != 0) {
-            for (int i = 0; i < context.flFeatSeq(0).flFeat(0).flExpressionSeq().flExpression().size(); i++) {
-                FlExpression flExpression = visitFlExpression(context.flFeatSeq(0).flFeat(0).flExpressionSeq().flExpression(i));
-                feat.add(flExpression);
+            Identifier feature_key = new Identifier("feature_name");
+            Identifier feature_value = new Identifier(context.flFeatSeq(0).flFeat(0).feat.getText());
+            FlExpression featName = new FlExpression(feature_key, feature_value, FlExpression.Operator.EQUAL);
+            feat.add(featName);
+            if (context.flFeatSeq().size() != 0) {
+                for (int i = 0; i < context.flFeatSeq(0).flFeat(0).flExpressionSeq().flExpression().size(); i++) {
+                    FlExpression flExpression = visitFlExpression(context.flFeatSeq(0).flFeat(0).flExpressionSeq().flExpression(i));
+                    feat.add(flExpression);
+                }
             }
         }
         List<FlExpression> model = new ArrayList<>();
-        Identifier key = new Identifier("model_name");
-        Identifier value = new Identifier(context.flModelSeq(0).flModel(0).model.getText());
-        FlExpression modelName = new FlExpression(key, value, FlExpression.Operator.EQUAL);
-        model.add(modelName);
-        for (int i=0; i<context.flModelSeq(0).flModel(0).flExpressionSeq().flExpression().size(); i++) {
-            FlExpression flExpression = visitFlExpression(context.flModelSeq(0).flModel(0).flExpressionSeq().flExpression(i));
-            model.add(flExpression);
+        if (context.flModelSeq().size() != 0) {
+            Identifier key = new Identifier("model_name");
+            Identifier value = new Identifier(context.flModelSeq(0).flModel(0).model.getText());
+            FlExpression modelName = new FlExpression(key, value, FlExpression.Operator.EQUAL);
+            model.add(modelName);
+            for (int i = 0; i < context.flModelSeq(0).flModel(0).flExpressionSeq().flExpression().size(); i++) {
+                FlExpression flExpression = visitFlExpression(context.flModelSeq(0).flModel(0).flExpressionSeq().flExpression(i));
+                model.add(flExpression);
+            }
         }
 
         List<FlExpression> eval = new ArrayList<>();
-        for (int i=0; i<context.flEvalSeq(0).flEval(0).flExpressionSeq().flExpression().size(); i++) {
-            FlExpression flExpression = visitFlExpression(context.flEvalSeq(0).flEval(0).flExpressionSeq().flExpression(i));
-            eval.add(flExpression);
+        if (context.flModelSeq().size() != 0) {
+            for (int i = 0; i < context.flEvalSeq(0).flEval(0).flExpressionSeq().flExpression().size(); i++) {
+                FlExpression flExpression = visitFlExpression(context.flEvalSeq(0).flEval(0).flExpressionSeq().flExpression(i));
+                eval.add(flExpression);
+            }
         }
 
         return new FederatedLearningExpression(fl, labels, psi, feat, model, eval);
