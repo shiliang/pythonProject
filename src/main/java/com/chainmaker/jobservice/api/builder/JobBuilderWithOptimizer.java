@@ -102,6 +102,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         JobTemplate jobTemplate = new JobTemplate();
         jobTemplate.setJob(job);
         jobTemplate.setServices(services);
+        multipartyPsi();
         jobTemplate.setTasks(tasks);
 //            jobTemplate.setTasks(mergedTasks);
         return jobTemplate;
@@ -1631,6 +1632,40 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     public String getFieldDomainID(String fieldName) {
         return metadata.getFieldInfo(fieldName).getDomainID();
     }
+    private void multipartyPsi() {
+        HashMap<String, TaskInputData> inputMap = new HashMap<>();
+        HashMap<String, TaskOutputData> outputMap = new HashMap<>();
+        int flag = 0, count = 0;
+        for (int i = 0; i < tasks.size(); i++) {
+            Task task = tasks.get(i);
+            if (task.getModule().getModuleName().equals("TEEPSI")) {
+                for (int j = 0; j < task.getInput().getData().size(); j++) {
+                    TaskInputData taskInputData = task.getInput().getData().get(j);
+                    TaskOutputData taskOutputData = task.getOutput().getData().get(j);
+                    String key = taskInputData.getParams().getString("table") + "_" + taskInputData.getParams().getString("field");
+                    if (!inputMap.containsKey(key)) {
+                        inputMap.put(key, taskInputData);
+                    }
+                    outputMap.put(key, taskOutputData);
+                }
+                count++;
+                if (count == 1) {
+                    flag = i;
+                }
+            }
+        }
+        for (int i = 1; i < count; i++) {
+            tasks.remove(flag + i);
+        }
+        Input input = new Input();
+        List<TaskInputData> inputData = new ArrayList<>(inputMap.values());
+        input.setData(inputData);
 
+        Output output = new Output();
+        List<TaskOutputData> outputData = new ArrayList<>(outputMap.values());
+        output.setData(outputData);
 
+        tasks.get(flag).setInput(input);
+        tasks.get(flag).setOutput(output);
+    }
 }
