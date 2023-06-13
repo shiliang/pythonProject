@@ -1667,6 +1667,20 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         if (tasks.get(flag).getModule().getModuleName().equals("TEEPSI")) {
             tasks.get(flag).setInput(input);
             tasks.get(flag).setOutput(output);
+            List<Party> parties = new ArrayList<>();
+            HashSet<String> partySet = new HashSet<>();
+            for (TaskInputData taskInputData : input.getData()) {
+                partySet.add(taskInputData.getDomainID());
+            }
+            for (String value : partySet) {
+                Party party = new Party();
+                party.setServerInfo(null);
+                party.setStatus(null);
+                party.setTimestamp(null);
+                party.setPartyID(value);
+                parties.add(party);
+            }
+            tasks.get(flag).setParties(parties);
         }
     }
 }
