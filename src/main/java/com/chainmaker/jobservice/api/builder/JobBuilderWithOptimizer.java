@@ -1664,8 +1664,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         Output output = new Output();
         List<TaskOutputData> outputData = new ArrayList<>(outputMap.values());
         output.setData(outputData);
-
-        tasks.get(flag).setInput(input);
-        tasks.get(flag).setOutput(output);
+        if (tasks.get(flag).getModule().getModuleName().equals("TEEPSI")) {
+            tasks.get(flag).setInput(input);
+            tasks.get(flag).setOutput(output);
+        }
     }
 }
