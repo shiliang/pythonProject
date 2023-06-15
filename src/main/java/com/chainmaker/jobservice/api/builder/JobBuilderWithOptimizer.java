@@ -694,6 +694,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         JSONObject moduleParams = new JSONObject(true);
         moduleParams.put("methodName", expr.getFunction().toString());
         moduleParams.put("domainID", "");
+        moduleParams.put("teeHost", "172.16.12.230");
+        moduleParams.put("teePort", "30091");
         module.setParams(moduleParams);
         task.setModule(module);
 
