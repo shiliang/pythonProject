@@ -236,7 +236,8 @@ public class ParserController {
         String data = request.getString("data");
         String key = request.getString("key");
 
-        List<String> valueList = List.of(StringUtils.strip(data, "[]").split(","));
+//        List<String> valueList = List.of(StringUtils.strip(data, "[]").split(","));
+        List<String> valueList = List.of(StringUtils.strip(data, "[]"));
         File file = new File(jobId);
         if (!file.exists()) {
             CsvUtil.writeToCsv(key, valueList, jobId, false);
