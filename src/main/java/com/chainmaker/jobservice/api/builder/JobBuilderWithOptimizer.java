@@ -693,7 +693,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         module.setModuleName(TaskType.TEE.name());
         JSONObject moduleParams = new JSONObject(true);
         moduleParams.put("methodName", expr.getFunction().toString());
-        moduleParams.put("domainID", "");
+        moduleParams.put("domainID", "wx-org3.chainmaker.orgDID");
         moduleParams.put("teeHost", "172.16.12.230");
         moduleParams.put("teePort", "30091");
         module.setParams(moduleParams);
