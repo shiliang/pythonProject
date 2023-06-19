@@ -318,7 +318,7 @@ public class JobParserServiceImpl implements JobParserService {
 
     @Override
     public JobMissionDetail parserSql(SqlVo sqlVo) {
-        String sqltext = sqlVo.getSqltext().toUpperCase().replace("\"", "");
+        String sqltext = sqlVo.getSqltext().replace("\"", "");
         SqlParser sqlParser = new SqlParser(sqltext, sqlVo.getModelType(), sqlVo.getIsStream());
         sqlParser.setCatalogConfig(catalogConfig);
         if (sqlVo.getIsStream() == 1) {

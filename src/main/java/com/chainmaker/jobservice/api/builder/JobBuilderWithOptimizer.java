@@ -873,8 +873,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         JSONObject object = new JSONObject();
         for (int i = 0; i < params.size(); i++) {
             FlExpression expression = params.get(i);
-            String key = expression.getLeft().toString().toLowerCase();
-            String value = expression.getRight().toString().toLowerCase();
+            String key = expression.getLeft().toString();
+            String value = expression.getRight().toString();
             if (!key.contains(".")) {
                 object.put(key, value);
             } else {

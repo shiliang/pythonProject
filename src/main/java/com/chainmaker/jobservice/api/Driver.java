@@ -22,7 +22,7 @@ public class Driver {
         catalogConfig.setAddress("172.16.12.230");
         catalogConfig.setPort("31008");
 
-        String query = "SELECT FL(a.b.c.is_train=true,a.b.is_on=false,is_test=false,FLLABEL(SOURCE_DATA=ADATA,with_label=true,label_type=int,output_format=dense,namespace=experiment),FLLABEL(SOURCE_DATA=BDATA,with_label=true,output_format=dense,namespace=experiment),HEPR(a=1),EVAL(eval_type=binary)) FROM ADATA,BDATA";
+//        String query = "SELECT FL(a.b.c.is_train=true,a.b.is_on=false,is_test=false,FLLABEL(SOURCE_DATA=ADATA,with_label=true,label_type=int,output_format=dense,namespace=experiment),FLLABEL(SOURCE_DATA=BDATA,with_label=true,output_format=dense,namespace=experiment),HEPR(a=1),EVAL(eval_type=binary)) FROM ADATA,BDATA";
 //        String query = "SELECT /*+ TEEJOIN */ * FROM (ADATA FULL OUTER JOIN BDATA ON ADATA.ID=BDATA.ID) FULL OUTER JOIN TABLEC ON ADATA.ID=TABLEC.ID";
 //        String query = "SELECT * FROM TEST_C_1 WHERE TEST_C_1.ID=?";
 //        String query = "SELECT AVG(ADATA.A1), ADATA.A2+ADATA.A1, CDATA.C3+CDATA.C3, ADATA.A1 FROM (ADATA JOIN BDATA ON ADATA.A1=BDATA.B1) JOIN CDATA ON ADATA.A2=CDATA.C2 WHERE BDATA.B1>3 AND ADATA.A2<10";
@@ -33,7 +33,7 @@ public class Driver {
 //        String query = "select adata.a1 from adata union select bdata.b1 from bdata";
 //        String query = "select adata.a1 from (adata join cdata on adata.a1=cdata.c1) join bdata on adata.id=bdata.id";
 //        String query = "SELECT TA.A FROM TA WHERE TA.ID<3";
-//        String query = "SELECT COUNT(TEST_B_1.B2 + TEST_C_1.C2) FROM TEST_B_1 JOIN TEST_C_1 ON TEST_B_1.ID=TEST_C_1.ID";
+        String query = "SELECT FL(is_train=true,is_test=false,FLLABEL(SOURCE_DATA=BREAST_HETERO_GGUEST,with_label=true,label_type=int,output_format=dense,namespace=experiment),FLLABEL(SOURCE_DATA=BREAST_HETERO_HHOST,with_label=false,output_format=dense,namespace=experiment),INTERSECTION(intersect_method=rsa),HENN(bottom_nn_define.a.in_features=10,bottom_nn_define.a.out_features=4,bottom_nn_define.a.layer=Linear,bottom_nn_define.b.layer=ReLU,top_nn_define.a.in_features=10,top_nn_define.a.out_features=4,top_nn_define.b.layer=Linear,top_nn_define.b.layer=Sigmoid,interactive_layer_define.a.out_dim=4,interactive_layer_define.a.need_guest=true,interactive_layer_define.a.host_num=1,interactive_layer_define.a.guest_dim=4,interactive_layer_define.a.host_dim=4,interactive_layer_define.a.layer=InteractiveLayer,epochs=2,loss.reduction=mean,loss.loss_fn=BCELoss),EVAL(eval_type=binary)) FROM BREAST_HETERO_GGUEST,BREAST_HETERO_HHOST";
 //        String query = "SELECT TESTA(ADATA.ID, BDATA.ID, TABLEC.ID) FROM ADATA, BDATA, TABLEC";
 
         // modelType:
@@ -44,7 +44,7 @@ public class Driver {
         // 0: 任务类型
         // 1: 服务类型
         Integer isStream = 0, modelType = 1;
-        String sql = query.toUpperCase().replace("\"", "");
+        String sql = query.replace("\"", "");
         SqlParser sqlParser = new SqlParser(sql, modelType, isStream);
         sqlParser.setCatalogConfig(catalogConfig);
         if (isStream == 1) {    // 2590ms
