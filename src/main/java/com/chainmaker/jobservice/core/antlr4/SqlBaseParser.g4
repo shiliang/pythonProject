@@ -855,7 +855,7 @@ flFeatSeq
     ;
 
 flFeat
-    : feat=(HEFSL | HOFSL | HEFB | HOFB | HEFSC | HEFSP | HEFIM | HEPEAR | HO1HOT | HEDS) '(' flExpressionSeq ')'
+    : feat=(HEFSL |HEFB | HOFB | HEFSC | HEFSP | HEFIM | HEPEAR | HO1HOT | HEDS) '(' flExpressionSeq ')'
     ;
 
 // model
@@ -864,7 +864,7 @@ flModelSeq
     ;
 
 flModel
-    : model=(HESB | HOSB | HELR | HEKMS | HELNR | HOLR)  '(' flExpressionSeq ')'  // hetero secure boost
+    : model=(HESB | HOSB | HELR | HEKMS | HELNR | HOLR | HEPR | HEFTL | HONN | HENN)  '(' flExpressionSeq ')'
     ;
 
 // evaluation

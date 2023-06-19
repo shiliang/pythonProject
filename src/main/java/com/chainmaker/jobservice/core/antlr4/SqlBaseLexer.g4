@@ -85,10 +85,9 @@ FLLABEL: 'FLLABEL';
 INTERSECTION: 'INTERSECTION';
 
 
-HEDS: 'HEDS';   // data statistic
+HEDS: 'HEDS';
 
 HEFSL: 'HEFSL';
-HOFSL: 'HOFSL';
 HEFB: 'HEFB';
 HOFB: 'HOFB';
 HEFSC: 'HEFSC';
@@ -104,6 +103,10 @@ HEKMS: 'HEKMS';
 HELNR: 'HELNR';
 HOLR: 'HOLR';
 EVAL: 'EVAL';
+HEPR: 'HEPR';
+HEFTL: 'HEFTL';
+HENN: 'HENN';
+HONN: 'HONN';
 
 // NOTE: If you add a new token in the list below, you should update the list of keywords
 // and reserved tag in `docs/sql-ref-ansi-compliance.md#sql-keywords`, and
