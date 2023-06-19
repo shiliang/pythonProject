@@ -373,7 +373,7 @@ public class JobParserServiceImpl implements JobParserService {
                 } else {
                     DagNode dataNode = new DagNode();
                     dataNode.setId(dataCount);
-                    dataCount += 1;
+
                     String dataLabel = taskInputData.getDataName() + "(" + dataStatus + ")";
                     dataNode.setLabel(dataLabel);
                     dataNode.setShape("image");
@@ -386,6 +386,7 @@ public class JobParserServiceImpl implements JobParserService {
                     dataEdge.setTo(Integer.parseInt(taskName) + capacity);
                     dataEdge.setLabel(taskInputData.getDataName());
                     edges.add(dataEdge);
+                    dataCount += 1;
 
                 }
             }
