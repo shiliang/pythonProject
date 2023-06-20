@@ -281,10 +281,20 @@ public class ParserController {
                     List<String> valueList = List.of(value);
                     dataList.add(valueList);
                 }
+            } else if (keys.size() == 2) {
+                for (String value : readData) {
+                    String kept = value.substring( 0, value.indexOf(","));
+                    String remainder = value.substring(value.indexOf(",")+1, value.length());
+                    List<String> valueList = new ArrayList<>();
+                    valueList.add(kept);
+                    valueList.add(remainder);
+                    dataList.add(valueList);
+                }
+
             } else {
                 for (String value : readData) {
-                List<String> valueList = List.of(value.split(","));
-                dataList.add(valueList);
+                    List<String> valueList = List.of(value.split(","));
+                    dataList.add(valueList);
                 }
             }
 
