@@ -251,9 +251,9 @@ public class ParserController {
             String headerString = "";
             for (int i = 0; i < Math.min(dataList.size(), result.size()); i++) {
                 if (i == 0) {
-                    headerString = result.get(i) + "#@#" + dataList.get(i);
+                    headerString = result.get(i) + "," + dataList.get(i);
                 } else {
-                    String temp = result.get(i) + "#@#" + dataList.get(i);
+                    String temp = result.get(i) + "," + dataList.get(i);
                     inputs.add(temp);
                 }
             }
