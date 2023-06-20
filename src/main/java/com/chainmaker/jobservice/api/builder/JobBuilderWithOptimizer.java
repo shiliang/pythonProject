@@ -930,9 +930,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 //        }
         switch (phyPlan.getRelTypeName()) {
             case "MPCProject":
-                System.out.println(((MPCProject) phyPlan).getProjects());
-                for (RexNode node : ((MPCProject) phyPlan).getProjects()) {
-                    tasks.add(generateProjectTask((MPCProject) phyPlan, phyTaskMap, (RexCall) node));
+                for (int i = 0; i < phyPlan.getRowType().getFieldNames().size(); i++) {
+                    RexNode node = ((MPCProject) phyPlan).getProjects().get(i);
+                    List<String> inputList = List.of(phyPlan.getRowType().getFieldNames().get(i).split("\\+|-|\\*|/|%|\\[|]|\\(|\\)"));
+                    tasks.add(generateProjectTask((MPCProject) phyPlan, phyTaskMap, (RexCall) node, inputList));
                 }
                 break;
             case "MPCJoin":
@@ -1081,13 +1082,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 //        }
     }
 
-    public Task generateProjectTask(MPCProject phyPlan, HashMap<RelNode, Task> phyTaskMap, RexCall node) {
+    public Task generateProjectTask(MPCProject phyPlan, HashMap<RelNode, Task> phyTaskMap, RexCall node, List<String> inputList) {
         Task task = basicTask(String.valueOf(cnt++));
 
         // [AS(+($8, $7), ''), AS(SUM($4), ''), AS($0, '')]
         // 所有 project 默认最上层都是 AS 的 RexCall, 所以去掉一层之后才是真的 proj 的内容
         RexNode proj = node.getOperands().get(0);
-        List<String> inputList = new ArrayList<>();
         // module信息（即进行什么操作）
         Module module = new Module();
 
@@ -1099,7 +1099,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     op.equals(SqlStdOperatorTable.MULTIPLY) || op.equals(SqlStdOperatorTable.DIVIDE) ||
                     op.equals(SqlStdOperatorTable.MOD)) {
                 module.setModuleName("EXP");
-                String expr = dfsRexNode(proj, phyPlan, inputList);
+                String expr = dfsRexNode(proj, phyPlan);
 
             } else {
                 module.setModuleName("AGG");
@@ -1282,17 +1282,14 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * @param proj
      * @return
      */
-    public String dfsRexNode(RexNode proj, MPCProject phyPlan, List<String> inputList) {
+    public String dfsRexNode(RexNode proj, MPCProject phyPlan) {
         String expr = "";
         if (proj instanceof RexCall) {
-            expr += dfsRexNode(((RexCall) proj).getOperands().get(0), phyPlan, inputList);
+            expr += dfsRexNode(((RexCall) proj).getOperands().get(0), phyPlan);
             expr += ((RexCall) proj).getOperator().toString();
-            expr += dfsRexNode(((RexCall) proj).getOperands().get(1), phyPlan, inputList);
+            expr += dfsRexNode(((RexCall) proj).getOperands().get(1), phyPlan);
         } else if (proj instanceof RexInputRef) {
             expr += "x";
-
-            System.out.println(((RexInputRef) proj).getIndex());
-            inputList.add(phyPlan.getRowType().getFieldNames().get(((RexInputRef) proj).getIndex()));
         } else if (proj instanceof RexLiteral) {
             expr += ((RexLiteral) proj).getValue().toString();
         } else {
