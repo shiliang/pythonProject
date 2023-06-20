@@ -272,7 +272,7 @@ public class ParserController {
         } else {
             List<List<String>> dataList = new ArrayList<>();
             for (String value : readData) {
-                List<String> valueList = List.of(value.split("#@#"));
+                List<String> valueList = List.of(value.split(","));
                 dataList.add(valueList);
             }
 
