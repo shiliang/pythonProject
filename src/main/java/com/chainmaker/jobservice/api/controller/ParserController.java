@@ -270,13 +270,22 @@ public class ParserController {
         String filePath = "result/" + jobID;
         JSONObject result = new JSONObject();
         List<String> readData = CsvUtil.readFromCsv(filePath);
+        System.out.println(readData.get(0));
         if (readData == null) {
             result.put("result", readData);
         } else {
             List<List<String>> dataList = new ArrayList<>();
-            for (String value : readData) {
+            List<String> keys = List.of(readData.get(0).split(","));
+            if (keys.size() == 1) {
+                for (String value : readData) {
+                    List<String> valueList = List.of(value);
+                    dataList.add(valueList);
+                }
+            } else {
+                for (String value : readData) {
                 List<String> valueList = List.of(value.split(","));
                 dataList.add(valueList);
+                }
             }
 
             JSONArray data = new JSONArray();
