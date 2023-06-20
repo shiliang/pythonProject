@@ -37,7 +37,7 @@ spec:   # pod 的描述信息
             type: Directory
         - name: result-path         # 给需要挂载的宿主机路径起个名字
           hostPath: # 宿主机路径
-            path: { { .Values.env.RESULT_PATH } }
+            path: {{ .Values.env.RESULT_PATH }}
             type: Directory
         - name: nfs-pv-mpc
           persistentVolumeClaim:
