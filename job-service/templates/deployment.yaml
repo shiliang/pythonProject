@@ -35,6 +35,10 @@ spec:   # pod 的描述信息
           hostPath:                           # 宿主机路径
             path: {{ .Values.env.SDK_PATH }}
             type: Directory
+        - name: result-path         # 给需要挂载的宿主机路径起个名字
+          hostPath: # 宿主机路径
+            path: {{ .Values.env.RESULT_PATH }}
+            type: Directory
         - name: nfs-pv-mpc
           persistentVolumeClaim:
             claimName: nfs-pvc-mpc
@@ -51,6 +55,8 @@ spec:   # pod 的描述信息
           volumeMounts:                 # 容器内部映射的目录路径
             - name: chainmaker-sdk-config    # 给需要映射的目录路径起个名字，名字要和上面的宿主机路径的名字对应
               mountPath: /home/workspace/sdk  # 容器内部映射挂载的目录路径
+            - name: result-path
+              mountPath: /home/workspace/result
             - mountPath: /home/workspace/logs
               name: nfs-pv-mpc
               subPathExpr: job-service/$(POD_NAMESPACE)_$(POD_NAME)_$(POD_IP)_$(NODE_IP)_$(NODE_NAME)

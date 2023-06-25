@@ -83,11 +83,19 @@ RIGHT_BRACKET: ']';
 FL: 'FL';
 FLLABEL: 'FLLABEL';
 INTERSECTION: 'INTERSECTION';
-HEFB: 'HEFB';    // feature binning
-HEFSL: 'HEFSL';  // feature selection
-HEFSP: 'HEFSP';  // sampling
-HEFSC: 'HEFSC';  // feature scale
-HEDS: 'HEDS';   // data statistic
+
+
+HEDS: 'HEDS';
+
+HEFSL: 'HEFSL';
+HEFB: 'HEFB';
+HOFB: 'HOFB';
+HEFSC: 'HEFSC';
+HEFSP: 'HEFSP';
+HEFIM: 'HEFIM';
+HEPEAR: 'HEPEAR';
+HO1HOT: 'HO1HOT';
+
 HESB: 'HESB';
 HOSB: 'HOSB';
 HELR: 'HELR';
@@ -95,6 +103,10 @@ HEKMS: 'HEKMS';
 HELNR: 'HELNR';
 HOLR: 'HOLR';
 EVAL: 'EVAL';
+HEPR: 'HEPR';
+HEFTL: 'HEFTL';
+HENN: 'HENN';
+HONN: 'HONN';
 
 // NOTE: If you add a new token in the list below, you should update the list of keywords
 // and reserved tag in `docs/sql-ref-ansi-compliance.md#sql-keywords`, and
@@ -421,6 +433,7 @@ GTE : '>=' | '!<';
 PLUS: '+';
 MINUS: '-';
 ASTERISK: '*';
+OCCULTATION: '?';
 SLASH: '/';
 PERCENT: '%';
 TILDE: '~';
@@ -509,6 +522,7 @@ fragment DIGIT
 
 fragment LETTER
     : [A-Z]
+    | [a-z]
     ;
 
 SIMPLE_COMMENT

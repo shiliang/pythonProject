@@ -161,7 +161,11 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             FaderatedQueryExpression projectList = visitFederatedQueryExpression((SqlBaseParser.FederatedQueryExpressionContext) context.selectClause().namedExpressionSeq());
 
             if (context.aggregationClause() == null) {
-                return new LogicalProject(projectList, children);
+                if (projectList.getValues().get(0).toString().equals("*")) {
+                    return children.get(0);
+                } else {
+                    return new LogicalProject(projectList, children);
+                }
             } else {
                 LogicalProject child = new LogicalProject(projectList, children);
                 if (context.havingClause() == null) {
@@ -285,13 +289,34 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             return visitParenthesizedExpression((SqlBaseParser.ParenthesizedExpressionContext) context);
         } else if (context instanceof SqlBaseParser.FunctionCallContext) {
             return visitFunctionCall((SqlBaseParser.FunctionCallContext) context);
+        } else if (context instanceof SqlBaseParser.FeatureReferenceContext) {
+            return visitFeatureReference((SqlBaseParser.FeatureReferenceContext) context);
+        } else if (context instanceof SqlBaseParser.PirCaseContext) {
+            return visitPirCase((SqlBaseParser.PirCaseContext) context);
+        } else if (context instanceof SqlBaseParser.StarContext) {
+            return visitStar((SqlBaseParser.StarContext) context);
         } else {
             throw new ParserException(DEFAULT_ERROR + ": " + context.getText());
         }
     }
     @Override
+    public Identifier visitPirCase(SqlBaseParser.PirCaseContext context) {
+        String identifier = context.getText();
+        return new Identifier(identifier);
+    }
+    @Override
+    public Identifier visitStar(SqlBaseParser.StarContext context) {
+        String identifier = context.getText();
+        return new Identifier(identifier);
+    }
+    @Override
     public Identifier visitColumnReference(SqlBaseParser.ColumnReferenceContext context) {
         String identifier = context.identifier().getChild(0).getText();
+        return new Identifier(identifier);
+    }
+    @Override
+    public Identifier visitFeatureReference(SqlBaseParser.FeatureReferenceContext context) {
+        String identifier = context.getText();
         return new Identifier(identifier);
     }
     @Override
@@ -466,23 +491,37 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             }
         }
 
-        // feat 暂不处理
-        List<List<FlExpression>> feat = new ArrayList<>();
-
+        List<FlExpression> feat = new ArrayList<>();
+        if (context.flFeatSeq().size() != 0) {
+            Identifier feature_key = new Identifier("feature_name");
+            Identifier feature_value = new Identifier(context.flFeatSeq(0).flFeat(0).feat.getText());
+            FlExpression featName = new FlExpression(feature_key, feature_value, FlExpression.Operator.EQUAL);
+            feat.add(featName);
+            if (context.flFeatSeq().size() != 0) {
+                for (int i = 0; i < context.flFeatSeq(0).flFeat(0).flExpressionSeq().flExpression().size(); i++) {
+                    FlExpression flExpression = visitFlExpression(context.flFeatSeq(0).flFeat(0).flExpressionSeq().flExpression(i));
+                    feat.add(flExpression);
+                }
+            }
+        }
         List<FlExpression> model = new ArrayList<>();
-        Identifier key = new Identifier("model_name");
-        Identifier value = new Identifier(context.flModelSeq(0).flModel(0).model.getText());
-        FlExpression modelName = new FlExpression(key, value, FlExpression.Operator.EQUAL);
-        model.add(modelName);
-        for (int i=0; i<context.flModelSeq(0).flModel(0).flExpressionSeq().flExpression().size(); i++) {
-            FlExpression flExpression = visitFlExpression(context.flModelSeq(0).flModel(0).flExpressionSeq().flExpression(i));
-            model.add(flExpression);
+        if (context.flModelSeq().size() != 0) {
+            Identifier key = new Identifier("model_name");
+            Identifier value = new Identifier(context.flModelSeq(0).flModel(0).model.getText());
+            FlExpression modelName = new FlExpression(key, value, FlExpression.Operator.EQUAL);
+            model.add(modelName);
+            for (int i = 0; i < context.flModelSeq(0).flModel(0).flExpressionSeq().flExpression().size(); i++) {
+                FlExpression flExpression = visitFlExpression(context.flModelSeq(0).flModel(0).flExpressionSeq().flExpression(i));
+                model.add(flExpression);
+            }
         }
 
         List<FlExpression> eval = new ArrayList<>();
-        for (int i=0; i<context.flEvalSeq(0).flEval(0).flExpressionSeq().flExpression().size(); i++) {
-            FlExpression flExpression = visitFlExpression(context.flEvalSeq(0).flEval(0).flExpressionSeq().flExpression(i));
-            eval.add(flExpression);
+        if (context.flModelSeq().size() != 0) {
+            for (int i = 0; i < context.flEvalSeq(0).flEval(0).flExpressionSeq().flExpression().size(); i++) {
+                FlExpression flExpression = visitFlExpression(context.flEvalSeq(0).flEval(0).flExpressionSeq().flExpression(i));
+                eval.add(flExpression);
+            }
         }
 
         return new FederatedLearningExpression(fl, labels, psi, feat, model, eval);

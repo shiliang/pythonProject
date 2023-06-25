@@ -83,6 +83,9 @@ public class ParserController {
     @RequestMapping(value = "/preview/dag", method = RequestMethod.POST)
     public Result jobPreview(@RequestBody String req) {
         SqlVo sqlVo = JSONObject.parseObject(req, SqlVo.class, Feature.OrderedField);
+        if (sqlVo.getSqltext().contains("?")) {
+            sqlVo.setIsStream(1);
+        }
         JobGraphVo jobGraphVo= jobParserService.jobPreview(sqlVo);
         return Result.success(jobGraphVo);
     }
@@ -233,15 +236,18 @@ public class ParserController {
         String data = request.getString("data");
         String key = request.getString("key");
 
-        List<String> valueList = List.of(StringUtils.strip(data, "[]").split(","));
-        File file = new File(jobId);
+        String filePath = "result/" + jobId;
+
+        List<String> valueList = List.of(StringUtils.strip(data, "[]").split("#@#"));
+//        List<String> valueList = List.of(StringUtils.strip(data, "[]"));
+        File file = new File(filePath);
         if (!file.exists()) {
-            CsvUtil.writeToCsv(key, valueList, jobId, false);
+            CsvUtil.writeToCsv(key, valueList, filePath, false);
         } else {
             List<String> dataList = new ArrayList<>();
             dataList.add(key);
             dataList.addAll(valueList);
-            List<String> result = CsvUtil.readFromCsv(jobId);
+            List<String> result = CsvUtil.readFromCsv(filePath);
 
             List<String> inputs = new ArrayList<>();
             String headerString = "";
@@ -253,7 +259,7 @@ public class ParserController {
                     inputs.add(temp);
                 }
             }
-            CsvUtil.writeToCsv(headerString, inputs, jobId, false);
+            CsvUtil.writeToCsv(headerString, inputs, filePath, false);
         }
         return Result.success(jobId);
     }
@@ -261,15 +267,35 @@ public class ParserController {
     @WebLog(description = "查询预览结果")
     @RequestMapping(value = "/preview/result/{jobID}", method = RequestMethod.GET)
     public Result getPreview(@PathVariable String jobID) throws IOException {
+        String filePath = "result/" + jobID;
         JSONObject result = new JSONObject();
-        List<String> readData = CsvUtil.readFromCsv(jobID);
+        List<String> readData = CsvUtil.readFromCsv(filePath);
+        System.out.println(readData.get(0));
         if (readData == null) {
             result.put("result", readData);
         } else {
             List<List<String>> dataList = new ArrayList<>();
-            for (String value : readData) {
-                List<String> valueList = List.of(value.split(","));
-                dataList.add(valueList);
+            List<String> keys = List.of(readData.get(0).split(","));
+            if (keys.size() == 1) {
+                for (String value : readData) {
+                    List<String> valueList = List.of(value);
+                    dataList.add(valueList);
+                }
+            } else if (keys.size() == 2) {
+                for (String value : readData) {
+                    String kept = value.substring( 0, value.indexOf(","));
+                    String remainder = value.substring(value.indexOf(",")+1, value.length());
+                    List<String> valueList = new ArrayList<>();
+                    valueList.add(kept);
+                    valueList.add(remainder);
+                    dataList.add(valueList);
+                }
+
+            } else {
+                for (String value : readData) {
+                    List<String> valueList = List.of(value.split(","));
+                    dataList.add(valueList);
+                }
             }
 
             JSONArray data = new JSONArray();
@@ -291,7 +317,8 @@ public class ParserController {
     @WebLog(description = "下载结果")
     @RequestMapping(value = "/download/result/{jobID}", method = RequestMethod.GET)
     public ResponseEntity<String> download(@PathVariable String jobID) {
-        List<String> data = CsvUtil.readFromCsv(jobID);
+        String filePath = "result/" + jobID;
+        List<String> data = CsvUtil.readFromCsv(filePath);
         JSONObject result = new JSONObject();
         result.put("result", data);
         return new ResponseEntity<String>(result.toJSONString(), HttpStatus.OK);

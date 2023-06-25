@@ -34,6 +34,7 @@ public class JobInfoVo {
         return jobInfoVo;
     }
     public static JobInfoVo jobInfoToJobInfoVo(JobInfo jobInfo) {
+
         JobInfoVo jobInfoVo = new JobInfoVo();
         JobVo jobVo = new JobVo();
         jobVo.setJobID(jobInfo.getJob().getJobID());
@@ -43,9 +44,13 @@ public class JobInfoVo {
         }
         if (jobInfo.getServices() != null) {
             if (jobInfo.getServices().size() > 0) {
+                String templateId = "1";
+                if (jobInfo.getJob().getCommon().get("method_name").equals("pir")) {
+                    templateId = "2";
+                }
                 List<ServiceVo> serviceVos = new ArrayList<>();
                 for (Service service : jobInfo.getServices()) {
-                    serviceVos.add(ServiceVo.serviceToServiceVo(service));
+                    serviceVos.add(ServiceVo.serviceToServiceVo(service, templateId));
                 }
                 jobInfoVo.setServices(serviceVos);
             }

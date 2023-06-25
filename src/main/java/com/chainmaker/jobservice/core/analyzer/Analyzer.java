@@ -7,6 +7,7 @@ import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
 import com.chainmaker.jobservice.api.model.vo.ModelParamsVo;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.api.response.RestException;
+import com.chainmaker.jobservice.core.analyzer.catalog.DataCatalogDetailInfo;
 import com.chainmaker.jobservice.core.analyzer.catalog.DataCatalogInfo;
 import com.chainmaker.jobservice.core.analyzer.catalog.MissionDetailVO;
 import com.chainmaker.jobservice.core.parser.plans.LogicalPlanVisitor;
@@ -35,6 +36,11 @@ public class Analyzer extends LogicalPlanVisitor {
     private List<ModelParamsVo> modelParamsVos = new ArrayList<>();
 
     private JSONArray dataCatalogInfoList;
+    private HashMap<String, String> columnInfoMap = new HashMap<>();
+
+    public HashMap<String, String> getColumnInfoMap() {
+        return columnInfoMap;
+    }
 
     public JSONArray getDataCatalogInfoList() {return dataCatalogInfoList; }
     public List<MissionDetailVO> getMissionDetailVOs() {
@@ -48,6 +54,7 @@ public class Analyzer extends LogicalPlanVisitor {
     public List<ModelParamsVo> getModelParamsVos() {
         return modelParamsVos;
     }
+
 
     /***
      * @description 根据表名获取表信息，获取计算资源信息
@@ -86,6 +93,10 @@ public class Analyzer extends LogicalPlanVisitor {
             missionDetailVO.setOrgId(dataCatalogInfo.getOrgId());
             missionDetailVO.setDatacatalogId(dataCatalogInfo.getId());
             missionDetailVOs.add(missionDetailVO);
+            System.out.println("dataCatalogInfo: " + dataCatalogInfo);
+            for (DataCatalogDetailInfo dataCatalogDetailInfo : dataCatalogInfo.getItemVOList()) {
+                columnInfoMap.put(dataCatalogInfo.getName()+dataCatalogDetailInfo.getName(), String.valueOf(dataCatalogDetailInfo.getDataType()));
+            }
         }
         if (modelType == 2) {
             for (String modelName : modelNameList) {

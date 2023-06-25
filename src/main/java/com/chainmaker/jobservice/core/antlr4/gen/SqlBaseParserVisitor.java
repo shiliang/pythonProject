@@ -1,4 +1,4 @@
-// Generated from C:/Users/Pc/IdeaProjects/chainmaker-job-service/src/main/java/com/chainmaker/jobservice/core/antlr4\SqlBaseParser.g4 by ANTLR 4.12.0
+// Generated from D:/chainmaker-job-service/src/main/java/com/chainmaker/jobservice/core/antlr4\SqlBaseParser.g4 by ANTLR 4.10.1
 package com.chainmaker.jobservice.core.antlr4.gen;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -1617,6 +1617,13 @@ public interface SqlBaseParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitLambda(SqlBaseParser.LambdaContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code featureReference}
+	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFeatureReference(SqlBaseParser.FeatureReferenceContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code parenthesizedExpression}
 	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
 	 * @param ctx the parse tree
@@ -1672,6 +1679,13 @@ public interface SqlBaseParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitLast(SqlBaseParser.LastContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code pirCase}
+	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPirCase(SqlBaseParser.PirCaseContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code star}
 	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
@@ -1756,6 +1770,12 @@ public interface SqlBaseParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitFirst(SqlBaseParser.FirstContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link SqlBaseParser#featureExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFeatureExpression(SqlBaseParser.FeatureExpressionContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code nullLiteral}
 	 * labeled alternative in {@link SqlBaseParser#constant}.
