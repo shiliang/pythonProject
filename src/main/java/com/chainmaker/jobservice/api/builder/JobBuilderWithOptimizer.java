@@ -133,9 +133,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         // 生成tasks
         tasks.addAll(dfsPlan(phyPlan, phyTaskMap));
         // 特殊处理联邦学习相关的tasks
-//        generateFLTasks(OriginPlan);
-        // 修改localJoin的输出数量
-//        localJoinCorrect();
+        generateFLTasks(OriginPlan);
         // 合并OTPSI，暂时放弃
 //        mergeOTPSI();
         // PSI后通知所有参与表
@@ -200,7 +198,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
 
         // 基本信息
-        Task task = basicTask(String.valueOf(cnt));
+        Task task = basicTask(String.valueOf(cnt++));
 
         // module信息（即进行什么操作）
         Module module = new Module();
@@ -687,7 +685,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                         REVEAL_EVERY_ITER=TRUE],
                     eval=[EVAL_TYPE=BINARY]}
              */
-        } else if (node instanceof LogicalProject){
+        } else if (node instanceof LogicalProject) {
             /*
                 "select adata.a1, testt(adata.a1, bdata.b1) from adata, bdata";
              */
@@ -706,7 +704,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
     public Task parseTEE(FunctionCallExpression expr) {
         // basic info
-        Task task = basicTask(String.valueOf(cnt));
+        Task task = basicTask(String.valueOf(cnt++));
 
         // module
         Module module = new Module();
@@ -776,7 +774,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     public Task parseFederatedLearning(FederatedLearning node) {
         // basic info
         FederatedLearningExpression expression = node.getParamsList();
-        Task task = basicTask(String.valueOf(cnt));
+        Task task = basicTask(String.valueOf(cnt++));
 
         // module
         Module module = new Module();
@@ -932,7 +930,15 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             case "MPCProject":
                 for (int i = 0; i < phyPlan.getRowType().getFieldNames().size(); i++) {
                     RexNode node = ((MPCProject) phyPlan).getProjects().get(i);
-                    List<String> inputList = List.of(phyPlan.getRowType().getFieldNames().get(i).split("\\+|-|\\*|/|%|\\[|]|\\(|\\)"));
+                    List<String> inputList = new ArrayList<String>(List.of(phyPlan.getRowType().getFieldNames().get(i).split("\\+|-|\\*|/|%|\\[|]|\\(|\\)")));
+                    // 删除如 SUM[ADATA.A1] 这种split出来剩余 SUM 的情况
+                    for (int j = 0; j < inputList.size(); j++) {
+                        if (!(inputList.get(j).contains("."))) {
+                            inputList.remove(j);
+                            j--;
+                        }
+                    }
+                    System.out.println(inputList);
                     tasks.add(generateProjectTask((MPCProject) phyPlan, phyTaskMap, (RexCall) node, inputList));
                 }
                 break;
@@ -945,6 +951,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     for (RexNode cond : ((RexCall) conds).getOperands()) {
                         tasks.add(generateFilterTask((MPCFilter) phyPlan, phyTaskMap, (RexCall) cond));
                     }
+                } else {
+                    tasks.add(generateFilterTask((MPCFilter) phyPlan, phyTaskMap, (RexCall) conds));
                 }
                 break;
             case "MPCTableScan":
@@ -953,6 +961,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 TaskOutputData outputData = new TaskOutputData();
                 String tableName = phyPlan.getTable().getQualifiedName().get(0);
                 outputData.setDataName(tableName);
+                outputData.setDataID(tableName);
                 output.setData(List.of(outputData));
                 task.setOutput(output);
                 Party party = new Party();
@@ -1092,187 +1101,105 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         Module module = new Module();
 
         JSONObject moduleparams = new JSONObject(true);
-        module.setParams(moduleparams);
         if (proj instanceof RexCall) {
             SqlOperator op = ((RexCall) proj).getOperator();
             if (op.equals(SqlStdOperatorTable.PLUS) || op.equals(SqlStdOperatorTable.MINUS) ||
                     op.equals(SqlStdOperatorTable.MULTIPLY) || op.equals(SqlStdOperatorTable.DIVIDE) ||
                     op.equals(SqlStdOperatorTable.MOD)) {
                 module.setModuleName("EXP");
-                String expr = dfsRexNode(proj, phyPlan);
-
+                moduleparams.put("function", "base");
+                String expr = dfsRexNode(proj);
+                moduleparams.put("expression", expr);
             } else {
                 module.setModuleName("AGG");
-
+                moduleparams.put("function", op.toString());
+                String expr = dfsRexNode(((RexCall) proj).getOperands().get(0));
+                moduleparams.put("expression", expr);
             }
         } else if (proj instanceof RexInputRef){
             module.setModuleName(TaskType.QUERY.name());
         } else {
             System.out.println("RexElse" + proj);
         }
+        module.setParams(moduleparams);
+        task.setModule(module);
 
-//        // module信息（即进行什么操作）
-//        JSONObject moduleparams = new JSONObject(true);
-//                String MPCProj = str.substring(str.indexOf("[") + 1, str.length() - 1);
-//                String MPCExpr = MPCProj;
-//                if (MPCProj.contains("[")) {
-//                    // 说明是 COUNT(ADATA.A1)这种，包含聚合函数
-//                    String func = MPCProj.substring(0, MPCProj.indexOf("["));
-//                    moduleparams.put("function", func);
-//                    MPCExpr = MPCProj.substring(MPCProj.indexOf("["), MPCProj.length()-1);
-//                } else {
-//                    // 说明是 ADATA.A1+BDATA.B1这种，不包含聚合函数，function置为base
-//                    moduleparams.put("function", "base");
-//                }
-//                String expression = "";
-//                int chNum = 0;
-//                for (int i = 0; i < MPCExpr.length(); i++) {
-//                    char ch = MPCExpr.charAt(i);
-//                    if (ch == '+' || ch == '-' || ch == '*' || ch == '/' ||
-//                            ch == '(' || ch == ')') {
-//                        if (chNum != 0) {
-//                            expression += "x";
-//                            chNum = 0;
-//                        }
-//                        expression += ch;
-//                    } else {
-//                        chNum++;
-//                    }
-//                }
-//                if (chNum != 0) {
-//                    expression += "x";
-//                }
-//                moduleparams.put("expression", expression);
-//
-//        module.setParams(moduleparams);
-//        task.setModule(module);
-//
-//        // 输入信息
-//        Input input = new Input();
-//        List<TaskInputData> inputDatas = new ArrayList<>();
-//
-//                String MPCProj = str.substring(str.indexOf("[") + 1, str.length() - 1);
-//                String[] fields;
-//                if (MPCProj.contains("[")) {
-//                    fields = MPCProj.substring(MPCProj.indexOf("[") + 1, MPCProj.length() - 1).split("\\+|-|\\*|/|\\(|\\)");
-//                } else {
-//                    fields = MPCProj.split("\\+|-|\\*|/|\\(|\\)");
-//                }
-//                HashMap<String, Integer> idxMap = new HashMap<>();
-//                int cnt = 0;
-//                for (int i = 0; i < fields.length; i++) {
-//                    String tableField = fields[i];
-//                    if (tableField.length() == 0) {
-//                        continue;
-//                    }
-//                    if (idxMap.containsKey(tableField)) {
-//                        int pos = idxMap.get(tableField);
-//                        List<Integer> list = (List<Integer>) inputDatas.get(pos).getParams().get("index");
-//                        list.add(i);
-//                        continue;
-//                    } else {
-//                        idxMap.put(tableField, cnt++);
-//                    }
-//                    String table = tableField.split("\\.")[0];
-//                    String field = tableField.split("\\.")[1];
-//                    TaskInputData inputdata = new TaskInputData();
-//                    for (String dataName : inputTables) {
-//                        if (dataName.startsWith(table)) {
-//                            inputdata.setDataName(dataName);
-//                            if (dataName.contains("-")) {
-//                                inputdata.setTaskSrc(dataName.split("-")[1]);
-//                                inputdata.setDataID("");
-//                            } else {
-//                                inputdata.setTaskSrc("");
-//                                inputdata.setDataID(inputdata.getDataName());
-//                            }
-//                            break;
-//                        }
-//                    }
-//                    if (inputdata.getDataName() == null) {
-//                        inputdata.setDataName(table);
-//                        inputdata.setTaskSrc("");
-//                        inputdata.setDataID(inputdata.getDataName());
-//                    }
-//                    JSONObject jsonObjectParams = new JSONObject(true);
-//                    jsonObjectParams.put("table", table);
-//                    jsonObjectParams.put("field", field);
-//                    List<Integer> list = new ArrayList<>();
-//                    list.add(i);
-//                    jsonObjectParams.put("index", Arrays.toString(list.toArray()));
-//
-//
-//                    inputdata.setDomainID(getFieldDomainID(jsonObjectParams.get("table") + "." + jsonObjectParams.get("field")));
-//                    inputdata.setRole("server");
-//                    inputdata.setParams(jsonObjectParams);
-//                    inputDatas.add(inputdata);
-//                }
-//
-//                String tableField = str.substring(str.indexOf("[") + 1, str.length() - 1);
-//                String table = tableField.split("\\.")[0];
-//                String field = tableField.split("\\.")[1];
-//                TaskInputData inputdata = new TaskInputData();
-//                for (String dataName : inputTables) {
-//                    if (dataName.startsWith(table)) {
-//                        inputdata.setDataName(dataName);
-//                        if (dataName.contains("-")) {
-//                            inputdata.setTaskSrc(dataName.split("-")[1]);
-//                            inputdata.setDataID("");
-//                        } else {
-//                            inputdata.setTaskSrc("");
-//                            inputdata.setDataID(inputdata.getDataName());
-//                        }
-//                        break;
-//                    }
-//                }
-//                if (inputdata.getDataName() == null) {
-//                    inputdata.setDataName(table);
-//                    inputdata.setTaskSrc("");
-//                    inputdata.setDataID(inputdata.getDataName());
-//                }
-//
-//                JSONObject jsonObjectParams = new JSONObject(true);
-//                if (isNumeric(tableField)) {
-//                    jsonObjectParams.put("const", tableField);
-//                    inputdata.setDomainID("");
-//                } else {
-//                    jsonObjectParams.put("table", table);
-//                    jsonObjectParams.put("field", field);
-//                    inputdata.setDomainID(getFieldDomainID(tableField));
-//                }
-//
-//
-//                inputdata.setRole("server");
-//                inputdata.setParams(jsonObjectParams);
-//                inputDatas.add(inputdata);
-//
-//        input.setData(inputDatas);
-//        task.setInput(input);
-//
-//        // 输出信息
-//        Output output = new Output();
-//        List<TaskOutputData> outputDatas = new ArrayList<>();
-//        TaskOutputData outputdata1 = new TaskOutputData();
-//        TaskOutputData outputdata2 = new TaskOutputData();
-//        String inputDataName1 = inputDatas.get(0).getDataName();
-//        String outputPrefix = "";
-//        if (inputDataName1.contains("-")) {
-//            outputPrefix = inputDataName1.substring(0, inputDataName1.indexOf('-'));
-//        } else {
-//            outputPrefix = inputDataName1;
-//        }
-//                outputdata1.setDataName(outputPrefix+"-"+curTaskName);
-//                outputdata1.setFinalResult("N");
-//                outputdata1.setDomainID(inputDatas.get(0).getDomainID());
-//                outputdata1.setDataID("");
-//                if (isFinalResult) {
-//                    outputdata1.setFinalResult("Y");
-//                }
-//                outputDatas.add(outputdata1);
-//
-//        output.setData(outputDatas);
-//        task.setOutput(output);
+        // 输入信息
+        Input input = new Input();
+        List<TaskInputData> inputDatas = new ArrayList<>();
+        Task childTask = phyTaskMap.get(((RelSubset) phyPlan.getInput()).getBest());
+        for (int i = 0; i < inputList.size(); i++) {
+            TaskInputData inputdata = new TaskInputData();
+            String tableField = inputList.get(i);
+            inputdata.setTaskSrc(childTask.getTaskName());
+            inputdata.setDomainID(getFieldDomainID(tableField));
+            if (childTask.getTaskName().equals("") || childTask.getOutput().getData().get(0).getDataName().startsWith(inputdata.getDomainID())) {
+                inputdata.setDataName(childTask.getOutput().getData().get(0).getDataName());
+                inputdata.setDataID(childTask.getOutput().getData().get(0).getDataID());
+            } else {
+                inputdata.setDataName(childTask.getOutput().getData().get(1).getDataName());
+                inputdata.setDataID(childTask.getOutput().getData().get(1).getDataID());
+            }
+            if (i == 0) {
+                inputdata.setRole("server");
+            } else {
+                inputdata.setRole("client");
+            }
+            JSONObject inputParam = new JSONObject(true);
+            inputParam.put("table", tableField.split("\\.")[0]);
+            inputParam.put("field", tableField.split("\\.")[1]);
+            inputdata.setParams(inputParam);
+            inputDatas.add(inputdata);
+        }
 
+        input.setData(inputDatas);
+        task.setInput(input);
+
+        // 输出信息
+        Output output = new Output();
+        TaskOutputData outputdata = new TaskOutputData();
+        outputdata.setDataName(inputDatas.get(0).getDomainID() + "-" + cnt);
+        outputdata.setFinalResult("Y");
+        outputdata.setDomainID(inputDatas.get(0).getDomainID());
+        outputdata.setDataID("");
+
+        output.setData(List.of(outputdata));
+        task.setOutput(output);
+
+        // parties信息
+        List<Party> parties = new ArrayList<>();
+        HashSet<String> partySet = new HashSet<>();
+        for (TaskInputData inputData : input.getData()) {
+            partySet.add(inputData.getDomainID());
+        }
+        for (String value : partySet) {
+            Party party = new Party();
+            party.setServerInfo(null);
+            party.setStatus(null);
+            party.setTimestamp(null);
+            party.setPartyID(value);
+            parties.add(party);
+        }
+        task.setParties(parties);
+        for (Party party : parties) {
+            jobParties.add(party.getPartyID());
+        }
+
+        if (parties.size() == 1) {
+            if (module.getModuleName().equals("EXP")) {
+                module.setModuleName(TaskType.LOCALEXP.name());
+            } else if (module.getModuleName().equals("AGG")) {
+                module.setModuleName(TaskType.LOCALAGG.name());
+            }
+        } else {
+            if (module.getModuleName().equals("EXP")) {
+                module.setModuleName(TaskType.MPCEXP.name());
+            } else if (module.getModuleName().equals("AGG")) {
+                module.setModuleName(TaskType.MPCAGG.name());
+            }
+        }
+
+        phyTaskMap.put(phyPlan, task);
         return task;
     }
 
@@ -1282,12 +1209,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * @param proj
      * @return
      */
-    public String dfsRexNode(RexNode proj, MPCProject phyPlan) {
+    public String dfsRexNode(RexNode proj) {
         String expr = "";
         if (proj instanceof RexCall) {
-            expr += dfsRexNode(((RexCall) proj).getOperands().get(0), phyPlan);
+            expr += dfsRexNode(((RexCall) proj).getOperands().get(0));
             expr += ((RexCall) proj).getOperator().toString();
-            expr += dfsRexNode(((RexCall) proj).getOperands().get(1), phyPlan);
+            expr += dfsRexNode(((RexCall) proj).getOperands().get(1));
         } else if (proj instanceof RexInputRef) {
             expr += "x";
         } else if (proj instanceof RexLiteral) {
@@ -1314,6 +1241,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         String leftField = phyPlan.getRowType().getFieldNames().get(((RexInputRef) cond.getOperands().get(0)).getIndex());
         String rightField = phyPlan.getRowType().getFieldNames().get(((RexInputRef) cond.getOperands().get(1)).getIndex());
         Task leftChild = phyTaskMap.get(((RelSubset) phyPlan.getLeft()).getBest());
+        System.out.println(((RelSubset) phyPlan.getRight()).getBest() instanceof MPCFilter);
         Task rightChild = phyTaskMap.get(((RelSubset) phyPlan.getRight()).getBest());
 
         inputdata1.setTaskSrc(leftChild.getTaskName());
@@ -1321,11 +1249,14 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         inputdata1.setDomainID(getFieldDomainID(leftField));
         if (leftChild.getTaskName().equals("")) {
             inputdata1.setDataName(leftField.split("\\.")[0]);
+            inputdata1.setDataID(leftField.split("\\.")[0]);
         } else {
             if (leftChild.getOutput().getData().get(0).getDomainID().equals(inputdata1.getDomainID())) {
                 inputdata1.setDataName(leftChild.getOutput().getData().get(0).getDataName());
+                inputdata1.setDataID(leftChild.getOutput().getData().get(0).getDataID());
             } else {
                 inputdata1.setDataName(leftChild.getOutput().getData().get(1).getDataName());
+                inputdata1.setDataID(leftChild.getOutput().getData().get(1).getDataID());
             }
         }
 
@@ -1353,25 +1284,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         input.setData(List.of(inputdata1, inputdata2));
         task.setInput(input);
 
-        // 输出信息
-        Output output = new Output();
-
-        TaskOutputData outputdata1 = new TaskOutputData();
-        TaskOutputData outputdata2 = new TaskOutputData();
-
-        outputdata1.setDataName(inputdata1.getDomainID() + "-" + cnt);
-        outputdata1.setFinalResult("N");
-        outputdata1.setDomainID(inputdata1.getDomainID());
-        outputdata1.setDataID("");
-
-        outputdata2.setDataName(inputdata2.getDomainID() + "-" + cnt);
-        outputdata2.setFinalResult("N");
-        outputdata2.setDomainID(inputdata2.getDomainID());
-        outputdata2.setDataID("");
-
-        output.setData(List.of(outputdata1, outputdata2));
-        task.setOutput(output);
-
         // parties信息
         List<Party> parties = new ArrayList<>();
         HashSet<String> partySet = new HashSet<>();
@@ -1391,6 +1303,31 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         for (Party party : parties) {
             jobParties.add(party.getPartyID());
         }
+
+        // 输出信息
+        Output output = new Output();
+
+        TaskOutputData outputdata1 = new TaskOutputData();
+        TaskOutputData outputdata2 = new TaskOutputData();
+
+        outputdata1.setDataName(inputdata1.getDomainID() + "-" + cnt);
+        outputdata1.setFinalResult("N");
+        outputdata1.setDomainID(inputdata1.getDomainID());
+        outputdata1.setDataID("");
+
+        outputdata2.setDataName(inputdata2.getDomainID() + "-" + cnt);
+        outputdata2.setFinalResult("N");
+        outputdata2.setDomainID(inputdata2.getDomainID());
+        outputdata2.setDataID("");
+
+        if (parties.size() == 1) {
+            output.setData(List.of(outputdata1));
+        } else {
+            output.setData(List.of(outputdata1, outputdata2));
+        }
+        task.setOutput(output);
+
+
         phyTaskMap.put(phyPlan, task);
 
         return task;
@@ -1433,6 +1370,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         inputdata.setTaskSrc(childTask.getTaskName());
         inputdata.setDataName(childTask.getOutput().getData().get(0).getDataName());
         inputdata.setDomainID(getFieldDomainID(tableField));
+        inputdata.setDataID(childTask.getOutput().getData().get(0).getDataID());
         inputdata.setRole("server");
         JSONObject inputParam = new JSONObject(true);
         inputParam.put("table", tableField.split("\\.")[0]);
