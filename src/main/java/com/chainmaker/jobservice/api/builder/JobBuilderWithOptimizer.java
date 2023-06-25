@@ -947,6 +947,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 break;
             case "MPCFilter":
                 RexNode conds = ((MPCFilter) phyPlan).getCondition();
+                // 多个filter条件 每个形成单独task
                 if (conds.getKind() == SqlKind.AND) {
                     for (RexNode cond : ((RexCall) conds).getOperands()) {
                         tasks.add(generateFilterTask((MPCFilter) phyPlan, phyTaskMap, (RexCall) cond));
@@ -975,120 +976,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
 
         return tasks;
-
-//        while (!stk.isEmpty()) {
-//            String s = stk.pop().trim();
-////            System.out.println("current str = " + s);
-//            List<String> params = List.of(s.split("\\[|]"));
-//            if (s.startsWith("MPCTableScan")) {
-//                // MPCTableScan [TC], 直接加入操作栈
-//                String table = params.get(1);
-//                operands.add(0, table);
-//            } else if (s.startsWith("MPCJoin")) {
-//                // MPCJoin [JoinType[INNER], JoinCond[=($0, $2)], $ from [TA.ID, TA.AGE, TC.ID]]
-////                // 默认都是两两PSI，所以取两个操作数
-////                List<String> lefts = operands.pop();
-////                List<String> rights = operands.pop();
-//
-//                if (params.get(4).startsWith("AND")) {
-//                    // 如果是多个JOIN的AND情况，则把它们分为多个单独的JOIN加入Task栈
-//                    String[] conds = params.get(4).substring(4, params.get(4).length() - 1).split("\\),");
-//                    conds[0] += ")";
-//                    for (int i = 0; i < conds.length; i++) {
-//                        conds[i] = conds[i].trim();
-//                        String newCond = s.substring(0, s.indexOf("AND"));
-//                        newCond += conds[i] + "] ";
-//                        newCond += s.substring(s.lastIndexOf("$"));
-////                        System.out.println(newFilter);
-//                        stk.add(newCond);
-//                    }
-//                } else {
-//                    // 完成string到Task的转换
-//                    Task PSITask = str2Task(s, cnt, "PSI", operands, false);
-//                    tasks.add(PSITask);
-//
-//                    // 该task的输出作为下一个的输入加入操作数栈
-//                    Output PSIOutput = PSITask.getOutput();
-//                    for (TaskOutputData outputData : PSIOutput.getData()) {
-//                        operands.add(0, outputData.getDataName());
-//                    }
-//                    cnt++;
-//                }
-//            } else if (s.startsWith("MPCFilter")) {
-//                // MPCFilter [FilterCond[AND(>($0, 10), <($1, 50))] $ from [TA.ID, TA.AGE]]
-//                // 需求只有AND或者单一Cond两种情况，如后续添加OR，可再增加
-//                if (params.get(2).startsWith("AND")) {
-//                    // 如果是多个Cond的AND情况，则把它们分为多个单独的Cond加入Task栈
-//                    String[] conds = params.get(2).substring(4, params.get(2).length() - 1).split("\\),");
-//                    conds[0] += ")";
-//                    for (int i = 0; i < conds.length; i++) {
-//                        conds[i] = conds[i].trim();
-//                        String newFilter = s.substring(0, s.indexOf("AND"));
-//                        newFilter += conds[i] + "] ";
-//                        newFilter += s.substring(s.lastIndexOf("$"));
-////                        System.out.println(newFilter);
-//                        stk.add(newFilter);
-//                    }
-//                } else {
-//                    // 如果是单独Cond的情况，则直接生成Task
-//                    // MPCFilter [FilterCond[>($0, 10)] $ from [TA.ID, TA.AGE]]
-////                    List<String> childTaskNames = operands.pop();
-//                    Task FilterTask;
-//                    String cond = params.get(2);
-//                    if (cond.substring(0, cond.indexOf(",")).contains("$") && cond.substring(cond.indexOf(",")).contains("$")) {
-////                        FilterTask = str2Task(s, cnt, "VariableFilter", childTaskNames, null, false);
-//                        FilterTask = str2Task(s, cnt, "VariableFilter", operands, false);
-//                    } else {
-////                        FilterTask = str2Task(s, cnt, "ConstantFilter", childTaskNames, null, false);
-//                        FilterTask = str2Task(s, cnt, "ConstantFilter", operands, false);
-//                    }
-//                    tasks.add(FilterTask);
-//                    Output FilterOutput = FilterTask.getOutput();
-//                    String outputDataName = FilterOutput.getData().get(0).getDataName();
-//                    operands.add(0, outputDataName);
-//                    cnt++;
-//                }
-//            } else if (s.startsWith("MPCProject")) {
-//                // MPCProject [TA.ID, SUM[TA.ID-TA.AGE]]
-//                // Project分为普通QUERY和MPC两种
-//                String tmp = s.substring(s.indexOf("[")+1, s.length()-1);
-//                if (tmp.equals("")) {
-//                    // 如果project是空的，即无法处理的FL和TEE已经被提出，无需进行proj处理
-//                    continue;
-//                }
-//                if (tmp.contains(",")) {
-//                    // 如果是复合Project，则需要转化成多次单独Project
-//                    String[] projs = tmp.split(",");
-//                    for (String proj : projs) {
-//                        proj = proj.trim();
-//                        String newProject = s.substring(0, s.indexOf("[")+1);
-//                        newProject += proj + "] ";
-//                        stk.add(newProject);
-//                    }
-//                } else {
-//                    // 已经是单独的Project
-////                    List<String> childNames = operands.pop();
-//                    Task ProjectTask;
-//
-//                    if (s.contains("MAX") || s.contains("MIN") || s.contains("COUNT") ||
-//                            s.contains("AVG") || s.contains("SUM") || s.contains("+") || s.contains("-") || s.contains("*") || s.contains("/")) {
-////                        ProjectTask = str2Task(s, cnt, "MPC", childNames, null, true);
-//                        ProjectTask = str2Task(s, cnt, "MPC", operands, true);
-//                    } else {
-////                        ProjectTask = str2Task(s, cnt, "QUERY", childNames, null, true);
-//                        ProjectTask = str2Task(s, cnt, "QUERY", operands, true);
-//                    }
-//                    tasks.add(ProjectTask);
-////                    Output ProjectOutput = ProjectTask.getOutput();
-////                    for (TaskOutputData outputData : ProjectOutput.getData()) {
-////                        operands.add(0, outputData.getDataName());
-////                    }
-//                    cnt++;
-//                }
-//            } else {
-//                ;
-//            }
-//        }
     }
 
     public Task generateProjectTask(MPCProject phyPlan, HashMap<RelNode, Task> phyTaskMap, RexCall node, List<String> inputList) {
@@ -1119,7 +1006,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         } else if (proj instanceof RexInputRef){
             module.setModuleName(TaskType.QUERY.name());
         } else {
-            System.out.println("RexElse" + proj);
+            // System.out.println("RexElse" + proj);
         }
         module.setParams(moduleparams);
         task.setModule(module);
@@ -1417,10 +1304,17 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         Module module = new Module();
         RexCall cond = (RexCall) phyPlan.getCondition();
         String moduleName = "";
+        JSONObject moduleparams = new JSONObject(true);
+        moduleparams.put("joinType", phyPlan.getJoinType().toString());
+        moduleparams.put("operator", cond.getOperator().toString());
+        module.setParams(moduleparams);
+
         if (hint != null) {
             for (HintExpression kv : hint.getValues()) {
                 if (kv.getKey().equals("TEEJOIN")) {
                     moduleName = TaskType.TEEPSI.name();
+                    module.setModuleName(moduleName);
+                    return module;
                 }
             }
         }
@@ -1434,11 +1328,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             moduleName = TaskType.OTPSI.name();
         }
         module.setModuleName(moduleName);
-
-        JSONObject moduleparams = new JSONObject(true);
-        moduleparams.put("joinType", phyPlan.getJoinType().toString());
-        moduleparams.put("operator", cond.getOperator().toString());
-        module.setParams(moduleparams);
 
         return module;
     }
