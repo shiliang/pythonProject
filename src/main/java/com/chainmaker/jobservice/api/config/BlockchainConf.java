@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.api.config;
 
 import com.chainmaker.jobservice.api.service.BlockchainContractService;
+import com.chainmaker.jobservice.api.service.JobParserService;
 import org.chainmaker.sdk.ChainManager;
 import org.chainmaker.sdk.Node;
 import org.chainmaker.sdk.config.NodeConfig;
@@ -21,7 +22,8 @@ import java.util.List;
 public class BlockchainConf {
     @Autowired
     BlockchainContractService blockchainContractService;
-
+    @Autowired
+    JobParserService jobParserService;
     @PostConstruct
     public void init() {
         try {
@@ -69,8 +71,7 @@ public class BlockchainConf {
                 blockchainContractService.setChainClient(chainManager.createChainClient(sdkConfig));
             }
             blockchainContractService.setAdminUserList(AdminLoader.loadAdminList(sdkConfig));
-
-
+            jobParserService.setOrgId(sdkConfig.getChain_client().getOrgId());
         } catch (Exception e) {
             System.err.println(e.fillInStackTrace());
         }
