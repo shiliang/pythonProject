@@ -21,6 +21,7 @@ import com.chainmaker.jobservice.api.model.po.data.ServiceValueParam;
 import com.chainmaker.jobservice.api.model.po.data.UserInfo;
 import com.chainmaker.jobservice.api.model.vo.*;
 import com.chainmaker.jobservice.api.response.ParserException;
+import com.chainmaker.jobservice.api.response.ContractException;
 import com.chainmaker.jobservice.api.service.JobParserService;
 import com.chainmaker.jobservice.core.SqlParser;
 import org.springframework.web.client.RestTemplate;
@@ -37,11 +38,30 @@ import java.util.*;
 @org.springframework.stereotype.Service
 public class JobParserServiceImpl implements JobParserService {
     private CatalogConfig catalogConfig;
+    private String orgId;
     private HashMap<String, JobGraph> jobGraphHashMap = new HashMap<>();
     private HashMap<String, CatalogCache> catalogCacheHashMap = new HashMap<>();
 
     public void setCatalogConfig(CatalogConfig catalogConfig) {
         this.catalogConfig = catalogConfig;
+    }
+    public void setOrgId(String orgId) {
+        this.orgId = orgId;
+    }
+    private String getOrgDID() {
+        if (!this.orgId.isEmpty()) {
+            if (this.orgId.equals("wx-org1.chainmaker.org")) {
+                return "wx-org1.chainmaker.orgDID";
+            } else if (this.orgId.equals("wx-org2.chainmaker.org")) {
+                return "wx-org2.chainmaker.orgDID";
+            } else if (this.orgId.equals("wx-org3.chainmaker.org")) {
+                return "wx-org3.chainmaker.orgDID";
+            } else {
+                throw new ContractException("获取DID失败");
+            }
+        } else {
+            throw new ContractException("orgId为空");
+        }
     }
 
     @Override
@@ -209,10 +229,11 @@ public class JobParserServiceImpl implements JobParserService {
     @Override
     public JobGraphVo getJobApproval(JobInfoPo jobInfoPo) {
         JobInfo jobInfo = JobInfo.converterToJobInfo(jobInfoPo);
-        UserInfo userInfo = getUserInfo(jobInfo.getJob().getSubmitter());
+
         int nodePort = 31004;
         if (jobInfo.getServices() != null) {
             for (Service service : jobInfo.getServices()) {
+                UserInfo userInfo = getUserInfo(service.getOrgDID());
                 service.setNodePort(nodePort);
                 nodePort += 1;
                 for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints().values()) {
@@ -322,7 +343,7 @@ public class JobParserServiceImpl implements JobParserService {
         SqlParser sqlParser = new SqlParser(sqltext, sqlVo.getModelType(), sqlVo.getIsStream());
         sqlParser.setCatalogConfig(catalogConfig);
         if (sqlVo.getIsStream() == 1) {
-            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser());
+            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser(), getOrgDID());
             jobBuilder.build();
             JobMissionDetail jobMissionDetail = new JobMissionDetail();
             jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());

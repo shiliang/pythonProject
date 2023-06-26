@@ -17,6 +17,7 @@ import java.util.List;
 
 public interface JobParserService {
     void setCatalogConfig(CatalogConfig catalogConfig);
+    void setOrgId(String orgId);
     /***
      * @description 根据类型解析SQL
      * @param sqlVo

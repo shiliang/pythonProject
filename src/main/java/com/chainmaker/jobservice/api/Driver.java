@@ -49,7 +49,7 @@ public class Driver {
         sqlParser.setCatalogConfig(catalogConfig);
         if (isStream == 1) {    // 2590ms
             long start = System.currentTimeMillis();
-            JobBuilder jobBuilder = new JobBuilder(modelType, isStream, sqlParser.parser());
+            JobBuilder jobBuilder = new JobBuilder(modelType, isStream, sqlParser.parser(), "wx-org3.chainmaker.orgDID");
             jobBuilder.build();
             System.out.println(JSONObject.toJSONString(jobBuilder.getJobTemplate(), SerializerFeature.DisableCircularReferenceDetect, SerializerFeature.PrettyFormat, SerializerFeature.WriteMapNullValue, SerializerFeature.WriteDateUseDateFormat));
             long end = System.currentTimeMillis();

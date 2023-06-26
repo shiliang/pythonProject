@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.api.builder;
 
 import com.alibaba.fastjson.JSONObject;
+import com.chainmaker.jobservice.api.config.BlockchainConf;
 import com.chainmaker.jobservice.api.model.bo.job.Job;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
@@ -11,6 +12,7 @@ import com.chainmaker.jobservice.api.model.bo.job.task.Module;
 import com.chainmaker.jobservice.api.model.vo.JobInfoVo;
 import com.chainmaker.jobservice.api.model.vo.ServiceVo;
 import com.chainmaker.jobservice.api.response.ParserException;
+import com.chainmaker.jobservice.api.response.ContractException;
 import com.chainmaker.jobservice.core.optimizer.model.FL.FlInputData;
 import com.chainmaker.jobservice.core.optimizer.model.InputData;
 import com.chainmaker.jobservice.core.optimizer.model.OutputData;
@@ -35,6 +37,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
     private enum TaskType {
         QUERY, PSI, MPC, TEE, FL
     }
+    private final String orgDID;
 
     private final Integer modelType;
     private final Integer isStream;
@@ -48,12 +51,13 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
     private Integer templateId = 1;
 
-    public JobBuilder(Integer modelType, Integer isStream, DAG<PhysicalPlan> dag) {
+    public JobBuilder(Integer modelType, Integer isStream, DAG<PhysicalPlan> dag, String orgDID) {
         this.modelType = modelType;
         this.isStream = isStream;
         this.dag = dag;
         this.createTime = String.valueOf(System.currentTimeMillis());
         this.jobID = UUID.randomUUID().toString().replace("-", "").toLowerCase();
+        this.orgDID = orgDID;
     }
 
     public JobTemplate getJobTemplate() {
@@ -136,7 +140,11 @@ public class JobBuilder extends PhysicalPlanVisitor {
             for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
                 referEndpoint.setReferServiceID(map.get(referEndpoint.getName()));
             }
-            serviceVo.setOrgDID(defaultOdgDID);
+            if (serviceVo.getServiceClass().equals("PirClient4Query")) {
+                serviceVo.setOrgDID(orgDID);
+            } else {
+                serviceVo.setOrgDID(defaultOdgDID);
+            }
             services.add(serviceVo);
         }
         Map<String, String> model_method = new HashMap<>();
