@@ -233,13 +233,15 @@ public class JobParserServiceImpl implements JobParserService {
         int nodePort = 31004;
         if (jobInfo.getServices() != null) {
             for (Service service : jobInfo.getServices()) {
-                UserInfo userInfo = getUserInfo(service.getOrgDID());
-                service.setNodePort(nodePort);
-                nodePort += 1;
-                for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints().values()) {
-                    exposeEndpoint.put("serviceCa", userInfo.getCaCert());
-                    exposeEndpoint.put("serviceCert", userInfo.getTlsCert());
-                    exposeEndpoint.put("serviceKey", userInfo.getTlsKey());
+                if (service.getOrgDID().equals(getOrgDID())) {
+                    UserInfo userInfo = getUserInfo(service.getOrgDID());
+                    service.setNodePort(nodePort);
+                    nodePort += 1;
+                    for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints().values()) {
+                        exposeEndpoint.put("serviceCa", userInfo.getCaCert());
+                        exposeEndpoint.put("serviceCert", userInfo.getTlsCert());
+                        exposeEndpoint.put("serviceKey", userInfo.getTlsKey());
+                    }
                 }
             }
         }
