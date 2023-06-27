@@ -740,6 +740,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         for (TaskInputData inputData : inputDataList) {
             partySet.add(inputData.getDomainID());
         }
+        partySet.add(module.getParams().get("domainID").toString());
         for (String value : partySet) {
             Party party = new Party();
             party.setServerInfo(null);
