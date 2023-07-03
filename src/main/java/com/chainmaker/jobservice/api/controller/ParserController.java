@@ -252,14 +252,24 @@ public class ParserController {
             List<String> inputs = new ArrayList<>();
             String headerString = "";
             for (int i = 0; i < Math.min(dataList.size(), result.size()); i++) {
-                if (i == 0) {
-                    headerString = result.get(i) + "," + dataList.get(i);
+                if (result.get(0).equals(dataList.get(0))) {
+                    if (i != 0) {
+                        result.add(dataList.get(i));
+                    }
                 } else {
-                    String temp = result.get(i) + "," + dataList.get(i);
-                    inputs.add(temp);
+                    if (i == 0) {
+                        headerString = result.get(i) + "," + dataList.get(i);
+                    } else {
+                        String temp = result.get(i) + "," + dataList.get(i);
+                        inputs.add(temp);
+                    }
                 }
             }
-            CsvUtil.writeToCsv(headerString, inputs, filePath, false);
+            if (result.get(0).equals(dataList.get(0))) {
+                CsvUtil.writeToCsv(headerString, result, filePath, false);
+            } else {
+                CsvUtil.writeToCsv(headerString, inputs, filePath, false);
+            }
         }
         return Result.success(jobId);
     }
