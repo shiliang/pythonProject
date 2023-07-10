@@ -1551,9 +1551,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 JSONObject params = task.getModule().getParams();
                 params.put("teeHost", "172.16.12.230");
                 params.put("teePort", "30091");
-                for (TaskOutputData output : task.getOutput().getData()) {
-                    output.setDomainID("");
-                }
+                params.put("domainID", "");
+//                for (TaskOutputData output : task.getOutput().getData()) {
+//                    output.setDomainID("");
+//                }
                 break;
             }
         }
