@@ -27,6 +27,7 @@ public class JobInfoPo {
 
     public static JobInfoPo converterToJobInfoPo(JobInfo jobInfo) {
         JobInfoPo jobInfoPo = new JobInfoPo();
+        jobInfo.update();
         jobInfoPo.setApplicationID(jobInfo.getJob().getJobID());
         jobInfoPo.setJob(JobPo.converterToJobPo(jobInfo.getJob()));
 

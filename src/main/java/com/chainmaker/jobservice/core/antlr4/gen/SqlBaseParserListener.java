@@ -1,4 +1,4 @@
-// Generated from C:/Users/Pc/IdeaProjects/chainmaker-job-service/src/main/java/com/chainmaker/jobservice/core/antlr4\SqlBaseParser.g4 by ANTLR 4.12.0
+// Generated from D:/chainmaker-job-service/src/main/java/com/chainmaker/jobservice/core/antlr4\SqlBaseParser.g4 by ANTLR 4.10.1
 package com.chainmaker.jobservice.core.antlr4.gen;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -2726,6 +2726,18 @@ public interface SqlBaseParserListener extends ParseTreeListener {
 	 */
 	void exitLambda(SqlBaseParser.LambdaContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code featureReference}
+	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
+	 * @param ctx the parse tree
+	 */
+	void enterFeatureReference(SqlBaseParser.FeatureReferenceContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code featureReference}
+	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
+	 * @param ctx the parse tree
+	 */
+	void exitFeatureReference(SqlBaseParser.FeatureReferenceContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code parenthesizedExpression}
 	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
 	 * @param ctx the parse tree
@@ -2821,6 +2833,18 @@ public interface SqlBaseParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitLast(SqlBaseParser.LastContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code pirCase}
+	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
+	 * @param ctx the parse tree
+	 */
+	void enterPirCase(SqlBaseParser.PirCaseContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code pirCase}
+	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
+	 * @param ctx the parse tree
+	 */
+	void exitPirCase(SqlBaseParser.PirCaseContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code star}
 	 * labeled alternative in {@link SqlBaseParser#primaryExpression}.
@@ -2965,6 +2989,16 @@ public interface SqlBaseParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitFirst(SqlBaseParser.FirstContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SqlBaseParser#featureExpression}.
+	 * @param ctx the parse tree
+	 */
+	void enterFeatureExpression(SqlBaseParser.FeatureExpressionContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SqlBaseParser#featureExpression}.
+	 * @param ctx the parse tree
+	 */
+	void exitFeatureExpression(SqlBaseParser.FeatureExpressionContext ctx);
 	/**
 	 * Enter a parse tree produced by the {@code nullLiteral}
 	 * labeled alternative in {@link SqlBaseParser#constant}.

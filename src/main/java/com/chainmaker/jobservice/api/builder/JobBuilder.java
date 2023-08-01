@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.api.builder;
 
 import com.alibaba.fastjson.JSONObject;
+import com.chainmaker.jobservice.api.config.BlockchainConf;
 import com.chainmaker.jobservice.api.model.bo.job.Job;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
@@ -11,6 +12,7 @@ import com.chainmaker.jobservice.api.model.bo.job.task.Module;
 import com.chainmaker.jobservice.api.model.vo.JobInfoVo;
 import com.chainmaker.jobservice.api.model.vo.ServiceVo;
 import com.chainmaker.jobservice.api.response.ParserException;
+import com.chainmaker.jobservice.api.response.ContractException;
 import com.chainmaker.jobservice.core.optimizer.model.FL.FlInputData;
 import com.chainmaker.jobservice.core.optimizer.model.InputData;
 import com.chainmaker.jobservice.core.optimizer.model.OutputData;
@@ -35,6 +37,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
     private enum TaskType {
         QUERY, PSI, MPC, TEE, FL
     }
+    private final String orgDID;
 
     private final Integer modelType;
     private final Integer isStream;
@@ -48,12 +51,13 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
     private Integer templateId = 1;
 
-    public JobBuilder(Integer modelType, Integer isStream, DAG<PhysicalPlan> dag) {
+    public JobBuilder(Integer modelType, Integer isStream, DAG<PhysicalPlan> dag, String orgDID) {
         this.modelType = modelType;
         this.isStream = isStream;
         this.dag = dag;
         this.createTime = String.valueOf(System.currentTimeMillis());
         this.jobID = UUID.randomUUID().toString().replace("-", "").toLowerCase();
+        this.orgDID = orgDID;
     }
 
     public JobTemplate getJobTemplate() {
@@ -83,7 +87,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
         } else {
             throw new ParserException("暂不支持的任务类型");
         }
-
+        System.out.println();
         for (Node<PhysicalPlan> next : dag.getNodes()) {
             next.getObject().accept(this);
         }
@@ -109,6 +113,43 @@ public class JobBuilder extends PhysicalPlanVisitor {
         module.setParams(param);
         task.setModule(module);
         tasks.add(task);
+    }
+    @Override
+    public void visit(PirFilter plan) {
+        System.out.println("PirFilter: " + plan);
+        templateId = 2;
+        String defaultOdgDID = plan.getInputDataList().get(0).getDomainID();
+        HashMap<String, String> map = new HashMap<>();
+        List<ServiceVo> serviceVos = new ArrayList<>();
+        for (int i=0; i<2; i++) {
+            String templateType = "";
+            switch (i) {
+                case 0:
+                    templateType = "PirClient4Query";
+                    break;
+                case 1:
+                    templateType = "PirServer4Query";
+                    break;
+            }
+            ServiceVo serviceVo = teeTemplateToService(templateType, i);
+            map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getId());
+            serviceVos.add(serviceVo);
+        }
+        System.out.println(map);
+        for (ServiceVo serviceVo : serviceVos) {
+            for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
+                referEndpoint.setReferServiceID(map.get(referEndpoint.getName()));
+            }
+            if (serviceVo.getServiceClass().equals("PirClient4Query")) {
+                serviceVo.setOrgDID(orgDID);
+            } else {
+                serviceVo.setOrgDID(defaultOdgDID);
+            }
+            services.add(serviceVo);
+        }
+        Map<String, String> model_method = new HashMap<>();
+        model_method.put("method_name", "pir");
+        job.setCommon(model_method);
     }
     @Override
     public void visit(TableScan plan) {
@@ -145,6 +186,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
             tasks.add(task);
         } else {
+            templateId = 1;
             String defaultOdgDID = plan.getInputDataList().get(0).getDomainID();
             HashMap<String, String> map = new HashMap<>();
             List<ServiceVo> serviceVos = new ArrayList<>();

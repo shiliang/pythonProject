@@ -11,6 +11,7 @@ public abstract class PhysicalPlanVisitor {
     public void visit(PhysicalPlan node){}
     public void visit(TableScan node){}
     public void visit(Project node){}
+    public void visit(PirFilter node){}
     public void visit(SpdzMpc node){}
     public void visit(TeeMpc node){}
     public void visit(Fate node){}

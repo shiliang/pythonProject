@@ -1,19 +1,47 @@
 package com.chainmaker.jobservice.api.model.bo.job;
 
 import com.chainmaker.jobservice.api.model.bo.job.service.Service;
+import com.chainmaker.jobservice.api.model.bo.job.task.Party;
 import com.chainmaker.jobservice.api.model.bo.job.task.Task;
+import com.chainmaker.jobservice.api.model.bo.job.task.TaskInputData;
 import com.chainmaker.jobservice.api.model.po.contract.JobInfoPo;
 import com.chainmaker.jobservice.api.model.po.contract.job.ServicePo;
 import com.chainmaker.jobservice.api.model.po.contract.job.TaskPo;
 import com.chainmaker.jobservice.api.model.vo.ServiceVo;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 public class JobInfo {
     private Job job;
     private List<Task> tasks;
     private List<Service> services;
+    public void update() {
+        for (Task task : this.tasks) {
+            if (task.getModule().getParams().containsKey("domainID")) {
+                List<Party> parties = new ArrayList<>();
+                HashSet<String> partySet = new HashSet<>();
+                for (TaskInputData inputData : task.getInput().getData()) {
+                    partySet.add(inputData.getDomainID());
+                }
+                partySet.add(task.getModule().getParams().get("domainID").toString());
+                for (String value : partySet) {
+                    Party party = new Party();
+                    party.setServerInfo(null);
+                    party.setStatus(null);
+                    party.setTimestamp(null);
+                    party.setPartyID(value);
+                    parties.add(party);
+                }
+                task.setParties(parties);
+
+                if (!this.job.getParties().contains(task.getModule().getParams().get("domainID").toString())) {
+                    this.job.getParties().add(task.getModule().getParams().get("domainID").toString());
+                }
+            }
+        }
+    }
 
     public static JobInfo converterToJobInfo(JobInfoPo jobInfoPo) {
         JobInfo jobInfo = new JobInfo();

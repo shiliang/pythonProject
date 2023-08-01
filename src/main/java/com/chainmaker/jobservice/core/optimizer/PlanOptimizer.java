@@ -73,6 +73,8 @@ public class PlanOptimizer extends LogicalPlanVisitor {
                     for (Expression expression: expressions) {
                         if (expression instanceof ArithmeticBinaryExpression) {
                             buildMpc((ArithmeticBinaryExpression) expression, function, namedExpressionList.get(i).getIdentifier().toString());
+                        } else if (expression instanceof Identifier) {
+                            System.out.println("*");
                         } else {
                             throw new ParserException("暂不支持");
                         }
@@ -82,6 +84,8 @@ public class PlanOptimizer extends LogicalPlanVisitor {
                 } else {
                     throw new ParserException("todo");
                 }
+            } else if (namedExpressionList.get(i).getExpression() instanceof Identifier) {
+                System.out.println("*");
             } else {
                 throw new ParserException("暂不支持");
             }
@@ -137,8 +141,39 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         for (LogicalPlan child: node.getChildren()) {
             child.accept(this);
         }
-//        System.out.println("Filter");
+        System.out.println("Filter");
+        // 目前只处理pir
+        PirFilter pirFilter = new PirFilter();
+        pirFilter.setId(count);
+        count += 1;
 
+        HashSet<String> parties = new HashSet<>();
+        if (node.getCondition() instanceof ComparisonExpression) {
+            if (((ComparisonExpression) node.getCondition()).getLeft() instanceof DereferenceExpression) {
+                DereferenceExpression expression = (DereferenceExpression) ((ComparisonExpression) node.getCondition()).getLeft();
+                PhysicalPlan parent = tableLastMap.get(expression.getBase().toString());
+                List<InputData> inputDataList = new ArrayList<>();
+                List<OutputData> outputDataList = new ArrayList<>();
+                InputData inputData = new InputData();
+                OutputData outputData = new OutputData();
+                inputData.setNodeSrc(parent.getId());
+                inputData.setTableName(expression.getBase().toString());
+                inputData.setColumn(expression.getFieldName());
+                inputData.setDomainID(tableOwnerMap.get(expression.getBase().toString()));
+                parties.add(inputData.getDomainID());
+                outputData.setTableName(expression.getBase().toString());
+                outputData.setDomainID(tableOwnerMap.get(expression.getBase().toString()));
+
+                outputData.setOutputSymbol(expression.getBase().toString() + "." + expression.getFieldName());
+                inputDataList.add(inputData);
+                outputDataList.add(outputData);
+                pirFilter.setInputDataList(inputDataList);
+                pirFilter.setOutputDataList(outputDataList);
+                pirFilter.setParties(new ArrayList<>(parties));
+                dag.addEdge(parent, pirFilter);
+            }
+
+        }
 
     }
 

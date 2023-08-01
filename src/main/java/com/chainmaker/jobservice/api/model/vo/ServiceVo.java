@@ -81,8 +81,8 @@ public class ServiceVo {
         return JSONObject.parseObject(serviceVoStr, ServiceVo.class);
     }
 
-    public static ServiceVo serviceToServiceVo(Service service) {
-        ServiceVo serviceVo = ServiceVo.templateToServiceVo("1", service.getServiceClass());
+    public static ServiceVo serviceToServiceVo(Service service, String templateId) {
+        ServiceVo serviceVo = ServiceVo.templateToServiceVo(templateId, service.getServiceClass());
         serviceVo.setId(service.getId());
         serviceVo.setVersion(service.getVersion());
         serviceVo.setManual(service.getManual());

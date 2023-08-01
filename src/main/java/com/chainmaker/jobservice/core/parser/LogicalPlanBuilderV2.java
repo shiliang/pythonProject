@@ -7,6 +7,7 @@ import com.chainmaker.jobservice.core.antlr4.gen.SqlBaseParserBaseVisitor;
 import com.chainmaker.jobservice.core.parser.plans.*;
 import com.chainmaker.jobservice.core.parser.tree.*;
 import com.google.common.collect.ImmutableList;
+import lombok.extern.java.Log;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
@@ -28,6 +29,10 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     public List<String> modelNameList = new ArrayList<>();
     private static final String DEFAULT_ERROR = "SQL语法暂不支持";
     private LogicalPlan logicalPlan;
+    private HashMap<String, LogicalPlan> joinCache = new HashMap<>();
+    private LogicalJoin rootJoin;
+    private Expression rootFilterExpression;
+    private LogicalExpression.Operator currentOp = LogicalExpression.Operator.AND;
 
     public HashMap<String, String> getTableNameMap() {
         return tableNameMap;
@@ -161,7 +166,11 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             FaderatedQueryExpression projectList = visitFederatedQueryExpression((SqlBaseParser.FederatedQueryExpressionContext) context.selectClause().namedExpressionSeq());
 
             if (context.aggregationClause() == null) {
-                return new LogicalProject(projectList, children);
+                if (projectList.getValues().get(0).toString().equals("*")) {
+                    return children.get(0);
+                } else {
+                    return new LogicalProject(projectList, children);
+                }
             } else {
                 LogicalProject child = new LogicalProject(projectList, children);
                 if (context.havingClause() == null) {
@@ -196,11 +205,80 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         List<Expression> aggCallList = new ArrayList<>();
         return new LogicalAggregate(groupKeys, aggCallList, children);
     }
+//    public LogicalPlan visitWhere(SqlBaseParser.RegularQuerySpecificationContext context) {
+//        Expression expression = visitBooleanExpression(context.whereClause().booleanExpression());
+//        List<LogicalPlan> children = visitFrom(context.fromClause());
+//        return new LogicalFilter(expression, children);
+//    }
 
     public LogicalPlan visitWhere(SqlBaseParser.RegularQuerySpecificationContext context) {
         Expression expression = visitBooleanExpression(context.whereClause().booleanExpression());
-        List<LogicalPlan> children = visitFrom(context.fromClause());
-        return new LogicalFilter(expression, children);
+        if (expression instanceof ComparisonExpression) {
+            dealWithComparisonExpression((ComparisonExpression) expression);
+        } else if (expression instanceof LogicalExpression) {
+            dealWithLogicalExpression((LogicalExpression) expression);
+        } else {
+            throw new ParserException("暂不支持的where语法");
+        }
+        if (rootJoin == null) {
+            List<LogicalPlan> children = visitFrom(context.fromClause());
+            return new LogicalFilter(rootFilterExpression, children);
+        } else if (rootFilterExpression == null) {
+            visitFrom(context.fromClause());
+            return rootJoin;
+        } else {
+            visitFrom(context.fromClause());
+            List<LogicalPlan> children = new ArrayList<>();
+            children.add(rootJoin);
+            return new LogicalFilter(rootFilterExpression, children);
+        }
+
+    }
+    private void dealWithLogicalExpression(LogicalExpression logicalExpression) {
+        if (logicalExpression.getLeft() instanceof ComparisonExpression) {
+            dealWithComparisonExpression((ComparisonExpression) logicalExpression.getLeft());
+        } else if (logicalExpression.getLeft() instanceof LogicalExpression) {
+            dealWithLogicalExpression((LogicalExpression) logicalExpression.getLeft());
+        } else {
+            throw new ParserException("暂不支持的语法");
+        }
+
+        if (logicalExpression.getRight() instanceof ComparisonExpression) {
+            dealWithComparisonExpression((ComparisonExpression) logicalExpression.getRight());
+        } else if (logicalExpression.getRight() instanceof LogicalExpression) {
+            dealWithLogicalExpression((LogicalExpression) logicalExpression.getRight());
+        } else {
+            throw new ParserException("暂不支持的语法");
+        }
+    }
+    private void dealWithComparisonExpression(ComparisonExpression expression) {
+        if (expression.getLeft() instanceof DereferenceExpression && expression.getRight() instanceof DereferenceExpression) {
+            String leftTable = ((DereferenceExpression) expression.getLeft()).getBase().toString();
+            String rightTable = ((DereferenceExpression) expression.getRight()).getBase().toString();
+            LogicalPlan left, right;
+            if (joinCache.containsKey(leftTable)) {
+                left = joinCache.get(leftTable);
+            } else {
+                left = new LogicalTable(((DereferenceExpression) expression.getLeft()).getBase().toString());
+            }
+            if (joinCache.containsKey(rightTable)) {
+                right = joinCache.get(rightTable);
+            } else {
+                right = new LogicalTable(((DereferenceExpression) expression.getRight()).getBase().toString());
+            }
+            LogicalJoin.Type joinType = LogicalJoin.Type.INNER;
+            LogicalJoin node = new LogicalJoin(expression, joinType, left, right);
+            rootJoin = node;
+            joinCache.put(((DereferenceExpression) expression.getLeft()).getBase().toString(), node);
+            joinCache.put(((DereferenceExpression) expression.getRight()).getBase().toString(), node);
+        } else {
+            if (rootFilterExpression == null) {
+                rootFilterExpression = expression;
+            } else {
+                LogicalExpression currentExpression = new LogicalExpression(rootFilterExpression, expression, currentOp);
+                rootFilterExpression = currentExpression;
+            }
+        }
     }
 
     public Expression visitBooleanExpression(SqlBaseParser.BooleanExpressionContext context) {
@@ -285,13 +363,34 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             return visitParenthesizedExpression((SqlBaseParser.ParenthesizedExpressionContext) context);
         } else if (context instanceof SqlBaseParser.FunctionCallContext) {
             return visitFunctionCall((SqlBaseParser.FunctionCallContext) context);
+        } else if (context instanceof SqlBaseParser.FeatureReferenceContext) {
+            return visitFeatureReference((SqlBaseParser.FeatureReferenceContext) context);
+        } else if (context instanceof SqlBaseParser.PirCaseContext) {
+            return visitPirCase((SqlBaseParser.PirCaseContext) context);
+        } else if (context instanceof SqlBaseParser.StarContext) {
+            return visitStar((SqlBaseParser.StarContext) context);
         } else {
             throw new ParserException(DEFAULT_ERROR + ": " + context.getText());
         }
     }
     @Override
+    public Identifier visitPirCase(SqlBaseParser.PirCaseContext context) {
+        String identifier = context.getText();
+        return new Identifier(identifier);
+    }
+    @Override
+    public Identifier visitStar(SqlBaseParser.StarContext context) {
+        String identifier = context.getText();
+        return new Identifier(identifier);
+    }
+    @Override
     public Identifier visitColumnReference(SqlBaseParser.ColumnReferenceContext context) {
         String identifier = context.identifier().getChild(0).getText();
+        return new Identifier(identifier);
+    }
+    @Override
+    public Identifier visitFeatureReference(SqlBaseParser.FeatureReferenceContext context) {
+        String identifier = context.getText();
         return new Identifier(identifier);
     }
     @Override
@@ -466,23 +565,37 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             }
         }
 
-        // feat 暂不处理
-        List<List<FlExpression>> feat = new ArrayList<>();
-
+        List<FlExpression> feat = new ArrayList<>();
+        if (context.flFeatSeq().size() != 0) {
+            Identifier feature_key = new Identifier("feature_name");
+            Identifier feature_value = new Identifier(context.flFeatSeq(0).flFeat(0).feat.getText());
+            FlExpression featName = new FlExpression(feature_key, feature_value, FlExpression.Operator.EQUAL);
+            feat.add(featName);
+            if (context.flFeatSeq().size() != 0) {
+                for (int i = 0; i < context.flFeatSeq(0).flFeat(0).flExpressionSeq().flExpression().size(); i++) {
+                    FlExpression flExpression = visitFlExpression(context.flFeatSeq(0).flFeat(0).flExpressionSeq().flExpression(i));
+                    feat.add(flExpression);
+                }
+            }
+        }
         List<FlExpression> model = new ArrayList<>();
-        Identifier key = new Identifier("model_name");
-        Identifier value = new Identifier(context.flModelSeq(0).flModel(0).model.getText());
-        FlExpression modelName = new FlExpression(key, value, FlExpression.Operator.EQUAL);
-        model.add(modelName);
-        for (int i=0; i<context.flModelSeq(0).flModel(0).flExpressionSeq().flExpression().size(); i++) {
-            FlExpression flExpression = visitFlExpression(context.flModelSeq(0).flModel(0).flExpressionSeq().flExpression(i));
-            model.add(flExpression);
+        if (context.flModelSeq().size() != 0) {
+            Identifier key = new Identifier("model_name");
+            Identifier value = new Identifier(context.flModelSeq(0).flModel(0).model.getText());
+            FlExpression modelName = new FlExpression(key, value, FlExpression.Operator.EQUAL);
+            model.add(modelName);
+            for (int i = 0; i < context.flModelSeq(0).flModel(0).flExpressionSeq().flExpression().size(); i++) {
+                FlExpression flExpression = visitFlExpression(context.flModelSeq(0).flModel(0).flExpressionSeq().flExpression(i));
+                model.add(flExpression);
+            }
         }
 
         List<FlExpression> eval = new ArrayList<>();
-        for (int i=0; i<context.flEvalSeq(0).flEval(0).flExpressionSeq().flExpression().size(); i++) {
-            FlExpression flExpression = visitFlExpression(context.flEvalSeq(0).flEval(0).flExpressionSeq().flExpression(i));
-            eval.add(flExpression);
+        if (context.flModelSeq().size() != 0) {
+            for (int i = 0; i < context.flEvalSeq(0).flEval(0).flExpressionSeq().flExpression().size(); i++) {
+                FlExpression flExpression = visitFlExpression(context.flEvalSeq(0).flEval(0).flExpressionSeq().flExpression(i));
+                eval.add(flExpression);
+            }
         }
 
         return new FederatedLearningExpression(fl, labels, psi, feat, model, eval);
