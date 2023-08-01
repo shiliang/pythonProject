@@ -1339,6 +1339,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 if (kv.getKey().equals("TEEJOIN")) {
                     moduleName = TaskType.TEEPSI.name();
                     module.setModuleName(moduleName);
+                    module.getParams().put("teeHost", "172.16.12.230");
+                    module.getParams().put("teePort", "30091");
+                    module.getParams().put("domainID", "");
                     return module;
                 }
             }
