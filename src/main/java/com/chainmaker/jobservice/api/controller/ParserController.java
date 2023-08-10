@@ -411,7 +411,7 @@ public class ParserController {
         params.put("orgDID", orgDID.getBytes(StandardCharsets.UTF_8));
         ContractServiceResponse res_csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_address_from_did", params);
         JSONObject res = res_csr.toJSON(false);
-        String url = res.getString("result") + "/kms/sm2/file/url/result/" + jobID + "/" + dataID;
+        String url = "http://" + res.getString("result") + "/kms/sm2/file/url/result/" + jobID + "/" + dataID;
         RestTemplate restTemplate = new RestTemplate();
         JSONObject urlResult = JSONObject.parseObject(restTemplate.getForObject(url, String.class), Feature.OrderedField);
         result.put("result", urlResult.getString("url"));
@@ -425,7 +425,7 @@ public class ParserController {
         params.put("orgDID", orgDID.getBytes(StandardCharsets.UTF_8));
         ContractServiceResponse res_csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_address_from_did", params);
         JSONObject res = res_csr.toJSON(false);
-        String url = res.getString("result") + "/url/result/" + jobID + "/" + dataID;
+        String url = "http://" + res.getString("result") + "/url/result/" + jobID + "/" + dataID;
         RestTemplate restTemplate = new RestTemplate();
         JSONObject urlResult = JSONObject.parseObject(restTemplate.getForObject(url, String.class), Feature.OrderedField);
         result.put("result", urlResult.getString("url"));
