@@ -36,8 +36,8 @@ public class BlockchainConf {
 
             String sdkCP = System.getenv("SDKCP");
             if (sdkCP == null || sdkCP.isEmpty()) {
-//                sdkCP = "/home/workspace/sdk/sdk_config.yml";
-                sdkCP = "D://sdk_config_test.yml";
+                sdkCP = "/home/workspace/sdk/sdk_config.yml";
+//                sdkCP = "D://sdk_config_test.yml";
             }
             ;
             FileReader reader = new FileReader(sdkCP);

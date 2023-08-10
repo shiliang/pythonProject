@@ -3,7 +3,7 @@ server:
   port: 5005
 
 catalog:
-#  address: "java-backendservice"
-#  port: "8008"
-  address: "192.168.40.230"
-  port: "31008"
+  address: "java-backendservice"
+  port: "8008"
+#  address: "192.168.40.230"
+#  port: "31008"
