@@ -404,7 +404,7 @@ public class ParserController {
         result.put("data", dataIdList);
         return new ResponseEntity<JSONObject>(result, HttpStatus.OK);
     }
-    @RequestMapping(value = "/jobs/get/result/enc/{jobID}/{dataID}/{ogrDID}", method = RequestMethod.GET)
+    @RequestMapping(value = "/jobs/get/result/enc/{jobID}/{dataID}/{orgDID}", method = RequestMethod.GET)
     public ResponseEntity<JSONObject> getEncResult(@PathVariable String jobID, @PathVariable String dataID, @PathVariable String orgDID) {
         JSONObject result = new JSONObject();
         Map<String, byte[]> params = new HashMap<>();
@@ -418,7 +418,7 @@ public class ParserController {
         return new ResponseEntity<JSONObject>(result, HttpStatus.OK);
     }
 //    todo
-    @RequestMapping(value = "/jobs/get/result/dec/{jobID}/{dataID}/{ogrDID}", method = RequestMethod.GET)
+    @RequestMapping(value = "/jobs/get/result/dec/{jobID}/{dataID}/{orgDID}", method = RequestMethod.GET)
     public ResponseEntity<JSONObject> getDecResult(@PathVariable String jobID, @PathVariable String dataID, @PathVariable String orgDID) {
         JSONObject result = new JSONObject();
         Map<String, byte[]> params = new HashMap<>();
