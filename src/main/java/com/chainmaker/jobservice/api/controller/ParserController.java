@@ -7,10 +7,14 @@ import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.aspect.WebLog;
 import com.chainmaker.jobservice.api.model.bo.*;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
+import com.chainmaker.jobservice.api.model.bo.job.task.Output;
+import com.chainmaker.jobservice.api.model.bo.job.task.Task;
+import com.chainmaker.jobservice.api.model.bo.job.task.TaskOutputData;
 import com.chainmaker.jobservice.api.model.po.contract.JobGetPo;
 import com.chainmaker.jobservice.api.model.po.contract.JobInfoPo;
 import com.chainmaker.jobservice.api.model.po.contract.JobUpdateStsPo;
 import com.chainmaker.jobservice.api.model.po.contract.ServiceUpdatePo;
+import com.chainmaker.jobservice.api.model.po.contract.job.TaskPo;
 import com.chainmaker.jobservice.api.model.vo.*;
 import com.chainmaker.jobservice.api.response.ContractServiceResponse;
 import com.chainmaker.jobservice.api.response.Result;
@@ -23,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.IOException;
@@ -375,5 +380,95 @@ public class ParserController {
         JSONObject res = res_csr.toJSON(false);
         HttpStatus responseStatus = res_csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
         return new ResponseEntity<JSONObject>(res, responseStatus);
+    }
+    @RequestMapping(value = "/jobs/result/list/{jobID}", method = RequestMethod.GET)
+    public ResponseEntity<JSONObject> getResultList(@PathVariable String jobID) {
+        JSONObject result = new JSONObject();
+        JSONArray dataIdList = new JSONArray();
+        JobGetPo jobGetPo = new JobGetPo();
+        jobGetPo.setJobID(jobID);
+        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
+        System.out.println("csr: " + csr);
+        JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class, Feature.OrderedField);
+        for (TaskPo taskPo : jobInfoPo.getTasks()) {
+            for (TaskOutputData taskOutputData : taskPo.getOutput().getData()) {
+                if (taskOutputData.getFinalResult().equals("Y")) {
+                    JSONObject temp = new JSONObject();
+                    temp.put("dataID", taskOutputData.getDataID());
+                    temp.put("orgDID", taskOutputData.getDomainID());
+                    dataIdList.add(temp);
+                }
+            }
+        }
+        result.put("jobID", jobID);
+        result.put("data", dataIdList);
+        return new ResponseEntity<JSONObject>(result, HttpStatus.OK);
+    }
+    @RequestMapping(value = "/jobs/get/result/enc/{jobID}/{dataID}/{ogrDID}", method = RequestMethod.GET)
+    public ResponseEntity<JSONObject> getEncResult(@PathVariable String jobID, @PathVariable String dataID, @PathVariable String orgDID) {
+        JSONObject result = new JSONObject();
+        Map<String, byte[]> params = new HashMap<>();
+        params.put("orgDID", orgDID.getBytes(StandardCharsets.UTF_8));
+        ContractServiceResponse res_csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_address_from_did", params);
+        JSONObject res = res_csr.toJSON(false);
+        String url = res.getString("result") + "/kms/sm2/file/url/result/" + jobID + "/" + dataID;
+        RestTemplate restTemplate = new RestTemplate();
+        JSONObject urlResult = JSONObject.parseObject(restTemplate.getForObject(url, String.class), Feature.OrderedField);
+        result.put("result", urlResult.getString("url"));
+        return new ResponseEntity<JSONObject>(result, HttpStatus.OK);
+    }
+//    todo
+    @RequestMapping(value = "/jobs/get/result/dec/{jobID}/{dataID}/{ogrDID}", method = RequestMethod.GET)
+    public ResponseEntity<JSONObject> getDecResult(@PathVariable String jobID, @PathVariable String dataID, @PathVariable String orgDID) {
+        JSONObject result = new JSONObject();
+        Map<String, byte[]> params = new HashMap<>();
+        params.put("orgDID", orgDID.getBytes(StandardCharsets.UTF_8));
+        ContractServiceResponse res_csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_address_from_did", params);
+        JSONObject res = res_csr.toJSON(false);
+        String url = res.getString("result") + "/url/result/" + jobID + "/" + dataID;
+        RestTemplate restTemplate = new RestTemplate();
+        JSONObject urlResult = JSONObject.parseObject(restTemplate.getForObject(url, String.class), Feature.OrderedField);
+        result.put("result", urlResult.getString("url"));
+        return new ResponseEntity<JSONObject>(result, HttpStatus.OK);
+    }
+    @RequestMapping(value = "/jobs/result/download/{jobID}", method = RequestMethod.GET)
+    public ResponseEntity<JSONObject> getResult(@PathVariable String jobID) {
+        HashMap<String, List<String>> resultMap = new HashMap<>();
+        HashMap<String, String> addressMap = new HashMap<>();
+        JobGetPo jobGetPo = new JobGetPo();
+        jobGetPo.setJobID(jobID);
+        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
+        System.out.println("csr: " + csr);
+        JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class, Feature.OrderedField);
+        for (TaskPo taskPo : jobInfoPo.getTasks()) {
+            for (TaskOutputData taskOutputData : taskPo.getOutput().getData()) {
+                if (taskOutputData.getFinalResult().equals("Y")) {
+                    if (resultMap.containsKey(taskOutputData.getDomainID())) {
+                        resultMap.get(taskOutputData.getDomainID()).add(taskOutputData.getDataID());
+                    } else {
+                        List<String> temp = new ArrayList<>();
+                        temp.add(taskOutputData.getDataID());
+                        resultMap.put(taskOutputData.getDomainID(), temp);
+                    }
+                }
+            }
+        }
+        for (String partyID : resultMap.keySet()) {
+            Map<String, byte[]> params = new HashMap<>();
+            params.put("orgDID", partyID.getBytes(StandardCharsets.UTF_8));
+            ContractServiceResponse res_csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_address_from_did", params);
+            JSONObject res = res_csr.toJSON(false);
+            addressMap.put(partyID, res.getString("result"));
+        }
+        System.out.println(resultMap);
+        JSONObject resultJson = new JSONObject();
+        for (String party : resultMap.keySet()) {
+            String address = addressMap.get(party);
+            for (String dataId : resultMap.get(party)) {
+                String url = address + "/result/" + jobID + "/" + dataId;
+                resultJson.put(party, url);
+            }
+        }
+        return new ResponseEntity<JSONObject>(resultJson, HttpStatus.OK);
     }
 }
