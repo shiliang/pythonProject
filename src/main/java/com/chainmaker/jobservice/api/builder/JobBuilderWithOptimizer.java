@@ -1181,11 +1181,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         inputdata2.setDomainID(getFieldDomainID(rightField));
         if (rightChild.getTaskName().equals("")) {
             inputdata2.setDataName(rightField.split("\\.")[0]);
+            inputdata2.setDataID(rightField.split("\\.")[0]);
         } else {
             if (rightChild.getOutput().getData().get(0).getDomainID().equals(inputdata2.getDomainID())) {
                 inputdata2.setDataName(rightChild.getOutput().getData().get(0).getDataName());
             } else {
                 inputdata2.setDataName(rightChild.getOutput().getData().get(1).getDataName());
+                inputdata2.setDataID(rightChild.getOutput().getData().get(1).getDataID());
             }
         }
 
