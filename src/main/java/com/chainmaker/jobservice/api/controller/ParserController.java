@@ -393,9 +393,36 @@ public class ParserController {
         for (TaskPo taskPo : jobInfoPo.getTasks()) {
             for (TaskOutputData taskOutputData : taskPo.getOutput().getData()) {
                 if (taskOutputData.getFinalResult().equals("Y")) {
+                    String orgDID = taskOutputData.getDomainID();
+                    String dataID = taskOutputData.getDataID();
+
                     JSONObject temp = new JSONObject();
-                    temp.put("dataID", taskOutputData.getDataID());
-                    temp.put("orgDID", taskOutputData.getDomainID());
+                    Map<String, byte[]> params = new HashMap<>();
+                    params.put("orgDID", orgDID.getBytes(StandardCharsets.UTF_8));
+                    ContractServiceResponse res_csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_address_from_did", params);
+                    JSONObject res = res_csr.toJSON(false);
+                    String url1 = "http://" + res.getString("result") + "/kms/sm2/file/url/result/" + jobID + "/" + dataID;
+                    String url2 = "http://" + res.getString("result") + "/kms/sm2/decrypt";
+                    System.out.println(url1);
+                    System.out.println(url2);
+                    RestTemplate restTemplate = new RestTemplate();
+                    JSONObject urlResult = JSONObject.parseObject(restTemplate.getForObject(url1, String.class), Feature.OrderedField);
+                    String encUrl = urlResult.getString("url");
+                    result.put("result", encUrl);
+                    JSONObject req = new JSONObject();
+                    req.put("orgDID", orgDID);
+                    req.put("jobId", jobID);
+                    req.put("dataID", dataID);
+                    req.put("url", urlResult.getString("url"));
+                    JSONObject urlDecResult = restTemplate.postForObject(url2, req, JSONObject.class);
+                    System.out.println(urlDecResult);
+                    String decUrl = urlDecResult.getString("url");
+
+                    temp.put("dataID", dataID);
+                    temp.put("orgDID", orgDID);
+                    temp.put("encUrl", encUrl);
+                    temp.put("decUrl", decUrl);
+
                     dataIdList.add(temp);
                 }
             }
@@ -412,8 +439,10 @@ public class ParserController {
         ContractServiceResponse res_csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_address_from_did", params);
         JSONObject res = res_csr.toJSON(false);
         String url = "http://" + res.getString("result") + "/kms/sm2/file/url/result/" + jobID + "/" + dataID;
+        System.out.println(url);
         RestTemplate restTemplate = new RestTemplate();
         JSONObject urlResult = JSONObject.parseObject(restTemplate.getForObject(url, String.class), Feature.OrderedField);
+        System.out.println(urlResult);
         result.put("result", urlResult.getString("url"));
         return new ResponseEntity<JSONObject>(result, HttpStatus.OK);
     }
@@ -425,10 +454,21 @@ public class ParserController {
         params.put("orgDID", orgDID.getBytes(StandardCharsets.UTF_8));
         ContractServiceResponse res_csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_address_from_did", params);
         JSONObject res = res_csr.toJSON(false);
-        String url = "http://" + res.getString("result") + "/url/result/" + jobID + "/" + dataID;
+        String url = "http://" + res.getString("result") + "/kms/sm2/file/url/result/" + jobID + "/" + dataID;
+        System.out.println(url);
         RestTemplate restTemplate = new RestTemplate();
         JSONObject urlResult = JSONObject.parseObject(restTemplate.getForObject(url, String.class), Feature.OrderedField);
-        result.put("result", urlResult.getString("url"));
+        String encUrl = urlResult.getString("url");
+
+        JSONObject req = new JSONObject();
+        req.put("orgDID", orgDID);
+        req.put("jobId", jobID);
+        req.put("dataID", dataID);
+        req.put("url", urlResult.getString("url"));
+        JSONObject urlDecResult = restTemplate.postForObject(url, req, JSONObject.class);
+        String decUrl = urlDecResult.getString("url");
+        result.put("result", decUrl);
+
         return new ResponseEntity<JSONObject>(result, HttpStatus.OK);
     }
     @RequestMapping(value = "/jobs/result/download/{jobID}", method = RequestMethod.GET)
