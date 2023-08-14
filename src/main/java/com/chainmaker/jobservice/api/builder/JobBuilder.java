@@ -75,7 +75,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
         if (modelType == 0 && isStream == 0) {
             jobType = JobType.FQ.name();
         } else if (modelType == 0 && isStream == 1) {
-            jobType = JobType.FQS.name();
+            jobType = JobType.CCS.name();
         } else if (modelType == 1 && isStream == 0) {
             jobType = JobType.FL.name();
         } else if (modelType == 1 && isStream == 1) {
