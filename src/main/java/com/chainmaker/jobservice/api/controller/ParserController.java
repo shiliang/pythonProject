@@ -408,7 +408,6 @@ public class ParserController {
                     RestTemplate restTemplate = new RestTemplate();
                     JSONObject urlResult = JSONObject.parseObject(restTemplate.getForObject(url1, String.class), Feature.OrderedField);
                     String encUrl = urlResult.getString("url");
-                    result.put("result", encUrl);
                     JSONObject req = new JSONObject();
                     req.put("orgDID", orgDID);
                     req.put("jobId", jobID);
