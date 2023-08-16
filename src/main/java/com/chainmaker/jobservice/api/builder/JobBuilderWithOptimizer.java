@@ -134,6 +134,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         HashMap<RelNode, Task> phyTaskMap = new HashMap<>();
         // 生成tasks
         tasks.addAll(dfsPlan(phyPlan, phyTaskMap));
+        updateTeePsi();
         // 特殊处理联邦学习相关的tasks
         generateFLTasks(OriginPlan);
         // 合并OTPSI，暂时放弃
@@ -150,6 +151,54 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         job.setUpdateTime(createTime);
         job.setTasksDAG(taskDAG);
         job.setParties(new ArrayList<>(jobParties));
+    }
+
+    public void updateTeePsi() {
+        Boolean updateFlag = true;
+        String psiColumn = "";
+        HashMap<Integer, String> indexPartyMap = new HashMap<>();
+        HashMap<String, TaskOutputData> outputMap = new HashMap<>();
+         for (Task task : tasks) {
+             if (task.getModule().getModuleName().equals(TaskType.TEEPSI.name())) {
+                 psiColumn = task.getInput().getData().get(0).getParams().getString("field");
+                 for (TaskOutputData taskOutputData : task.getOutput().getData()) {
+                     outputMap.put(taskOutputData.getDomainID(), taskOutputData);
+                 }
+             }
+         }
+        for (int i = 0; i < tasks.size(); i++) {
+            if (tasks.get(i).getModule().getModuleName().equals(TaskType.QUERY.name())) {
+                indexPartyMap.put(i, tasks.get(i).getParties().get(0).getPartyID());
+                if (!tasks.get(i).getInput().getData().get(0).getParams().getString("field").equals(psiColumn)) {
+                    updateFlag = false;
+                }
+            }
+        }
+        if (updateFlag) {
+            System.out.println(indexPartyMap);
+            System.out.println(tasks.size());
+            for (Integer index : indexPartyMap.keySet()) {
+                System.out.println("remove query");
+                Task task = tasks.get(index);
+                tasks.remove(task);
+            }
+            System.out.println(tasks.size());
+            for (Task task : tasks) {
+                if (task.getModule().getModuleName().equals(TaskType.TEEPSI.name())) {
+                    Output output = new Output();
+                    List<TaskOutputData> taskOutputDataList = new ArrayList<>();
+                    for (TaskOutputData taskOutputData : task.getOutput().getData()) {
+                        if (indexPartyMap.containsValue(taskOutputData.getDomainID())) {
+                            taskOutputData.setFinalResult("Y");
+                            taskOutputDataList.add(taskOutputData);
+                        }
+                    }
+                    output.setData(taskOutputDataList);
+                    task.setOutput(output);
+                }
+            }
+        }
+
     }
 
     /**
@@ -963,7 +1012,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                             j--;
                         }
                     }
-                    System.out.println(inputList);
+                    System.out.println();
                     tasks.add(generateProjectTask((MPCProject) phyPlan, phyTaskMap, (RexCall) node, inputList));
                 }
                 break;

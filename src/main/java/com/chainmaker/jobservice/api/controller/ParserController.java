@@ -407,6 +407,7 @@ public class ParserController {
                     System.out.println(url2);
                     RestTemplate restTemplate = new RestTemplate();
                     JSONObject urlResult = JSONObject.parseObject(restTemplate.getForObject(url1, String.class), Feature.OrderedField);
+                    System.out.println(urlResult);
                     String encUrl = urlResult.getString("url");
                     JSONObject req = new JSONObject();
                     req.put("orgDID", orgDID);
