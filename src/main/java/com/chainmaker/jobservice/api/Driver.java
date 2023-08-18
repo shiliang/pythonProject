@@ -34,7 +34,7 @@ public class Driver {
 
 //        String query = "SELECT FL(a.b.c.is_train=true,a.b.is_on=false,is_test=false,FLLABEL(SOURCE_DATA=ADATA,with_label=true,label_type=int,output_format=dense,namespace=experiment),FLLABEL(SOURCE_DATA=BDATA,with_label=true,output_format=dense,namespace=experiment),HOLR(penalty=L2,tol=0.0001,alpha=0.01,optimizer=rmsprop,batch_size=-1,learning_rate=0.15,init_param.init_method=zeros,init_param.fit_intercept=true,max_iter=1,early_stop=diff,encrypt_param.key_length=1024,reveal_strategy=respectively,reveal_every_iter=true),EVAL(eval_type=binary)) FROM ADATA,BDATA";
 //        String query = "select /*+ TEEJOIN */ adata.a2 from adata join bdata on adata.id=bdata.id";
-        String query = "SELECT /*+ TEEJOIN */ TEST_C_1.ID FROM TEST_C_1,TEST_B_1 WHERE TEST_C_1.ID=TEST_B_1.ID";
+        String query = "SELECT TEST_B_1.B1+TEST_C_1.C1 FROM TEST_B_1,TEST_C_1 WHERE TEST_B_1.ID=TEST_C_1.ID";
 
 
         // modelType:

@@ -1109,6 +1109,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             JSONObject inputParam = new JSONObject(true);
             inputParam.put("table", tableField.split("\\.")[0]);
             inputParam.put("field", tableField.split("\\.")[1]);
+            if (module.getModuleName().equals("EXP") || module.getModuleName().equals("AGG")) {
+                inputParam.put("type", columnInfoMap.get(tableField.split("\\.")[0]+tableField.split("\\.")[1]));
+                List<Integer> list = new ArrayList<>();
+                list.add(i);
+                inputParam.put("index", Arrays.toString(list.toArray()));
+            }
             inputdata.setParams(inputParam);
             inputDatas.add(inputdata);
         }
