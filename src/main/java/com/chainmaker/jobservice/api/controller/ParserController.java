@@ -392,9 +392,12 @@ public class ParserController {
         JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class, Feature.OrderedField);
         for (TaskPo taskPo : jobInfoPo.getTasks()) {
             for (TaskOutputData taskOutputData : taskPo.getOutput().getData()) {
-                if (taskOutputData.getFinalResult().equals("Y")) {
+                if (!taskOutputData.getFinalResult().equals("N")) {
                     String orgDID = taskOutputData.getDomainID();
                     String dataID = taskOutputData.getDataID();
+
+                    String encUrl = "";
+                    String decUrl = "";
 
                     JSONObject temp = new JSONObject();
                     Map<String, byte[]> params = new HashMap<>();
@@ -402,22 +405,25 @@ public class ParserController {
                     ContractServiceResponse res_csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_address_from_did", params);
                     JSONObject res = res_csr.toJSON(false);
                     String url1 = "http://" + res.getString("result") + "/kms/sm2/file/url/result/" + jobID + "/" + dataID;
-                    String url2 = "http://" + res.getString("result") + "/kms/sm2/decrypt";
                     System.out.println(url1);
-                    System.out.println(url2);
                     RestTemplate restTemplate = new RestTemplate();
                     JSONObject urlResult = JSONObject.parseObject(restTemplate.getForObject(url1, String.class), Feature.OrderedField);
                     System.out.println(urlResult);
-                    String encUrl = urlResult.getString("url");
-                    JSONObject req = new JSONObject();
-                    req.put("orgDID", orgDID);
-                    req.put("jobId", jobID);
-                    req.put("dataID", dataID);
-                    req.put("url", urlResult.getString("url"));
-                    JSONObject urlDecResult = restTemplate.postForObject(url2, req, JSONObject.class);
-                    System.out.println(urlDecResult);
-                    String decUrl = urlDecResult.getString("url");
-
+                    if (taskOutputData.getFinalResult().equals("YE")) {
+                        encUrl = urlResult.getString("url");
+                        JSONObject req = new JSONObject();
+                        req.put("orgDID", orgDID);
+                        req.put("jobId", jobID);
+                        req.put("dataID", dataID);
+                        req.put("url", encUrl);
+                        String url2 = "http://" + res.getString("result") + "/kms/sm2/decrypt";
+                        System.out.println(url2);
+                        JSONObject urlDecResult = restTemplate.postForObject(url2, req, JSONObject.class);
+                        System.out.println(urlDecResult);
+                        decUrl = urlDecResult.getString("url");
+                    } else {
+                        decUrl = urlResult.getString("url");
+                    }
                     temp.put("dataID", dataID);
                     temp.put("orgDID", orgDID);
                     temp.put("encUrl", encUrl);
