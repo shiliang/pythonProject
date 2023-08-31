@@ -1396,7 +1396,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 if (kv.getKey().equals("TEEJOIN")) {
                     moduleName = TaskType.TEEPSI.name();
                     module.setModuleName(moduleName);
-                    module.getParams().put("teeHost", "172.16.12.230");
+                    module.getParams().put("teeHost", "192.168.40.230");
                     module.getParams().put("teePort", "30091");
                     module.getParams().put("domainID", "");
                     return module;
@@ -1934,7 +1934,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 List<String> values = kv.getValues();
                 task.getModule().setModuleName(TaskType.TEEPSI.name());
                 JSONObject params = task.getModule().getParams();
-                params.put("teeHost", "172.16.12.230");
+                params.put("teeHost", "192.168.40.230");
                 params.put("teePort", "30091");
                 params.put("domainID", "");
 //                for (TaskOutputData output : task.getOutput().getData()) {

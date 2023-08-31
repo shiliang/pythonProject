@@ -295,7 +295,7 @@ public class JobParserServiceImpl implements JobParserService {
         System.out.println("jobInfoPo: " + jobInfoPo);
         JobInfo jobInfo = JobInfo.converterToJobInfo(jobInfoPo);
         String jobID = jobInfo.getJob().getJobID();
-        String orgDID = jobInfo.getJob().getSubmitter();
+        String orgDID = getOrgDID();
         System.out.println("jobInfo: " + jobInfo);
         List<ServiceValueParam> serviceValueParams = get(orgDID, jobID);
         List<ServiceRunner> serviceRunners = converterToServiceRunner(jobInfo.getServices(), serviceValueParams, orgDID);
