@@ -201,7 +201,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
                 services.add(serviceVo);
             }
             Map<String, String> model_method = new HashMap<>();
-            model_method.put("method_name", "pir");
+            model_method.put("method_name", "teepir");
             job.setCommon(model_method);
         }
     }
