@@ -47,6 +47,8 @@ public class JobInfoVo {
                 String templateId = "1";
                 if (jobInfo.getJob().getCommon().get("method_name").equals("pir")) {
                     templateId = "2";
+                } else if (jobInfo.getJob().getCommon().get("method_name").equals("pir")) {
+                    templateId = "3";
                 }
                 List<ServiceVo> serviceVos = new ArrayList<>();
                 for (Service service : jobInfo.getServices()) {
