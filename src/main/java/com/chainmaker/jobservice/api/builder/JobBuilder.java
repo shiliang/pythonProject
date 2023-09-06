@@ -11,6 +11,7 @@ import com.chainmaker.jobservice.api.model.bo.job.task.*;
 import com.chainmaker.jobservice.api.model.bo.job.task.Module;
 import com.chainmaker.jobservice.api.model.vo.JobInfoVo;
 import com.chainmaker.jobservice.api.model.vo.ServiceVo;
+import com.chainmaker.jobservice.api.model.vo.ValueVo;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.api.response.ContractException;
 import com.chainmaker.jobservice.core.optimizer.model.FL.FlInputData;
@@ -116,40 +117,93 @@ public class JobBuilder extends PhysicalPlanVisitor {
     }
     @Override
     public void visit(PirFilter plan) {
-        System.out.println("PirFilter: " + plan);
-        templateId = 2;
-        String defaultOdgDID = plan.getInputDataList().get(0).getDomainID();
-        HashMap<String, String> map = new HashMap<>();
-        List<ServiceVo> serviceVos = new ArrayList<>();
-        for (int i=0; i<2; i++) {
-            String templateType = "";
-            switch (i) {
-                case 0:
-                    templateType = "PirClient4Query";
-                    break;
-                case 1:
-                    templateType = "PirServer4Query";
-                    break;
+        if (modelType == 0) {
+            System.out.println("PirFilter: " + plan);
+            templateId = 2;
+            String defaultOdgDID = plan.getInputDataList().get(0).getDomainID();
+            HashMap<String, String> map = new HashMap<>();
+            List<ServiceVo> serviceVos = new ArrayList<>();
+            for (int i = 0; i < 2; i++) {
+                String templateType = "";
+                switch (i) {
+                    case 0:
+                        templateType = "PirClient4Query";
+                        break;
+                    case 1:
+                        templateType = "PirServer4Query";
+                        break;
+                }
+                ServiceVo serviceVo = teeTemplateToService(templateType, i);
+                ValueVo valueTable = new ValueVo();
+                valueTable.setKey("table");
+                valueTable.setValue(plan.getInputDataList().get(0).getTableName());
+                serviceVo.getValues().set(0, valueTable);
+                ValueVo valueColumn = new ValueVo();
+                valueColumn.setKey("column");
+                valueColumn.setValue(plan.getInputDataList().get(0).getColumn());
+                serviceVo.getValues().add(valueColumn);
+                map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getId());
+                serviceVos.add(serviceVo);
             }
-            ServiceVo serviceVo = teeTemplateToService(templateType, i);
-            map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getId());
-            serviceVos.add(serviceVo);
+            System.out.println(map);
+            for (ServiceVo serviceVo : serviceVos) {
+                for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
+                    referEndpoint.setReferServiceID(map.get(referEndpoint.getName()));
+                }
+                if (serviceVo.getServiceClass().equals("PirClient4Query")) {
+                    serviceVo.setOrgDID(orgDID);
+                } else {
+                    serviceVo.setOrgDID(defaultOdgDID);
+                }
+                services.add(serviceVo);
+            }
+            Map<String, String> model_method = new HashMap<>();
+            model_method.put("method_name", "pir");
+            job.setCommon(model_method);
+        } else {
+            System.out.println("PirFilter: " + plan);
+            templateId = 3;
+            String defaultOdgDID = plan.getInputDataList().get(0).getDomainID();
+            HashMap<String, String> map = new HashMap<>();
+            List<ServiceVo> serviceVos = new ArrayList<>();
+            for (int i = 0; i < 2; i++) {
+                String templateType = "";
+                switch (i) {
+                    case 0:
+                        templateType = "TeePirClient4Query";
+                        break;
+                    case 1:
+                        templateType = "TeePirServer4Query";
+                        break;
+                }
+                ServiceVo serviceVo = teeTemplateToService(templateType, i);
+                ValueVo valueTable = new ValueVo();
+                valueTable.setKey("table");
+                valueTable.setValue(plan.getInputDataList().get(0).getTableName());
+                serviceVo.getValues().set(0, valueTable);
+                ValueVo valueColumn = new ValueVo();
+                valueColumn.setKey("column");
+                valueColumn.setValue(plan.getInputDataList().get(0).getColumn());
+                serviceVo.getValues().add(valueColumn);
+                map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getId());
+                serviceVos.add(serviceVo);
+            }
+            System.out.println(map);
+            for (ServiceVo serviceVo : serviceVos) {
+                for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
+                    referEndpoint.setReferServiceID(map.get(referEndpoint.getName()));
+                }
+                if (serviceVo.getServiceClass().equals("TeePirClient4Query")) {
+                    serviceVo.setOrgDID(orgDID);
+                } else {
+                    serviceVo.setOrgDID(defaultOdgDID);
+                }
+                services.add(serviceVo);
+            }
+            Map<String, String> model_method = new HashMap<>();
+            model_method.put("method_name", "pir");
+            job.setCommon(model_method);
         }
-        System.out.println(map);
-        for (ServiceVo serviceVo : serviceVos) {
-            for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
-                referEndpoint.setReferServiceID(map.get(referEndpoint.getName()));
-            }
-            if (serviceVo.getServiceClass().equals("PirClient4Query")) {
-                serviceVo.setOrgDID(orgDID);
-            } else {
-                serviceVo.setOrgDID(defaultOdgDID);
-            }
-            services.add(serviceVo);
-        }
-        Map<String, String> model_method = new HashMap<>();
-        model_method.put("method_name", "pir");
-        job.setCommon(model_method);
     }
     @Override
     public void visit(TableScan plan) {

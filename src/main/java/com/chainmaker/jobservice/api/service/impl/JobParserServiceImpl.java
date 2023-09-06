@@ -373,7 +373,7 @@ public class JobParserServiceImpl implements JobParserService {
         List<DagEdge> edges = new ArrayList<>();
         int capacity = 100;
         int dataCount = 0;
-        int id = capacity;
+        int id = dataCount;
         for (Task task : tasks) {
             DagNode dagNode = new DagNode();
             dagNode.setId(id);
@@ -389,13 +389,13 @@ public class JobParserServiceImpl implements JobParserService {
             for (TaskInputData taskInputData: task.getInput().getData()) {
                 if (!Objects.equals(taskInputData.getTaskSrc(), "")) {
                     DagEdge dagEdge = new DagEdge();
-                    dagEdge.setFrom(Integer.parseInt(taskInputData.getTaskSrc()) + capacity);
-                    dagEdge.setTo(Integer.parseInt(taskName) + capacity);
+                    dagEdge.setFrom(Integer.parseInt(taskInputData.getTaskSrc()));
+                    dagEdge.setTo(Integer.parseInt(taskName));
                     dagEdge.setLabel(taskInputData.getDataName());
                     edges.add(dagEdge);
                 } else {
                     DagNode dataNode = new DagNode();
-                    dataNode.setId(dataCount);
+                    dataNode.setId(capacity);
 
                     String dataLabel = taskInputData.getDataName() + "(" + dataStatus + ")";
                     dataNode.setLabel(dataLabel);
@@ -405,11 +405,11 @@ public class JobParserServiceImpl implements JobParserService {
                     nodes.add(dataNode);
 
                     DagEdge dataEdge = new DagEdge();
-                    dataEdge.setFrom(dataCount);
-                    dataEdge.setTo(Integer.parseInt(taskName) + capacity);
+                    dataEdge.setFrom(capacity);
+                    dataEdge.setTo(Integer.parseInt(taskName));
                     dataEdge.setLabel(taskInputData.getDataName());
                     edges.add(dataEdge);
-                    dataCount += 1;
+                    capacity += 1;
 
                 }
             }
