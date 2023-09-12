@@ -75,7 +75,7 @@ public class JobGraphVo {
         Boolean flag = sql.contains("+") || sql.contains("-") || sql.contains("*") || sql.contains("/");
         if (flag) {
             this.setCheckFlag(true);
-            this.setCheckMessage("当前算法存在数据泄露风险，风险类型：线性运算");
+            this.setCheckMessage("当前算法存在风险，风险类型：线性运算");
         } else {
             System.out.println("NO");
         }
