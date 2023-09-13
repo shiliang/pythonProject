@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.api.model.vo;
 
+import com.chainmaker.jobservice.api.model.bo.job.Job;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
 import com.chainmaker.jobservice.api.model.bo.job.service.Service;
@@ -16,15 +17,13 @@ import java.util.List;
  */
 
 public class JobInfoVo {
-    private JobVo job;
+    private Job job;
     private List<Task> tasks;
     private List<ServiceVo> services;
 
     public static JobInfoVo converterToJobInfoVo(JobTemplate jobTemplate) {
         JobInfoVo jobInfoVo = new JobInfoVo();
-        JobVo jobVo = new JobVo();
-        jobVo.setJobID(jobTemplate.getJob().getJobID());
-        jobInfoVo.setJob(jobVo);
+        jobInfoVo.setJob(jobTemplate.getJob());
         if (jobTemplate.getTasks() != null) {
             jobInfoVo.setTasks(jobTemplate.getTasks());
         }
@@ -36,9 +35,7 @@ public class JobInfoVo {
     public static JobInfoVo jobInfoToJobInfoVo(JobInfo jobInfo) {
 
         JobInfoVo jobInfoVo = new JobInfoVo();
-        JobVo jobVo = new JobVo();
-        jobVo.setJobID(jobInfo.getJob().getJobID());
-        jobInfoVo.setJob(jobVo);
+        jobInfoVo.setJob(jobInfo.getJob());
         if (jobInfo.getTasks() != null) {
             jobInfoVo.setTasks(jobInfo.getTasks());
         }
@@ -60,11 +57,11 @@ public class JobInfoVo {
         return jobInfoVo;
     }
 
-    public JobVo getJob() {
+    public Job getJob() {
         return job;
     }
 
-    public void setJob(JobVo job) {
+    public void setJob(Job job) {
         this.job = job;
     }
 
