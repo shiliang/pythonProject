@@ -72,12 +72,12 @@ public class JobGraphVo {
                 '}';
     }
     public void checkSql(String sql) {
-        Boolean flag = sql.contains("+") || sql.contains("-") || sql.contains("*") || sql.contains("/");
-        if (flag) {
-            this.setCheckFlag(true);
-            this.setCheckMessage("当前算法存在风险，风险类型：线性运算");
-        } else {
-            System.out.println("NO");
-        }
+//        Boolean flag = sql.contains("+") || sql.contains("-") || sql.contains("*") || sql.contains("/");
+//        if (flag) {
+//            this.setCheckFlag(true);
+//            this.setCheckMessage("当前算法存在风险，风险类型：线性运算");
+//        } else {
+//            System.out.println("NO");
+//        }
     }
 }
