@@ -200,7 +200,6 @@ public class JobParserServiceImpl implements JobParserService {
 
     @Override
     public JobInfo jobCreate(MissionInfo missionInfo) {
-        System.out.println("missionInfo: " + missionInfo);
         String jobID = missionInfo.getJobID();
         JobGraph jobGraph = getJobGraph(jobID);
         JobInfo jobInfo = jobGraph.getJobInfo();
@@ -224,7 +223,6 @@ public class JobParserServiceImpl implements JobParserService {
             parties.add(value);
         }
         jobInfo.getJob().setParties(new ArrayList<>(parties));
-        System.out.println("jobInfo: " + jobInfo);
         return jobInfo;
     }
 
@@ -293,11 +291,9 @@ public class JobParserServiceImpl implements JobParserService {
 
     @Override
     public JobRunner getJobRunner(JobInfoPo jobInfoPo) {
-        System.out.println("jobInfoPo: " + jobInfoPo);
         JobInfo jobInfo = JobInfo.converterToJobInfo(jobInfoPo);
         String jobID = jobInfo.getJob().getJobID();
         String orgDID = getOrgDID();
-        System.out.println("jobInfo: " + jobInfo);
         List<ServiceValueParam> serviceValueParams = get(orgDID, jobID);
         List<ServiceRunner> serviceRunners = converterToServiceRunner(jobInfo.getServices(), serviceValueParams, orgDID);
         JobRunner jobRunner = new JobRunner();
@@ -352,7 +348,6 @@ public class JobParserServiceImpl implements JobParserService {
             jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
             jobMissionDetail.setMissionDetailVOList(sqlParser.getMissionDetailVOs());
             jobMissionDetail.setModelParamsVoList(sqlParser.getModelParamsVos());
-            System.out.println(jobMissionDetail);
             return jobMissionDetail;
         } else {
             JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parserWithOptimizer(), sqlParser.getColumnInfoMap());
@@ -361,7 +356,6 @@ public class JobParserServiceImpl implements JobParserService {
             jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
             jobMissionDetail.setMissionDetailVOList(sqlParser.getMissionDetailVOs());
             jobMissionDetail.setModelParamsVoList(sqlParser.getModelParamsVos());
-            System.out.println(jobMissionDetail);
             return jobMissionDetail;
         }
     }
@@ -493,9 +487,7 @@ public class JobParserServiceImpl implements JobParserService {
             }
             for (Service service : services) {
                 if (Objects.equals(service.getOrgDID(), orgDID)) {
-                    System.out.println(service.getId());
                     for (ServiceValueParam serviceValueParam : serviceValueParams) {
-                        System.out.println("serviceValueParam: " + serviceValueParam);
                         if (Objects.equals(service.getId(), serviceValueParam.getId())) {
                             String serviceStr = JSONObject.toJSONString(service);
                             ServiceRunner serviceRunner = JSONObject.parseObject(serviceStr, ServiceRunner.class, Feature.OrderedField);
@@ -508,13 +500,10 @@ public class JobParserServiceImpl implements JobParserService {
                                 }
                                 exposeEndpoint.put("serviceKey", new String(serviceValueParam.getServiceKey()));
                             }
-                            System.out.println(serviceRunner.getReferEndpoints());
                             for (ReferEndpointRunner referEndpointRunner : serviceRunner.getReferEndpoints().values()) {
                                 if (referEndpointRunner != null) {
                                     if (!Objects.equals(referEndpointRunner.getName(), "")) {
-                                        System.out.println("not null");
                                         HashMap<String, String> referExposeEndpoint = exposeEndpointMap.get(referEndpointRunner.getReferServiceID());
-                                        System.out.println(referExposeEndpoint);
                                         referEndpointRunner.setAddress(referExposeEndpoint.get("address"));
                                         referEndpointRunner.setPath(referExposeEndpoint.get("path"));
                                         referEndpointRunner.setMethod(referExposeEndpoint.get("method"));
@@ -529,7 +518,6 @@ public class JobParserServiceImpl implements JobParserService {
                 }
             }
         }
-        System.out.println("serviceRunners: " + serviceRunners);
         return serviceRunners;
     }
 
