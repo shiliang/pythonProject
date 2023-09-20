@@ -260,7 +260,7 @@ public class JobParserServiceImpl implements JobParserService {
             jobGraphVo.setDag(dag);
         }
         jobGraphVo.setJobInfo(jobInfoVo);
-        jobGraphVo.checkSql(jobInfoPo.getJob().getRequestData());
+//        jobGraphVo.checkSql(jobInfoPo.getJob().getRequestData());
         return jobGraphVo;
     }
 
