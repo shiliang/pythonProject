@@ -88,7 +88,6 @@ public class JobBuilder extends PhysicalPlanVisitor {
         } else {
             throw new ParserException("暂不支持的任务类型");
         }
-        System.out.println();
         for (Node<PhysicalPlan> next : dag.getNodes()) {
             next.getObject().accept(this);
         }
@@ -118,7 +117,6 @@ public class JobBuilder extends PhysicalPlanVisitor {
     @Override
     public void visit(PirFilter plan) {
         if (modelType == 0) {
-            System.out.println("PirFilter: " + plan);
             templateId = 2;
             String defaultOdgDID = plan.getInputDataList().get(0).getDomainID();
             HashMap<String, String> map = new HashMap<>();
@@ -145,7 +143,6 @@ public class JobBuilder extends PhysicalPlanVisitor {
                 map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getId());
                 serviceVos.add(serviceVo);
             }
-            System.out.println(map);
             for (ServiceVo serviceVo : serviceVos) {
                 for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
                     referEndpoint.setReferServiceID(map.get(referEndpoint.getName()));
@@ -161,7 +158,6 @@ public class JobBuilder extends PhysicalPlanVisitor {
             model_method.put("method_name", "pir");
             job.setCommon(model_method);
         } else {
-            System.out.println("PirFilter: " + plan);
             templateId = 3;
             String defaultOdgDID = plan.getInputDataList().get(0).getDomainID();
             HashMap<String, String> map = new HashMap<>();
@@ -188,7 +184,6 @@ public class JobBuilder extends PhysicalPlanVisitor {
                 map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getId());
                 serviceVos.add(serviceVo);
             }
-            System.out.println(map);
             for (ServiceVo serviceVo : serviceVos) {
                 for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
                     referEndpoint.setReferServiceID(map.get(referEndpoint.getName()));

@@ -98,9 +98,7 @@ public class ParserController {
     @WebLog(description = "提交DAG")
     @RequestMapping(value = "/commit/dag", method = RequestMethod.POST)
     public Result jobCommit(@RequestBody String req) {
-        System.out.println("req: " + req);
         JobGraphVo jobGraphVo = JSONObject.parseObject(req, JobGraphVo.class, Feature.OrderedField);
-        System.out.println("jobGraphVo: " + jobGraphVo);
         MissionInfoVo missionInfoVo = jobParserService.jobCommit(jobGraphVo);
         return Result.success(missionInfoVo);
     }
@@ -112,7 +110,6 @@ public class ParserController {
         JobInfo jobInfo = jobParserService.jobCreate(missionInfo);
         String jobID = jobInfo.getJob().getJobID();
         JobInfoPo jobInfoPo = JobInfoPo.converterToJobInfoPo(jobInfo);
-        System.out.println("jobInfoPo: " + jobInfoPo);
         ContractServiceResponse csr = blockchainContractService.invokeContract(CONTRACT_NAME, "CreateJobByApplication", jobInfoPo.toContractParams());
         csr.setJsonResult("{\"jobID\"" + ":\"" + jobID + "\"}");
         String response = csr.toString();
@@ -164,7 +161,6 @@ public class ParserController {
         jobGetPo.setJobID(jobID);
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
         HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
-        System.out.println("csr: " + csr);
         JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class, Feature.OrderedField);
         JobRunner jobRunner = jobParserService.getJobRunner(jobInfoPo);
         return new ResponseEntity<JobRunner>(jobRunner, responseStatus);
@@ -285,7 +281,6 @@ public class ParserController {
         String filePath = "result/" + jobID;
         JSONObject result = new JSONObject();
         List<String> readData = CsvUtil.readFromCsv(filePath);
-        System.out.println(readData.get(0));
         if (readData == null) {
             result.put("result", readData);
         } else {
@@ -363,7 +358,6 @@ public class ParserController {
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_address_from_did", params);
         JSONObject res = csr.toJSON(false);
         HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
-        System.out.println(responseStatus);
         return new ResponseEntity<JSONObject>(res, responseStatus);
     }
     @RequestMapping(value = "/jobs/address/{jobID}", method = RequestMethod.GET)
@@ -371,7 +365,6 @@ public class ParserController {
         JobGetPo jobGetPo = new JobGetPo();
         jobGetPo.setJobID(jobID);
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
-        System.out.println("csr: " + csr);
         JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class, Feature.OrderedField);
         String submitter = jobInfoPo.getJob().getSubmitter();
         Map<String, byte[]> params = new HashMap<>();
@@ -388,7 +381,6 @@ public class ParserController {
         JobGetPo jobGetPo = new JobGetPo();
         jobGetPo.setJobID(jobID);
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
-        System.out.println("csr: " + csr);
         JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class, Feature.OrderedField);
         for (TaskPo taskPo : jobInfoPo.getTasks()) {
             for (TaskOutputData taskOutputData : taskPo.getOutput().getData()) {
@@ -484,7 +476,6 @@ public class ParserController {
         JobGetPo jobGetPo = new JobGetPo();
         jobGetPo.setJobID(jobID);
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
-        System.out.println("csr: " + csr);
         JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class, Feature.OrderedField);
         for (TaskPo taskPo : jobInfoPo.getTasks()) {
             for (TaskOutputData taskOutputData : taskPo.getOutput().getData()) {
@@ -506,7 +497,6 @@ public class ParserController {
             JSONObject res = res_csr.toJSON(false);
             addressMap.put(partyID, res.getString("result"));
         }
-        System.out.println(resultMap);
         JSONObject resultJson = new JSONObject();
         for (String party : resultMap.keySet()) {
             String address = addressMap.get(party);

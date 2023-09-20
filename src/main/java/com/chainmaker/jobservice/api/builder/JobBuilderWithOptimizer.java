@@ -175,8 +175,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             }
         }
         if (updateFlag) {
-            System.out.println(indexPartyMap);
-            System.out.println(tasks.size());
             for (Integer index : indexPartyMap.keySet()) {
                 System.out.println("remove query");
                 Task task = tasks.get(index);
