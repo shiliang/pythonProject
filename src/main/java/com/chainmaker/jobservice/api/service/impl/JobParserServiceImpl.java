@@ -213,7 +213,9 @@ public class JobParserServiceImpl implements JobParserService {
         jobInfo.getJob().setSubmitter(missionInfo.getCreateOrgDID());
         HashSet<String> parties = new HashSet<>();
         for (ServiceParamsVo serviceParamsVo : missionInfo.getServiceParams()) {
-            parties.add(serviceParamsVo.getOrgDID());
+            if (!serviceParamsVo.getOrgDID().equals("")) {
+                parties.add(serviceParamsVo.getOrgDID());
+            }
         }
 //        for (MissionDetailInfo missionDetailInfo : missionInfo.getMissionDetailInfos()) {
 //            parties.add(missionDetailInfo.getOrgId());
