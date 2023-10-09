@@ -38,7 +38,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         FQ, FQS, FL, FLS, CC, CCS
     }
     private enum TaskType {
-        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, PSIRSA, TEEPSI, MPC, MPCEXP, FL, TEE, LOCALMERGE, LOCALEXP, LOCALAGG, NOTIFY
+        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, PSIRSA, TEEPSI, TEEAVG, MPC, MPCEXP, FL, TEE, LOCALMERGE, LOCALEXP, LOCALAGG, NOTIFY
     }
 
     private class TaskNode {
@@ -1051,6 +1051,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     }
 
     public Task generateProjectTask(MPCProject phyPlan, HashMap<RelNode, Task> phyTaskMap, RexCall node, List<String> inputList) {
+        System.out.println("inputList:" + inputList);
         Task task = basicTask(String.valueOf(cnt++));
 
         // [AS(+($8, $7), ''), AS(SUM($4), ''), AS($0, '')]
@@ -1081,7 +1082,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             // System.out.println("RexElse" + proj);
         }
         module.setParams(moduleparams);
-        task.setModule(module);
+        task.setModule(checkMpcModule(module));
 
         // 输入信息
         Input input = new Input();
@@ -1413,6 +1414,22 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         module.setModuleName(moduleName);
 
         return module;
+    }
+    public Module checkMpcModule(Module temp) {
+        System.out.println(hint.toString());
+        if (hint != null) {
+            for (HintExpression kv : hint.getValues()) {
+                if (kv.getKey().equals("TEEAVG")) {
+                    temp.setModuleName(TaskType.TEEAVG.name());
+                    temp.getParams().put("teeHost", "192.168.40.230");
+                    temp.getParams().put("teePort", "30091");
+                    temp.getParams().put("domainID", "");
+                    System.out.println("module:" + temp);
+                    return temp;
+                }
+            }
+        }
+        return temp;
     }
 
     /**

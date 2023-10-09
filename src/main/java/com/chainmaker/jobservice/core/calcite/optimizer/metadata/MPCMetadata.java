@@ -169,6 +169,7 @@ public class MPCMetadata {
 //            this.tables.get("TB").setOrgDId("source2");
 //            this.tables.get("TC").setRowCount(100);
         }
+        System.out.println("fieldNameInfoMap:" + fieldNameInfoMap);
     }
 
     /**
