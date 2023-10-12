@@ -1416,7 +1416,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         return module;
     }
     public Module checkMpcModule(Module temp) {
-        System.out.println(hint.toString());
         if (hint != null) {
             for (HintExpression kv : hint.getValues()) {
                 if (kv.getKey().equals("TEEAVG")) {
