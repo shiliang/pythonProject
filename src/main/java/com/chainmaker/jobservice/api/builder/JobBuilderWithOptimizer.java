@@ -1178,9 +1178,20 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     public String dfsRexNode(RexNode proj) {
         String expr = "";
         if (proj instanceof RexCall) {
-            expr += dfsRexNode(((RexCall) proj).getOperands().get(0));
+            String tmpl = dfsRexNode(((RexCall) proj).getOperands().get(0));
+            if (tmpl.length() > 1) {
+                expr += "(" + tmpl + ")";
+            } else {
+                expr += tmpl;
+            }
             expr += ((RexCall) proj).getOperator().toString();
-            expr += dfsRexNode(((RexCall) proj).getOperands().get(1));
+            String tmpr = dfsRexNode(((RexCall) proj).getOperands().get(1));
+            if (tmpr.length() > 1) {
+                expr += "(" + tmpr + ")";
+            } else {
+                expr += tmpr;
+            }
+
         } else if (proj instanceof RexInputRef) {
             expr += "x";
         } else if (proj instanceof RexLiteral) {
@@ -1195,96 +1206,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         Task task = basicTask(String.valueOf(cnt++));
         RexCall cond = (RexCall) phyPlan.getCondition();
 
-<<<<<<< HEAD
-//        Stack<List<String>> operands = new Stack<>();
-        List<String> operands = new ArrayList<>();
-        while (!stk.isEmpty()) {
-            boolean isFinalResult = false;
-            String s = stk.pop().trim();
-//            System.out.println("current str = " + s);
-            List<String> params = List.of(s.split("\\[|]"));
-            if (s.startsWith("MPCTableScan")) {
-                // MPCTableScan [TC], 直接加入操作栈
-                String table = params.get(1);
-                operands.add(0, table);
-            } else if (s.startsWith("MPCJoin")) {
-                if (stk.isEmpty()) {
-                    isFinalResult = true;
-                }
-                // MPCJoin [JoinType[INNER], JoinCond[=($0, $2)], $ from [TA.ID, TA.AGE, TC.ID]]
-//                // 默认都是两两PSI，所以取两个操作数
-//                List<String> lefts = operands.pop();
-//                List<String> rights = operands.pop();
-
-                if (params.get(4).startsWith("AND")) {
-                    // 如果是多个JOIN的AND情况，则把它们分为多个单独的JOIN加入Task栈
-                    String[] conds = params.get(4).substring(4, params.get(4).length() - 1).split("\\),");
-                    conds[0] += ")";
-                    for (int i = 0; i < conds.length; i++) {
-                        conds[i] = conds[i].trim();
-                        String newCond = s.substring(0, s.indexOf("AND"));
-                        newCond += conds[i] + "] ";
-                        newCond += s.substring(s.lastIndexOf("$"));
-//                        System.out.println(newFilter);
-                        stk.add(newCond);
-                    }
-                } else {
-                    // 完成string到Task的转换
-                    Task PSITask = str2Task(s, cnt, "PSI", operands, false);
-                    tasks.add(PSITask);
-
-                    // 该task的输出作为下一个的输入加入操作数栈
-                    Output PSIOutput = PSITask.getOutput();
-                    for (TaskOutputData outputData : PSIOutput.getData()) {
-                        operands.add(0, outputData.getDataName());
-                    }
-                    cnt++;
-                }
-            } else if (s.startsWith("MPCFilter")) {
-                // MPCFilter [FilterCond[AND(>($0, 10), <($1, 50))] $ from [TA.ID, TA.AGE]]
-                // 需求只有AND或者单一Cond两种情况，如后续添加OR，可再增加
-                if (params.get(2).startsWith("AND")) {
-                    // 如果是多个Cond的AND情况，则把它们分为多个单独的Cond加入Task栈
-                    String[] conds = params.get(2).substring(4, params.get(2).length() - 1).split("\\),");
-                    conds[0] += ")";
-                    for (int i = 0; i < conds.length; i++) {
-                        conds[i] = conds[i].trim();
-                        String newFilter = s.substring(0, s.indexOf("AND"));
-                        newFilter += conds[i] + "] ";
-                        newFilter += s.substring(s.lastIndexOf("$"));
-//                        System.out.println(newFilter);
-                        stk.add(newFilter);
-                    }
-                } else {
-                    if (stk.isEmpty()) {
-                        isFinalResult = true;
-                    }
-                    // 如果是单独Cond的情况，则直接生成Task
-                    // MPCFilter [FilterCond[>($0, 10)] $ from [TA.ID, TA.AGE]]
-//                    List<String> childTaskNames = operands.pop();
-                    Task FilterTask;
-                    String cond = params.get(2);
-                    if (cond.substring(0, cond.indexOf(",")).contains("$") && cond.substring(cond.indexOf(",")).contains("$")) {
-//                        FilterTask = str2Task(s, cnt, "VariableFilter", childTaskNames, null, false);
-                        FilterTask = str2Task(s, cnt, "VariableFilter", operands, isFinalResult);
-                    } else {
-//                        FilterTask = str2Task(s, cnt, "ConstantFilter", childTaskNames, null, false);
-                        FilterTask = str2Task(s, cnt, "ConstantFilter", operands, isFinalResult);
-                    }
-                    tasks.add(FilterTask);
-                    Output FilterOutput = FilterTask.getOutput();
-                    String outputDataName = FilterOutput.getData().get(0).getDataName();
-                    operands.add(0, outputDataName);
-                    cnt++;
-                }
-            } else if (s.startsWith("MPCProject")) {
-                // MPCProject [TA.ID, SUM[TA.ID-TA.AGE]]
-                // Project分为普通QUERY和MPC两种
-                String tmp = s.substring(s.indexOf("[")+1, s.length()-1);
-                if (tmp.equals("")) {
-                    // 如果project是空的，即无法处理的FL和TEE已经被提出，无需进行proj处理
-                    continue;
-=======
         // module信息（即进行什么操作）
         task.setModule(checkPSIModule(phyPlan));
 
@@ -1489,7 +1410,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     module.getParams().put("teePort", "30091");
                     module.getParams().put("domainID", "");
                     return module;
->>>>>>> 8dc69bc10dc6420807e555b1044fde7c4fe3d726
                 }
             }
         }
