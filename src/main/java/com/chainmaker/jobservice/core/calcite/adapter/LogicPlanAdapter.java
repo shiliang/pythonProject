@@ -729,6 +729,9 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
             case "SUM":
                 op = SqlStdOperatorTable.SUM;
                 break;
+            case "AVG":
+                op = SqlStdOperatorTable.AVG;
+                break;
             case "COUNT":
                 op = SqlStdOperatorTable.COUNT;
                 break;

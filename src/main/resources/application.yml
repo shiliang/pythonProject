@@ -5,5 +5,5 @@ server:
 catalog:
   address: "java-backendservice"
   port: "8008"
-#  address: "172.16.12.243"
+#  address: "192.168.40.243"
 #  port: "31008"

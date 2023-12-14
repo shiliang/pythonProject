@@ -87,7 +87,6 @@ public class BlockchainContractServiceImpl implements BlockchainContractService 
             Request.EndorsementEntry[] endorsementEntries = SdkUtils.getEndorsers(payload, getAdminUserList());
             // 3. send request
             responseInfo = chainClient.sendContractManageRequest(payload, endorsementEntries, rpcCallTimeout, syncResultTimeout);
-            System.out.println(responseInfo);
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("failed");

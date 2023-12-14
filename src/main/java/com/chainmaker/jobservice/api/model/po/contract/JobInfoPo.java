@@ -27,6 +27,7 @@ public class JobInfoPo {
 
     public static JobInfoPo converterToJobInfoPo(JobInfo jobInfo) {
         JobInfoPo jobInfoPo = new JobInfoPo();
+        jobInfo.update();
         jobInfoPo.setApplicationID(jobInfo.getJob().getJobID());
         jobInfoPo.setJob(JobPo.converterToJobPo(jobInfo.getJob()));
 
@@ -51,13 +52,11 @@ public class JobInfoPo {
     }
 
     public HashMap<String, byte[]> toContractParams() {
-        System.out.println("start");
         HashMap<String, byte[]> contractParams = new HashMap<>();
         contractParams.put("applicationID", this.getApplicationID().getBytes());
         contractParams.put("job", JSON.toJSONString(this.getJob()).getBytes());
         contractParams.put("tasks", JSON.toJSONString(this.getTasks()).getBytes());
         contractParams.put("services", JSON.toJSONString(this.getServices()).getBytes());
-        System.out.println(contractParams);
         return contractParams;
     }
 

@@ -21,6 +21,7 @@ import com.chainmaker.jobservice.api.model.po.data.ServiceValueParam;
 import com.chainmaker.jobservice.api.model.po.data.UserInfo;
 import com.chainmaker.jobservice.api.model.vo.*;
 import com.chainmaker.jobservice.api.response.ParserException;
+import com.chainmaker.jobservice.api.response.ContractException;
 import com.chainmaker.jobservice.api.service.JobParserService;
 import com.chainmaker.jobservice.core.SqlParser;
 import org.springframework.web.client.RestTemplate;
@@ -37,20 +38,37 @@ import java.util.*;
 @org.springframework.stereotype.Service
 public class JobParserServiceImpl implements JobParserService {
     private CatalogConfig catalogConfig;
+    private String orgId;
     private HashMap<String, JobGraph> jobGraphHashMap = new HashMap<>();
     private HashMap<String, CatalogCache> catalogCacheHashMap = new HashMap<>();
 
     public void setCatalogConfig(CatalogConfig catalogConfig) {
         this.catalogConfig = catalogConfig;
     }
+    public void setOrgId(String orgId) {
+        this.orgId = orgId;
+    }
+    private String getOrgDID() {
+        if (!this.orgId.isEmpty()) {
+            if (this.orgId.equals("wx-org1.chainmaker.org")) {
+                return "wx-org1.chainmaker.orgDID";
+            } else if (this.orgId.equals("wx-org2.chainmaker.org")) {
+                return "wx-org2.chainmaker.orgDID";
+            } else if (this.orgId.equals("wx-org3.chainmaker.org")) {
+                return "wx-org3.chainmaker.orgDID";
+            } else {
+                throw new ContractException("获取DID失败");
+            }
+        } else {
+            throw new ContractException("orgId为空");
+        }
+    }
 
     @Override
     public void save(List<ServiceValueParam> serviceValues) {
         String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/missions/services";
-        System.out.println("url: " + url);
         RestTemplate restTemplate = new RestTemplate();
         JSONObject response = restTemplate.postForObject(url, serviceValues, JSONObject.class);
-        System.out.println("response: " + response);
         if (response == null) {
             throw new ParserException("本地持久化失败");
         }
@@ -59,10 +77,8 @@ public class JobParserServiceImpl implements JobParserService {
     @Override
     public List<ServiceValueParam> get(String orgDID, String jobID) {
         String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/missions/serviceValues/" + orgDID + "/local/" + jobID;
-        System.out.println("url: " + url);
         RestTemplate restTemplate = new RestTemplate();
         JSONObject result = JSONObject.parseObject(restTemplate.getForObject(url, String.class), Feature.OrderedField);
-        System.out.println("result: " + result);
         ServiceValueParam[] serviceValueParams = JSONObject.parseObject(result.getString("data"), ServiceValueParam[].class, Feature.OrderedField);
         return new ArrayList<>(Arrays.asList(serviceValueParams));
     }
@@ -70,10 +86,8 @@ public class JobParserServiceImpl implements JobParserService {
     @Override
     public UserInfo getUserInfo(String userName) {
         String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/login/orgDID/" + userName;
-        System.out.println(("url: " + url));
         RestTemplate restTemplate = new RestTemplate();
         JSONObject result = JSONObject.parseObject(restTemplate.getForObject(url, String.class), Feature.OrderedField);
-        System.out.println("result: " + result);
         return JSONObject.parseObject(result.getString("data"), UserInfo.class, Feature.OrderedField);
     }
 
@@ -180,7 +194,6 @@ public class JobParserServiceImpl implements JobParserService {
 
     @Override
     public JobInfo jobCreate(MissionInfo missionInfo) {
-        System.out.println("missionInfo: " + missionInfo);
         String jobID = missionInfo.getJobID();
         JobGraph jobGraph = getJobGraph(jobID);
         JobInfo jobInfo = jobGraph.getJobInfo();
@@ -193,7 +206,9 @@ public class JobParserServiceImpl implements JobParserService {
         jobInfo.getJob().setSubmitter(missionInfo.getCreateOrgDID());
         HashSet<String> parties = new HashSet<>();
         for (ServiceParamsVo serviceParamsVo : missionInfo.getServiceParams()) {
-            parties.add(serviceParamsVo.getOrgDID());
+            if (!serviceParamsVo.getOrgDID().equals("")) {
+                parties.add(serviceParamsVo.getOrgDID());
+            }
         }
 //        for (MissionDetailInfo missionDetailInfo : missionInfo.getMissionDetailInfos()) {
 //            parties.add(missionDetailInfo.getOrgId());
@@ -202,23 +217,25 @@ public class JobParserServiceImpl implements JobParserService {
             parties.add(value);
         }
         jobInfo.getJob().setParties(new ArrayList<>(parties));
-        System.out.println("jobInfo: " + jobInfo);
         return jobInfo;
     }
 
     @Override
     public JobGraphVo getJobApproval(JobInfoPo jobInfoPo) {
         JobInfo jobInfo = JobInfo.converterToJobInfo(jobInfoPo);
-        UserInfo userInfo = getUserInfo(jobInfo.getJob().getSubmitter());
+
         int nodePort = 31004;
         if (jobInfo.getServices() != null) {
             for (Service service : jobInfo.getServices()) {
-                service.setNodePort(nodePort);
-                nodePort += 1;
-                for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints().values()) {
-                    exposeEndpoint.put("serviceCa", userInfo.getCaCert());
-                    exposeEndpoint.put("serviceCert", userInfo.getTlsCert());
-                    exposeEndpoint.put("serviceKey", userInfo.getTlsKey());
+                if (service.getOrgDID().equals(getOrgDID())) {
+                    UserInfo userInfo = getUserInfo(service.getOrgDID());
+                    service.setNodePort(nodePort);
+                    nodePort += 1;
+                    for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints().values()) {
+                        exposeEndpoint.put("serviceCa", userInfo.getCaCert());
+                        exposeEndpoint.put("serviceCert", userInfo.getTlsCert());
+                        exposeEndpoint.put("serviceKey", userInfo.getTlsKey());
+                    }
                 }
             }
         }
@@ -235,8 +252,7 @@ public class JobParserServiceImpl implements JobParserService {
             jobGraphVo.setDag(dag);
         }
         jobGraphVo.setJobInfo(jobInfoVo);
-
-
+//        jobGraphVo.checkSql(jobInfoPo.getJob().getRequestData());
         return jobGraphVo;
     }
 
@@ -269,11 +285,9 @@ public class JobParserServiceImpl implements JobParserService {
 
     @Override
     public JobRunner getJobRunner(JobInfoPo jobInfoPo) {
-        System.out.println("jobInfoPo: " + jobInfoPo);
         JobInfo jobInfo = JobInfo.converterToJobInfo(jobInfoPo);
         String jobID = jobInfo.getJob().getJobID();
-        String orgDID = jobInfo.getJob().getSubmitter();
-        System.out.println("jobInfo: " + jobInfo);
+        String orgDID = getOrgDID();
         List<ServiceValueParam> serviceValueParams = get(orgDID, jobID);
         List<ServiceRunner> serviceRunners = converterToServiceRunner(jobInfo.getServices(), serviceValueParams, orgDID);
         JobRunner jobRunner = new JobRunner();
@@ -322,13 +336,12 @@ public class JobParserServiceImpl implements JobParserService {
         SqlParser sqlParser = new SqlParser(sqltext, sqlVo.getModelType(), sqlVo.getIsStream());
         sqlParser.setCatalogConfig(catalogConfig);
         if (sqlVo.getIsStream() == 1) {
-            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser());
+            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser(), getOrgDID());
             jobBuilder.build();
             JobMissionDetail jobMissionDetail = new JobMissionDetail();
             jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
             jobMissionDetail.setMissionDetailVOList(sqlParser.getMissionDetailVOs());
             jobMissionDetail.setModelParamsVoList(sqlParser.getModelParamsVos());
-            System.out.println(jobMissionDetail);
             return jobMissionDetail;
         } else {
             JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parserWithOptimizer(), sqlParser.getColumnInfoMap());
@@ -337,7 +350,6 @@ public class JobParserServiceImpl implements JobParserService {
             jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
             jobMissionDetail.setMissionDetailVOList(sqlParser.getMissionDetailVOs());
             jobMissionDetail.setModelParamsVoList(sqlParser.getModelParamsVos());
-            System.out.println(jobMissionDetail);
             return jobMissionDetail;
         }
     }
@@ -350,7 +362,7 @@ public class JobParserServiceImpl implements JobParserService {
         List<DagEdge> edges = new ArrayList<>();
         int capacity = 100;
         int dataCount = 0;
-        int id = capacity;
+        int id = dataCount;
         for (Task task : tasks) {
             DagNode dagNode = new DagNode();
             dagNode.setId(id);
@@ -366,13 +378,13 @@ public class JobParserServiceImpl implements JobParserService {
             for (TaskInputData taskInputData: task.getInput().getData()) {
                 if (!Objects.equals(taskInputData.getTaskSrc(), "")) {
                     DagEdge dagEdge = new DagEdge();
-                    dagEdge.setFrom(Integer.parseInt(taskInputData.getTaskSrc()) + capacity);
-                    dagEdge.setTo(Integer.parseInt(taskName) + capacity);
+                    dagEdge.setFrom(Integer.parseInt(taskInputData.getTaskSrc()));
+                    dagEdge.setTo(Integer.parseInt(taskName));
                     dagEdge.setLabel(taskInputData.getDataName());
                     edges.add(dagEdge);
                 } else {
                     DagNode dataNode = new DagNode();
-                    dataNode.setId(dataCount);
+                    dataNode.setId(capacity);
 
                     String dataLabel = taskInputData.getDataName() + "(" + dataStatus + ")";
                     dataNode.setLabel(dataLabel);
@@ -382,11 +394,11 @@ public class JobParserServiceImpl implements JobParserService {
                     nodes.add(dataNode);
 
                     DagEdge dataEdge = new DagEdge();
-                    dataEdge.setFrom(dataCount);
-                    dataEdge.setTo(Integer.parseInt(taskName) + capacity);
+                    dataEdge.setFrom(capacity);
+                    dataEdge.setTo(Integer.parseInt(taskName));
                     dataEdge.setLabel(taskInputData.getDataName());
                     edges.add(dataEdge);
-                    dataCount += 1;
+                    capacity += 1;
 
                 }
             }
@@ -469,9 +481,7 @@ public class JobParserServiceImpl implements JobParserService {
             }
             for (Service service : services) {
                 if (Objects.equals(service.getOrgDID(), orgDID)) {
-                    System.out.println(service.getId());
                     for (ServiceValueParam serviceValueParam : serviceValueParams) {
-                        System.out.println("serviceValueParam: " + serviceValueParam);
                         if (Objects.equals(service.getId(), serviceValueParam.getId())) {
                             String serviceStr = JSONObject.toJSONString(service);
                             ServiceRunner serviceRunner = JSONObject.parseObject(serviceStr, ServiceRunner.class, Feature.OrderedField);
@@ -484,13 +494,10 @@ public class JobParserServiceImpl implements JobParserService {
                                 }
                                 exposeEndpoint.put("serviceKey", new String(serviceValueParam.getServiceKey()));
                             }
-                            System.out.println(serviceRunner.getReferEndpoints());
                             for (ReferEndpointRunner referEndpointRunner : serviceRunner.getReferEndpoints().values()) {
                                 if (referEndpointRunner != null) {
                                     if (!Objects.equals(referEndpointRunner.getName(), "")) {
-                                        System.out.println("not null");
                                         HashMap<String, String> referExposeEndpoint = exposeEndpointMap.get(referEndpointRunner.getReferServiceID());
-                                        System.out.println(referExposeEndpoint);
                                         referEndpointRunner.setAddress(referExposeEndpoint.get("address"));
                                         referEndpointRunner.setPath(referExposeEndpoint.get("path"));
                                         referEndpointRunner.setMethod(referExposeEndpoint.get("method"));
@@ -505,7 +512,6 @@ public class JobParserServiceImpl implements JobParserService {
                 }
             }
         }
-        System.out.println("serviceRunners: " + serviceRunners);
         return serviceRunners;
     }
 

@@ -17,6 +17,7 @@ import java.util.List;
 
 public interface JobParserService {
     void setCatalogConfig(CatalogConfig catalogConfig);
+    void setOrgId(String orgId);
     /***
      * @description 根据类型解析SQL
      * @param sqlVo
@@ -84,5 +85,6 @@ public interface JobParserService {
     void save(List<ServiceValueParam> serviceValues);
     List<ServiceValueParam> get(String orgDID, String jobID);
     UserInfo getUserInfo(String userName);
+
 
 }

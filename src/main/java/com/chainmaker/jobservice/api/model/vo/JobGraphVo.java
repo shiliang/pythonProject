@@ -3,6 +3,8 @@ package com.chainmaker.jobservice.api.model.vo;
 import com.chainmaker.jobservice.api.model.bo.graph.Dag;
 import com.chainmaker.jobservice.api.model.bo.graph.Topology;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author gaokang
@@ -18,6 +20,24 @@ public class JobGraphVo {
     private Dag dag;
     /** 服务拓扑图 */
     private Topology topology;
+    private Boolean checkFlag = false;
+    private String checkMessage;
+
+    public Boolean getCheckFlag() {
+        return checkFlag;
+    }
+
+    public void setCheckFlag(Boolean checkFlag) {
+        this.checkFlag = checkFlag;
+    }
+
+    public String getCheckMessage() {
+        return checkMessage;
+    }
+
+    public void setCheckMessage(String checkMessage) {
+        this.checkMessage = checkMessage;
+    }
 
     public JobInfoVo getJobInfo() {
         return jobInfo;
@@ -50,5 +70,14 @@ public class JobGraphVo {
                 ", dag=" + dag +
                 ", topology=" + topology +
                 '}';
+    }
+    public void checkSql(String sql) {
+//        Boolean flag = sql.contains("+") || sql.contains("-") || sql.contains("*") || sql.contains("/");
+//        if (flag) {
+//            this.setCheckFlag(true);
+//            this.setCheckMessage("当前算法存在风险，风险类型：线性运算");
+//        } else {
+//            System.out.println("NO");
+//        }
     }
 }
