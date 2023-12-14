@@ -4,8 +4,10 @@ import com.chainmaker.jobservice.core.calcite.cost.MPCCost;
 import com.chainmaker.jobservice.core.calcite.cost.MPCRelMetaDataProvider;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
+import com.chainmaker.jobservice.core.calcite.utils.RexNodeRowCounter;
 import com.chainmaker.jobservice.core.parser.plans.*;
 import com.chainmaker.jobservice.core.parser.tree.*;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.Enumerable;
@@ -17,6 +19,8 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.*;
@@ -28,7 +32,9 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
+import org.aspectj.apache.bcel.classfile.ConstantDouble;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 import static com.chainmaker.jobservice.core.calcite.utils.ConstExprJudgement.isInteger;
@@ -47,6 +53,8 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
     private SchemaPlus rootSchema;              // 语句涉及的schema信息
     private FrameworkConfig config;             // 创建builder的一些配置
     private RelBuilder builder;                 // RelNode生成器
+
+    private RexBuilder rexBuilder;              // RexNode生成器
     private Integer modelType;                      // 需要处理的任务类型
 
     List<String> multiTableList = new ArrayList<>(); // 用于存储参加join的属性名
@@ -100,6 +108,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
     public void CastToRelNode() {
         builder = RelBuilder.create(config);
         builder.getCluster().setMetadataProvider(MPCRelMetaDataProvider.relMetaDataProvider);
+        rexBuilder = builder.getRexBuilder();
         root = visit(originLogicalPlan);
 
     }
@@ -585,49 +594,71 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         RexNode left = dealWithExpression(expr.getLeft());
         RexNode right = dealWithExpression(expr.getRight());
         SqlOperator op = SqlStdOperatorTable.PLUS;
-        boolean flag = true;
+        int refCnt = 2;
         if (left instanceof RexLiteral && right instanceof RexLiteral) {
-            flag = false;
+            refCnt = 0;
+        } else if (left instanceof RexLiteral || right instanceof RexLiteral) {
+            refCnt = 1;
+            if (left instanceof RexLiteral) {
+                RexNode tmp = left;
+                left = right;
+                right = tmp;
+            }
         }
         switch (expr.getOperator()) {
             case ADD:
                 op = SqlStdOperatorTable.PLUS;
-                if (flag) {
+                if (refCnt == 2) {
                     ans = builder.call(op, left, right);
+                } else if (refCnt == 1) {
+                    rexBuilder = builder.getRexBuilder();
+                    ans = builder.call(op, builder.cast(left, SqlTypeName.DOUBLE), right);
                 } else {
                     ans = builder.literal(Double.parseDouble(left.toString()) + Double.parseDouble(right.toString()));
                 }
                 break;
             case SUBTRACT:
                 op = SqlStdOperatorTable.MINUS;
-                if (flag) {
+                if (refCnt == 2) {
                     ans = builder.call(op, left, right);
+                } else if (refCnt == 1) {
+                    rexBuilder = builder.getRexBuilder();
+                    ans = builder.call(op, builder.cast(left, SqlTypeName.DOUBLE), right);
                 } else {
                     ans = builder.literal(Double.parseDouble(left.toString()) - Double.parseDouble(right.toString()));
                 }
                 break;
             case MULTIPLY:
                 op = SqlStdOperatorTable.MULTIPLY;
-                if (flag) {
+                if (refCnt == 2) {
                     ans = builder.call(op, left, right);
+                } else if (refCnt == 1) {
+                    rexBuilder = builder.getRexBuilder();
+                    ans = builder.call(op, builder.cast(left, SqlTypeName.DOUBLE), right);
                 } else {
                     ans = builder.literal(Double.parseDouble(left.toString()) * Double.parseDouble(right.toString()));
                 }
                 break;
             case DIVIDE:
                 op = SqlStdOperatorTable.DIVIDE;
-                if (flag) {
+                if (refCnt == 2) {
                     ans = builder.call(op, left, right);
+                } else if (refCnt == 1) {
+                    rexBuilder = builder.getRexBuilder();
+                    ans = builder.call(op, builder.cast(left, SqlTypeName.DOUBLE), right);
                 } else {
                     ans = builder.literal(Double.parseDouble(left.toString()) / Double.parseDouble(right.toString()));
                 }
                 break;
             case MODULUS:
                 op = SqlStdOperatorTable.MOD;
-                if (flag) {
+                if (refCnt == 2) {
                     ans = builder.call(op, left, right);
+                } else if (refCnt == 1) {
+                    rexBuilder = builder.getRexBuilder();
+                    ans = builder.call(op, builder.cast(left, SqlTypeName.DOUBLE), right);
                 } else {
-                    ans = builder.literal(Integer.parseInt(left.toString()) % Integer.parseInt(right.toString()));
+                    ans = builder.literal(Double.parseDouble(left.toString()) % Double.parseDouble(right.toString()));
                 }
                 break;
             default:

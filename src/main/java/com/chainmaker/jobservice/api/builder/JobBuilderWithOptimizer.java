@@ -7,6 +7,7 @@ import com.chainmaker.jobservice.api.model.bo.job.task.*;
 import com.chainmaker.jobservice.api.model.bo.job.task.Module;
 import com.chainmaker.jobservice.api.model.vo.ServiceVo;
 import com.chainmaker.jobservice.api.response.ParserException;
+import com.chainmaker.jobservice.core.calcite.optimizer.metadata.FieldInfo;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCFilter;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCJoin;
@@ -1008,6 +1009,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                         if (!(inputList.get(j).contains("."))) {
                             inputList.remove(j);
                             j--;
+                            continue;
+                        }
+                        if (inputList.get(j).matches("[-+]?\\d*\\.?\\d+")) {
+                            inputList.remove(j);
+                            j--;
+                            continue;
                         }
                     }
                     System.out.println();
@@ -1179,14 +1186,19 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         String expr = "";
         if (proj instanceof RexCall) {
             String tmpl = dfsRexNode(((RexCall) proj).getOperands().get(0));
-            if (tmpl.length() > 1) {
+            if (tmpl.length() > 1 && tmpl.contains("x")) {
                 expr += "(" + tmpl + ")";
             } else {
                 expr += tmpl;
             }
-            expr += ((RexCall) proj).getOperator().toString();
+            String tmpOp = ((RexCall) proj).getOperator().toString();
+            if (tmpOp.equals("CAST")) {
+                return expr;
+            } else {
+                expr += tmpOp;
+            }
             String tmpr = dfsRexNode(((RexCall) proj).getOperands().get(1));
-            if (tmpr.length() > 1) {
+            if (tmpr.length() > 1 && tmpr.contains("x")) {
                 expr += "(" + tmpr + ")";
             } else {
                 expr += tmpr;

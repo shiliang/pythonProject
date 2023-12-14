@@ -49,7 +49,7 @@ public class Driver {
 //        String query = "SELECT TA.A FROM TA WHERE TA.ID<3";
 //        String query = "SELECT FL(is_train=true,is_test=false,FLLABEL(SOURCE_DATA=BREAST_HETERO_GGUEST,with_label=true,label_type=int,output_format=dense,namespace=experiment),FLLABEL(SOURCE_DATA=BREAST_HETERO_HHOST,with_label=false,output_format=dense,namespace=experiment),INTERSECTION(intersect_method=rsa),HENN(bottom_nn_define.a.in_features=10,bottom_nn_define.a.out_features=4,bottom_nn_define.a.layer=Linear,bottom_nn_define.b.layer=ReLU,top_nn_define.a.in_features=10,top_nn_define.a.out_features=4,top_nn_define.b.layer=Linear,top_nn_define.b.layer=Sigmoid,interactive_layer_define.a.out_dim=4,interactive_layer_define.a.need_guest=true,interactive_layer_define.a.host_num=1,interactive_layer_define.a.guest_dim=4,interactive_layer_define.a.host_dim=4,interactive_layer_define.a.layer=InteractiveLayer,epochs=2,loss.reduction=mean,loss.loss_fn=BCELoss),EVAL(eval_type=binary)) FROM BREAST_HETERO_GGUEST,BREAST_HETERO_HHOST";
 //        String query = "SELECT TESTA(ADATA.ID, BDATA.ID, TABLEC.ID) FROM ADATA, BDATA, TABLEC";
-        String query = "SELECT (T_DT_USER.ID-T_DT_USER.DATA) * (T_JTW_USER.DATA -(T_DT_USER.ID+T_DT_USER.DATA)) FROM T_DT_USER,T_JTW_USER WHERE T_DT_USER.ID=T_JTW_USER.ID";
+        String query = "SELECT 0.1*T_DT_USER.DATA + T_JTW_USER.DATA*0.2 FROM T_DT_USER,T_JTW_USER WHERE T_DT_USER.ID=T_JTW_USER.ID";
 
         // modelType:
         // 0： 联邦查询
