@@ -14,11 +14,20 @@ import java.util.List;
 public class PirFilter extends PhysicalPlan {
     private Integer id;
     private String condition;
+    private String project;
     private String nodeName = "filter";
     private List<InputData> inputDataList;
     private List<OutputData> outputDataList;
     private boolean finalResult;
     private List<String> parties;
+
+    public String getProject() {
+        return project;
+    }
+
+    public void setProject(String project) {
+        this.project = project;
+    }
 
     @Override
     public Integer getId() {

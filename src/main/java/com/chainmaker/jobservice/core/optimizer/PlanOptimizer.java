@@ -31,6 +31,8 @@ public class PlanOptimizer extends LogicalPlanVisitor {
     private HashMap<String, PhysicalPlan> tableLastMap = new HashMap<>();
     private Integer count = 0;
 
+    private HashMap<String, List<String>> kvMap = new HashMap<>();
+
     public PlanOptimizer(Integer modelType, Integer isStream, HashMap<String, String> tableOwnerMap) {
         this.modelType = modelType;
         this.isStream = isStream;
@@ -56,11 +58,19 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         buildFate(expression);
     }
     public void visit(LogicalProject node) {
-
+        List<String> kvList = new ArrayList<>();
+        List<NamedExpression> preProject = node.getProjectList().getValues();
+        for (int i=0; i<preProject.size(); i++) {
+            if (preProject.get(i).getExpression() instanceof DereferenceExpression) {
+                kvList.add(((DereferenceExpression) preProject.get(i).getExpression()).getFieldName());
+            }
+        }
+        kvMap.put("project", kvList);
         for (LogicalPlan child: node.getChildren()) {
             child.accept(this);
         }
         List<NamedExpression> namedExpressionList = node.getProjectList().getValues();
+
         for (int i=0; i<namedExpressionList.size(); i++) {
             if (namedExpressionList.get(i).getExpression() instanceof DereferenceExpression) {
                 buildProject((DereferenceExpression) namedExpressionList.get(i).getExpression(), namedExpressionList.get(i).getIdentifier().toString());
@@ -145,6 +155,9 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         // 目前只处理pir
         PirFilter pirFilter = new PirFilter();
         pirFilter.setId(count);
+        if (kvMap.size() > 0) {
+            pirFilter.setProject(kvMap.get("project").toString().replace("[", "").replace("]", ""));
+        }
         count += 1;
 
         HashSet<String> parties = new HashSet<>();
@@ -163,7 +176,6 @@ public class PlanOptimizer extends LogicalPlanVisitor {
                 parties.add(inputData.getDomainID());
                 outputData.setTableName(expression.getBase().toString());
                 outputData.setDomainID(tableOwnerMap.get(expression.getBase().toString()));
-
                 outputData.setOutputSymbol(expression.getBase().toString() + "." + expression.getFieldName());
                 inputDataList.add(inputData);
                 outputDataList.add(outputData);
