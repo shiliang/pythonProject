@@ -3,6 +3,7 @@ package com.chainmaker.jobservice.core.optimizer.plans;
 import com.chainmaker.jobservice.core.optimizer.model.InputData;
 import com.chainmaker.jobservice.core.optimizer.model.OutputData;
 
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -14,18 +15,18 @@ import java.util.List;
 public class PirFilter extends PhysicalPlan {
     private Integer id;
     private String condition;
-    private String project;
+    private HashMap<String, List<String>> project;
     private String nodeName = "filter";
     private List<InputData> inputDataList;
     private List<OutputData> outputDataList;
     private boolean finalResult;
     private List<String> parties;
 
-    public String getProject() {
+    public HashMap<String, List<String>> getProject() {
         return project;
     }
 
-    public void setProject(String project) {
+    public void setProject(HashMap<String, List<String>> project) {
         this.project = project;
     }
 

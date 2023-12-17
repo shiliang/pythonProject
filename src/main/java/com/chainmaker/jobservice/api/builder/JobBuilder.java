@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.api.builder;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.config.BlockchainConf;
 import com.chainmaker.jobservice.api.model.bo.job.Job;
@@ -135,18 +136,18 @@ public class JobBuilder extends PhysicalPlanVisitor {
                         break;
                 }
                 ServiceVo serviceVo = teeTemplateToService(templateType, i);
+                JSONArray pirParams = new JSONArray();
+                for (InputData inputData : plan.getInputDataList()) {
+                    JSONObject dataSourse = new JSONObject();
+                    dataSourse.put("table", inputData.getTableName());
+                    dataSourse.put("key", inputData.getColumn());
+                    dataSourse.put("column", plan.getProject().get(inputData.getTableName()));
+                    pirParams.add(dataSourse);
+                }
                 ValueVo valueTable = new ValueVo();
-                valueTable.setKey("table");
-                valueTable.setValue(plan.getInputDataList().get(0).getTableName());
+                valueTable.setKey("pirParams");
+                valueTable.setValue(pirParams.toString().replace("[", "").replace("]", ""));
                 serviceVo.getValues().set(0, valueTable);
-                ValueVo valueColumn = new ValueVo();
-                valueColumn.setKey("key");
-                valueColumn.setValue(plan.getInputDataList().get(0).getColumn());
-                serviceVo.getValues().add(valueColumn);
-                ValueVo valueProject = new ValueVo();
-                valueProject.setKey("column");
-                valueProject.setValue(plan.getProject());
-                serviceVo.getValues().add(valueProject);
                 map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getId());
                 serviceVos.add(serviceVo);
             }
@@ -180,18 +181,18 @@ public class JobBuilder extends PhysicalPlanVisitor {
                         break;
                 }
                 ServiceVo serviceVo = teeTemplateToService(templateType, i);
+                JSONArray pirParams = new JSONArray();
+                for (InputData inputData : plan.getInputDataList()) {
+                    JSONObject dataSourse = new JSONObject();
+                    dataSourse.put("table", inputData.getTableName());
+                    dataSourse.put("key", inputData.getColumn());
+                    dataSourse.put("column", plan.getProject().get(inputData.getTableName()));
+                    pirParams.add(dataSourse);
+                }
                 ValueVo valueTable = new ValueVo();
-                valueTable.setKey("table");
-                valueTable.setValue(plan.getInputDataList().get(0).getTableName());
+                valueTable.setKey("pirParams");
+                valueTable.setValue(pirParams.toString().replace("[", "").replace("]", ""));
                 serviceVo.getValues().set(0, valueTable);
-                ValueVo valueColumn = new ValueVo();
-                valueColumn.setKey("column");
-                valueColumn.setValue(plan.getInputDataList().get(0).getColumn());
-                serviceVo.getValues().add(valueColumn);
-                ValueVo valueProject = new ValueVo();
-                valueProject.setKey("column");
-                valueProject.setValue(plan.getProject());
-                serviceVo.getValues().add(valueProject);
                 map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getId());
                 serviceVos.add(serviceVo);
             }
