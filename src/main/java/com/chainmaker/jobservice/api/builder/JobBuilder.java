@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.api.builder;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.config.BlockchainConf;
 import com.chainmaker.jobservice.api.model.bo.job.Job;
@@ -45,6 +46,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
     private final DAG<PhysicalPlan> dag;
     private final String createTime, jobID;
     private Job job = new Job();
+    private HashMap<String, String> kvMap = new HashMap<>();
     private List<ServiceVo> services = new ArrayList<>();
     private List<Task> tasks = new ArrayList<>();
 
@@ -104,15 +106,17 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
     @Override
     public void visit(Project plan) {
-        String moduleName = TaskType.QUERY.name();
-        Task task = basePlanToTask(plan);
-        Module module = new Module();
-        module.setModuleName(moduleName);
-        JSONObject param = new JSONObject();
-        param.put("alias", plan.getOutputDataList().get(0).getOutputSymbol());
-        module.setParams(param);
-        task.setModule(module);
-        tasks.add(task);
+        if (isStream != 1) {
+            String moduleName = TaskType.QUERY.name();
+            Task task = basePlanToTask(plan);
+            Module module = new Module();
+            module.setModuleName(moduleName);
+            JSONObject param = new JSONObject();
+            param.put("alias", plan.getOutputDataList().get(0).getOutputSymbol());
+            module.setParams(param);
+            task.setModule(module);
+            tasks.add(task);
+        }
     }
     @Override
     public void visit(PirFilter plan) {
@@ -132,14 +136,18 @@ public class JobBuilder extends PhysicalPlanVisitor {
                         break;
                 }
                 ServiceVo serviceVo = teeTemplateToService(templateType, i);
+                JSONArray pirParams = new JSONArray();
+                for (InputData inputData : plan.getInputDataList()) {
+                    JSONObject dataSourse = new JSONObject();
+                    dataSourse.put("table", inputData.getTableName());
+                    dataSourse.put("key", inputData.getColumn());
+                    dataSourse.put("column", plan.getProject().get(inputData.getTableName()).toString());
+                    pirParams.add(dataSourse);
+                }
                 ValueVo valueTable = new ValueVo();
-                valueTable.setKey("table");
-                valueTable.setValue(plan.getInputDataList().get(0).getTableName());
+                valueTable.setKey("pirParams");
+                valueTable.setValue(pirParams.toString().replace("[", "").replace("]", ""));
                 serviceVo.getValues().set(0, valueTable);
-                ValueVo valueColumn = new ValueVo();
-                valueColumn.setKey("column");
-                valueColumn.setValue(plan.getInputDataList().get(0).getColumn());
-                serviceVo.getValues().add(valueColumn);
                 map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getId());
                 serviceVos.add(serviceVo);
             }
@@ -173,14 +181,18 @@ public class JobBuilder extends PhysicalPlanVisitor {
                         break;
                 }
                 ServiceVo serviceVo = teeTemplateToService(templateType, i);
+                JSONArray pirParams = new JSONArray();
+                for (InputData inputData : plan.getInputDataList()) {
+                    JSONObject dataSourse = new JSONObject();
+                    dataSourse.put("table", inputData.getTableName());
+                    dataSourse.put("key", inputData.getColumn());
+                    dataSourse.put("column", plan.getProject().get(inputData.getTableName()).toString());
+                    pirParams.add(dataSourse);
+                }
                 ValueVo valueTable = new ValueVo();
-                valueTable.setKey("table");
-                valueTable.setValue(plan.getInputDataList().get(0).getTableName());
+                valueTable.setKey("pirParams");
+                valueTable.setValue(pirParams.toString().replace("[", "").replace("]", ""));
                 serviceVo.getValues().set(0, valueTable);
-                ValueVo valueColumn = new ValueVo();
-                valueColumn.setKey("column");
-                valueColumn.setValue(plan.getInputDataList().get(0).getColumn());
-                serviceVo.getValues().add(valueColumn);
                 map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getId());
                 serviceVos.add(serviceVo);
             }

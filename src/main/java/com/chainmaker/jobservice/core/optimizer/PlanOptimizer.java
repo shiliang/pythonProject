@@ -31,6 +31,8 @@ public class PlanOptimizer extends LogicalPlanVisitor {
     private HashMap<String, PhysicalPlan> tableLastMap = new HashMap<>();
     private Integer count = 0;
 
+    private HashMap<String, List<String>> kvMap = new HashMap<>();
+
     public PlanOptimizer(Integer modelType, Integer isStream, HashMap<String, String> tableOwnerMap) {
         this.modelType = modelType;
         this.isStream = isStream;
@@ -57,10 +59,25 @@ public class PlanOptimizer extends LogicalPlanVisitor {
     }
     public void visit(LogicalProject node) {
 
+        List<NamedExpression> preProject = node.getProjectList().getValues();
+        for (int i=0; i<preProject.size(); i++) {
+            Expression expression = preProject.get(i).getExpression();
+            if (expression instanceof DereferenceExpression) {
+                if (kvMap.containsKey(((DereferenceExpression) expression).getBase().toString())) {
+                    kvMap.get(((DereferenceExpression) expression).getBase().toString()).add(((DereferenceExpression) expression).getFieldName());
+                } else {
+                    List<String> kvList = new ArrayList<>();
+                    kvList.add(((DereferenceExpression) expression).getFieldName());
+                    kvMap.put(((DereferenceExpression) expression).getBase().toString(), kvList);
+                }
+
+            }
+        }
         for (LogicalPlan child: node.getChildren()) {
             child.accept(this);
         }
         List<NamedExpression> namedExpressionList = node.getProjectList().getValues();
+
         for (int i=0; i<namedExpressionList.size(); i++) {
             if (namedExpressionList.get(i).getExpression() instanceof DereferenceExpression) {
                 buildProject((DereferenceExpression) namedExpressionList.get(i).getExpression(), namedExpressionList.get(i).getIdentifier().toString());
@@ -145,36 +162,51 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         // 目前只处理pir
         PirFilter pirFilter = new PirFilter();
         pirFilter.setId(count);
+        if (!kvMap.isEmpty()) {
+            pirFilter.setProject(kvMap);
+        }
         count += 1;
 
         HashSet<String> parties = new HashSet<>();
+        List<InputData> inputDataList = new ArrayList<>();
+        List<OutputData> outputDataList = new ArrayList<>();
         if (node.getCondition() instanceof ComparisonExpression) {
-            if (((ComparisonExpression) node.getCondition()).getLeft() instanceof DereferenceExpression) {
-                DereferenceExpression expression = (DereferenceExpression) ((ComparisonExpression) node.getCondition()).getLeft();
-                PhysicalPlan parent = tableLastMap.get(expression.getBase().toString());
-                List<InputData> inputDataList = new ArrayList<>();
-                List<OutputData> outputDataList = new ArrayList<>();
-                InputData inputData = new InputData();
-                OutputData outputData = new OutputData();
-                inputData.setNodeSrc(parent.getId());
-                inputData.setTableName(expression.getBase().toString());
-                inputData.setColumn(expression.getFieldName());
-                inputData.setDomainID(tableOwnerMap.get(expression.getBase().toString()));
-                parties.add(inputData.getDomainID());
-                outputData.setTableName(expression.getBase().toString());
-                outputData.setDomainID(tableOwnerMap.get(expression.getBase().toString()));
-
-                outputData.setOutputSymbol(expression.getBase().toString() + "." + expression.getFieldName());
-                inputDataList.add(inputData);
-                outputDataList.add(outputData);
+            if (((ComparisonExpression) node.getCondition()).getRight().toString().equals("?")) {
+                dealPir(((ComparisonExpression) node.getCondition()).getLeft(), inputDataList, outputDataList, parties);
                 pirFilter.setInputDataList(inputDataList);
                 pirFilter.setOutputDataList(outputDataList);
                 pirFilter.setParties(new ArrayList<>(parties));
-                dag.addEdge(parent, pirFilter);
             }
 
         }
+        for (InputData inputData : pirFilter.getInputDataList()) {
+            PhysicalPlan parent = tableLastMap.get(inputData.getTableName());
+            dag.addEdge(parent, pirFilter);
+        }
 
+    }
+    private void dealPir(Expression condition, List<InputData> inputDataList, List<OutputData> outputDataList, HashSet<String> parties) {
+        if (condition instanceof ComparisonExpression) {
+            dealPir(((ComparisonExpression) condition).getLeft(), inputDataList, outputDataList, parties);
+            dealPir(((ComparisonExpression) condition).getRight(), inputDataList, outputDataList, parties);
+        } else if (condition instanceof DereferenceExpression) {
+            DereferenceExpression expression = (DereferenceExpression) condition;
+            PhysicalPlan parent = tableLastMap.get(expression.getBase().toString());
+            InputData inputData = new InputData();
+            OutputData outputData = new OutputData();
+            inputData.setNodeSrc(parent.getId());
+            inputData.setTableName(expression.getBase().toString());
+            inputData.setColumn(expression.getFieldName());
+            inputData.setDomainID(tableOwnerMap.get(expression.getBase().toString()));
+            parties.add(inputData.getDomainID());
+            outputData.setTableName(expression.getBase().toString());
+            outputData.setDomainID(tableOwnerMap.get(expression.getBase().toString()));
+            outputData.setOutputSymbol(expression.getBase().toString() + "." + expression.getFieldName());
+            inputDataList.add(inputData);
+            outputDataList.add(outputData);
+        } else {
+            throw new ParserException("暂不支持");
+        }
     }
 
     private void buildFate(FederatedLearningExpression expression) {
