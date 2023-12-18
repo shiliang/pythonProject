@@ -141,7 +141,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         // 合并OTPSI，暂时放弃
 //        mergeOTPSI();
         // PSI后通知所有参与表
-//        notifyPSIOthers();
+        notifyPSIOthers();
         // 合并本地tasks
 //        mergeLocalTasks();
 
@@ -237,8 +237,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 notifyList.add(leader1);
                 notifyList.add(leader2);
                 for (TaskOutputData outputData : tasks.get(i).getOutput().getData()) {
-                    String[] tmp = outputData.getDataName().split("-");
-                    affectedOutputNames.put(tmp[0], tmp[1]);
+                    String outputName = outputData.getDataName();
+                    int lastPos = outputName.lastIndexOf("-");
+                    affectedOutputNames.put(outputName.substring(0, lastPos), outputName.substring(lastPos+1));
                 }
             }
         }
@@ -248,7 +249,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
 
         // 基本信息
-        Task task = basicTask(String.valueOf(cnt++));
+        Task task = basicTask(String.valueOf(maxPSIid+1));
+        cnt++;
 
         // module信息（即进行什么操作）
         Module module = new Module();
@@ -267,9 +269,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             }
             TaskInputData inputData = new TaskInputData();
             inputData.setRole("follower");
-            inputData.setDataName(table + "-" + affectedOutputNames.get(table));
-            inputData.setTaskSrc(affectedOutputNames.get(table));
             inputData.setDomainID(metadata.getTableOrgId(table));
+            inputData.setDataName(inputData.getDomainID() + "-" + affectedOutputNames.get(inputData.getDomainID()));
+            inputData.setTaskSrc(affectedOutputNames.get(inputData.getDomainID()));
+
             JSONObject inputDataParams = new JSONObject(true);
             inputDataParams.put("table", table);
             inputData.setParams(inputDataParams);
@@ -284,7 +287,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         List<TaskOutputData> outputDatas = new ArrayList<>();
         for (TaskInputData inputData : inputDatas) {
             TaskOutputData outputData = new TaskOutputData();
-            outputData.setDataName(inputData.getParams().get("table") + "-" + task.getTaskName());
+            outputData.setDataName(metadata.getTableOrgId((String) inputData.getParams().get("table")) + "-" + task.getTaskName());
             outputData.setDomainID(inputData.getDomainID());
             outputData.setFinalResult("N");
             outputDatas.add(outputData);
@@ -307,20 +310,23 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             parties.add(party);
         }
         task.setParties(parties);
-        tasks.add(task);
+        tasks.add(maxPSIid+1, task);
 
         // 通知上位依赖，outputDataName的修改
-        for (int i = maxPSIid+1; i < n; i++) {
+        for (int i = maxPSIid+2; i < n+1; i++) {
+            tasks.get(i).setTaskName(String.valueOf(Integer.parseInt(tasks.get(i).getTaskName())+1));
             for (TaskInputData inputData : tasks.get(i).getInput().getData()) {
-                String oldDataName = inputData.getDataName();
-                String[] tmp = oldDataName.split("-");
-                if (tmp[0].equals(leader1) || tmp[0].equals(leader2)) {
+                String oldOrgID = inputData.getDomainID();
+                if (oldOrgID.equals(metadata.getTableOrgId(leader1)) || oldOrgID.equals(metadata.getTableOrgId(leader2))) {
                     continue;
                 }
-                String oldID = affectedOutputNames.get(tmp[0]);
-                if (tmp[1].equals(oldID)) {
-                    inputData.setDataName(tmp[0] + "-" + task.getTaskName());
-                }
+                inputData.setDataName(oldOrgID + "-" + task.getTaskName());
+                inputData.setTaskSrc(task.getTaskName());
+            }
+            for (TaskOutputData outputData : tasks.get(i).getOutput().getData()) {
+                int pos = outputData.getDataName().lastIndexOf("-");
+                String prefix = outputData.getDataName().substring(0, pos+1);
+                outputData.setDataName(prefix+tasks.get(i).getTaskName());
             }
         }
     }
@@ -1001,6 +1007,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 //        }
         switch (phyPlan.getRelTypeName()) {
             case "MPCProject":
+//                notifyPSIOthers(tasks);
                 for (int i = 0; i < phyPlan.getRowType().getFieldNames().size(); i++) {
                     RexNode node = ((MPCProject) phyPlan).getProjects().get(i);
                     List<String> inputList = new ArrayList<String>(List.of(phyPlan.getRowType().getFieldNames().get(i).split("\\+|-|\\*|/|%|\\[|]|\\(|\\)")));
