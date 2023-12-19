@@ -29,6 +29,7 @@ import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.aspectj.apache.bcel.classfile.ModulePackages;
 
 import java.util.*;
 
@@ -221,6 +222,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
     /**
      * 最后一次PSI中的任意一方通知其他所有表最后的求交结果
+     * （由于底层实现问题，现阶段实现针对三方做了特殊处理，导致不可扩展，后续需要修改）
      */
     public void notifyPSIOthers() {
         int n = tasks.size();
@@ -247,6 +249,20 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         if (affectedOutputNames.size() <= 2) {
             return;
         }
+        // 如果后续查询用不到中间求交的其他表，则也不用通知
+        boolean needNotify = false;
+        for (int i = maxPSIid+1; i < n; i++) {
+            for (TaskInputData inputData : tasks.get(i).getInput().getData()) {
+                String oldOrgID = inputData.getDomainID();
+                if (oldOrgID.equals(metadata.getTableOrgId(leader1)) || oldOrgID.equals(metadata.getTableOrgId(leader2))) {
+                    continue;
+                }
+                needNotify = true;
+            }
+        }
+        if (!needNotify) {
+            return;
+        }
 
         // 基本信息
         Task task = basicTask(String.valueOf(maxPSIid+1));
@@ -256,32 +272,74 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         Module module = new Module();
         module.setModuleName(TaskType.NOTIFY.name());
         JSONObject moduleparams = new JSONObject(true);
-//        moduleparams.put("leader", leader1);
         module.setParams(moduleparams);
         task.setModule(module);
 
         // 输入信息
         Input input = new Input();
         List<TaskInputData> inputDatas = new ArrayList<>();
-        for (String table : notifyList) {
-            if (table.equals(leader1)) {
-                continue;
-            }
-            TaskInputData inputData = new TaskInputData();
-            if (table.equals(leader2)) {
-                inputData.setRole("server");
-            } else {
-                inputData.setRole("follower");
-            }
-            inputData.setDomainID(metadata.getTableOrgId(table));
-            inputData.setDataName(inputData.getDomainID() + "-" + affectedOutputNames.get(inputData.getDomainID()));
-            inputData.setTaskSrc(String.valueOf(Integer.parseInt(affectedOutputNames.get(inputData.getDomainID()))-1));
 
-            JSONObject inputDataParams = new JSONObject(true);
-            inputDataParams.put("table", table);
-            inputData.setParams(inputDataParams);
-            inputDatas.add(inputData);
+        // 此处为临时处理，逻辑基本写死，不可扩展
+        // 由于只针对三方PSI，所以需要通知的就是第一次PSI，没有其他情况，所以直接照抄第一次PSI的Task
+        module.setModuleName(TaskType.OTPSI.name());
+        moduleparams.put("joinType", "INNER");
+        moduleparams.put("operator", "=");
+        int firstIdx = 0;
+        for (int i = 0; i < n; i++) {
+            if (tasks.get(i).getModule().equals(TaskType.OTPSI.name())) {
+                firstIdx = i;
+                break;
+            }
         }
+        TaskInputData inputData1 = new TaskInputData();
+        inputData1.setRole("server");
+        inputData1.setDomainID(tasks.get(firstIdx).getInput().getData().get(0).getDomainID());
+        inputData1.setDataName(inputData1.getDomainID() + "-" + affectedOutputNames.get(inputData1.getDomainID()));
+        inputData1.setTaskSrc(String.valueOf(Integer.parseInt(affectedOutputNames.get(inputData1.getDomainID()))-1));
+        JSONObject inputData1Params = new JSONObject(true);
+        inputData1Params.put("table", tasks.get(firstIdx).getInput().getData().get(0).getParams().get("table"));
+        inputData1Params.put("field", tasks.get(firstIdx).getInput().getData().get(0).getParams().get("field"));
+        inputData1.setParams(inputData1Params);
+        inputDatas.add(inputData1);
+
+        TaskInputData inputData2 = new TaskInputData();
+        inputData2.setRole("client");
+        inputData2.setDomainID(tasks.get(firstIdx).getInput().getData().get(1).getDomainID());
+        inputData2.setDataName(inputData2.getDomainID() + "-" + affectedOutputNames.get(inputData2.getDomainID()));
+        inputData2.setTaskSrc(String.valueOf(Integer.parseInt(affectedOutputNames.get(inputData2.getDomainID()))-1));
+        JSONObject inputData2Params = new JSONObject(true);
+        inputData2Params.put("table", tasks.get(firstIdx).getInput().getData().get(1).getParams().get("table"));
+        inputData2Params.put("field", tasks.get(firstIdx).getInput().getData().get(1).getParams().get("field"));
+        inputData2.setParams(inputData2Params);
+        inputDatas.add(inputData2);
+
+        // 确保server是完整的那一方，对output有影响，因为此处只有client方会有输出
+        if (Integer.parseInt(affectedOutputNames.get(inputData1.getDomainID())) < Integer.parseInt(affectedOutputNames.get(inputData2.getDomainID()))) {
+            inputData1.setRole("client");
+            inputData2.setRole("server");
+        }
+
+        // 以下是添加uid的通知方式
+//        for (String table : notifyList) {
+//            if (table.equals(leader1)) {
+//                continue;
+//            }
+//            TaskInputData inputData = new TaskInputData();
+//            if (table.equals(leader2)) {
+//                inputData.setRole("server");
+//            } else {
+//                inputData.setRole("client");
+//            }
+//            inputData.setDomainID(metadata.getTableOrgId(table));
+//            inputData.setDataName(inputData.getDomainID() + "-" + affectedOutputNames.get(inputData.getDomainID()));
+//            inputData.setTaskSrc(String.valueOf(Integer.parseInt(affectedOutputNames.get(inputData.getDomainID()))-1));
+//
+//            JSONObject inputDataParams = new JSONObject(true);
+//            inputDataParams.put("table", table);
+////            inputDataParams.put("field", );
+//            inputData.setParams(inputDataParams);
+//            inputDatas.add(inputData);
+//        }
         input.setData(inputDatas);
         task.setInput(input);
 
