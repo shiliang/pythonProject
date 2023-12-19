@@ -256,7 +256,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         Module module = new Module();
         module.setModuleName(TaskType.NOTIFY.name());
         JSONObject moduleparams = new JSONObject(true);
-        moduleparams.put("leader", leader1);
+//        moduleparams.put("leader", leader1);
         module.setParams(moduleparams);
         task.setModule(module);
 
@@ -264,14 +264,18 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         Input input = new Input();
         List<TaskInputData> inputDatas = new ArrayList<>();
         for (String table : notifyList) {
-            if (table.equals(leader1) || table.equals(leader2)) {
+            if (table.equals(leader1)) {
                 continue;
             }
             TaskInputData inputData = new TaskInputData();
-            inputData.setRole("follower");
+            if (table.equals(leader2)) {
+                inputData.setRole("server");
+            } else {
+                inputData.setRole("follower");
+            }
             inputData.setDomainID(metadata.getTableOrgId(table));
             inputData.setDataName(inputData.getDomainID() + "-" + affectedOutputNames.get(inputData.getDomainID()));
-            inputData.setTaskSrc(affectedOutputNames.get(inputData.getDomainID()));
+            inputData.setTaskSrc(String.valueOf(Integer.parseInt(affectedOutputNames.get(inputData.getDomainID()))-1));
 
             JSONObject inputDataParams = new JSONObject(true);
             inputDataParams.put("table", table);
@@ -286,6 +290,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         Output output = new Output();
         List<TaskOutputData> outputDatas = new ArrayList<>();
         for (TaskInputData inputData : inputDatas) {
+            if (inputData.getRole().equals("server")) {
+                continue;
+            }
             TaskOutputData outputData = new TaskOutputData();
             outputData.setDataName(metadata.getTableOrgId((String) inputData.getParams().get("table")) + "-" + task.getTaskName());
             outputData.setDomainID(inputData.getDomainID());
@@ -1075,6 +1082,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         Module module = new Module();
 
         JSONObject moduleparams = new JSONObject(true);
+        List<String> constantList = new ArrayList<>();
         if (proj instanceof RexCall) {
             SqlOperator op = ((RexCall) proj).getOperator();
             if (op.equals(SqlStdOperatorTable.PLUS) || op.equals(SqlStdOperatorTable.MINUS) ||
@@ -1082,18 +1090,26 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     op.equals(SqlStdOperatorTable.MOD)) {
                 module.setModuleName("EXP");
                 moduleparams.put("function", "base");
-                String expr = dfsRexNode(proj);
+                String expr = dfsRexNode(proj, constantList);
                 moduleparams.put("expression", expr);
             } else {
                 module.setModuleName("AGG");
                 moduleparams.put("function", op.toString());
-                String expr = dfsRexNode(((RexCall) proj).getOperands().get(0));
+                String expr = dfsRexNode(((RexCall) proj).getOperands().get(0), constantList);
                 moduleparams.put("expression", expr);
             }
         } else if (proj instanceof RexInputRef){
             module.setModuleName(TaskType.QUERY.name());
         } else {
             // System.out.println("RexElse" + proj);
+        }
+        if (!constantList.isEmpty()) {
+            String constants = "";
+            for (String constant : constantList) {
+                constants += constant + ",";
+            }
+            constants = constants.substring(0, constants.length() - 1);
+            moduleparams.put("constant", constants);
         }
         module.setParams(moduleparams);
         task.setModule(checkMpcModule(module));
@@ -1123,7 +1139,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             inputParam.put("table", tableField.split("\\.")[0]);
             inputParam.put("field", tableField.split("\\.")[1]);
             if (module.getModuleName().equals("EXP") || module.getModuleName().equals("AGG")) {
-                inputParam.put("type", columnInfoMap.get(tableField.split("\\.")[0]+tableField.split("\\.")[1]));
+                inputParam.put("type", columnInfoMap.get(tableField));
                 List<Integer> list = new ArrayList<>();
                 list.add(i);
                 inputParam.put("index", Arrays.toString(list.toArray()));
@@ -1189,10 +1205,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * @param proj
      * @return
      */
-    public String dfsRexNode(RexNode proj) {
+    public String dfsRexNode(RexNode proj, List<String> constants) {
         String expr = "";
         if (proj instanceof RexCall) {
-            String tmpl = dfsRexNode(((RexCall) proj).getOperands().get(0));
+            String tmpl = dfsRexNode(((RexCall) proj).getOperands().get(0), constants);
             if (tmpl.length() > 1 && tmpl.contains("x")) {
                 expr += "(" + tmpl + ")";
             } else {
@@ -1204,7 +1220,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             } else {
                 expr += tmpOp;
             }
-            String tmpr = dfsRexNode(((RexCall) proj).getOperands().get(1));
+            String tmpr = dfsRexNode(((RexCall) proj).getOperands().get(1), constants);
             if (tmpr.length() > 1 && tmpr.contains("x")) {
                 expr += "(" + tmpr + ")";
             } else {
@@ -1214,7 +1230,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         } else if (proj instanceof RexInputRef) {
             expr += "x";
         } else if (proj instanceof RexLiteral) {
-            expr += ((RexLiteral) proj).getValue().toString();
+            expr += "c";
+            constants.add(((RexLiteral) proj).getValue().toString());
         } else {
             ;
         }
