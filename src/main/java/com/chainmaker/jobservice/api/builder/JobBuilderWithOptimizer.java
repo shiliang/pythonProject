@@ -1439,11 +1439,11 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         if (hint != null) {
             for (HintExpression kv : hint.getValues()) {
-                if (kv.getKey().equals("TEEJOIN")) {
+                if (kv.getKey().equals("JOIN") && kv.getValues().get(0).equals("TEE")) {
                     moduleName = TaskType.TEEPSI.name();
                     module.setModuleName(moduleName);
-                    module.getParams().put("teeHost", "192.168.40.230");
-                    module.getParams().put("teePort", "30091");
+                    module.getParams().put("teeHost", "127.0.0.1");
+                    module.getParams().put("teePort", "30000");
                     module.getParams().put("domainID", "");
                     return module;
                 }
@@ -1991,7 +1991,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     public void logicalHintFix(Task task) {
         List<HintExpression> list = hint.getValues();
         for (HintExpression kv : list) {
-            if (kv.getKey().equals("TEEJOIN")) {
+            if (kv.getKey().equals("JOIN")) {
                 List<String> values = kv.getValues();
                 task.getModule().setModuleName(TaskType.TEEPSI.name());
                 JSONObject params = task.getModule().getParams();
