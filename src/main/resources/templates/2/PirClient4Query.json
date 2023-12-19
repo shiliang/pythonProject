@@ -55,6 +55,26 @@
             "label": "GRPC"
           }
         ]
+      },
+      {
+        "key": "address",
+        "values": "127.0.0.1:31005",
+        "labels": "通信地址",
+        "types": "INPUT"
+      },
+      {
+        "key": "path",
+        "values": "",
+        "labels": "请求路径",
+        "types": "OPINPUT",
+        "desc": "HTTP"
+      },
+      {
+        "key": "method",
+        "values": "",
+        "labels": "请求方法",
+        "types": "OPINPUT",
+        "desc": "HTTP"
       }]
   }],
   "referEndpoints": [
