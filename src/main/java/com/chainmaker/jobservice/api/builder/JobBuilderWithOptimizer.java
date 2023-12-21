@@ -286,7 +286,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         moduleparams.put("operator", "=");
         int firstIdx = 0;
         for (int i = 0; i < n; i++) {
-            if (tasks.get(i).getModule().equals(TaskType.OTPSI.name())) {
+            if (tasks.get(i).getModule().getModuleName().equals(TaskType.OTPSI.name())) {
                 firstIdx = i;
                 break;
             }
