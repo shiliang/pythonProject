@@ -51,7 +51,7 @@ public class JobParserServiceImpl implements JobParserService {
 
     @Override
     public String getOrgId() {
-        return null;
+        return this.orgId;
     }
 
     @Override
