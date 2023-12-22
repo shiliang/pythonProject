@@ -84,9 +84,17 @@ public class ParserController {
         }
 
     }
+    public String getDIDFromOrgId(String orgId) {
+        Map<String, byte[]> params = new HashMap<>();
+        params.put("certOrgID", orgId.getBytes(StandardCharsets.UTF_8));
+        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_did_from_cert_org_id", params);
+        JSONObject res = csr.toJSON(false);
+        return res.getString("result");
+    }
     @WebLog(description = "预生成DAG")
     @RequestMapping(value = "/preview/dag", method = RequestMethod.POST)
     public Result jobPreview(@RequestBody String req) {
+        jobParserService.setOrgDID(getDIDFromOrgId(jobParserService.getOrgId()));
         SqlVo sqlVo = JSONObject.parseObject(req, SqlVo.class, Feature.OrderedField);
         if (sqlVo.getSqltext().contains("?")) {
             sqlVo.setIsStream(1);
@@ -125,6 +133,7 @@ public class ParserController {
     @WebLog(description = "查询Job待审批信息")
     @RequestMapping(value = "/jobs/dag/{jobID}", method = RequestMethod.GET)
     public Result getJobApproval(@PathVariable String jobID) {
+        jobParserService.setOrgDID(getDIDFromOrgId(jobParserService.getOrgId()));
         JobGetPo jobGetPo = new JobGetPo();
         jobGetPo.setJobID(jobID);
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
@@ -157,6 +166,7 @@ public class ParserController {
     // @WebLog(description = "获取JOB信息")
     @RequestMapping(value = "/jobs/{jobID}", method = RequestMethod.GET)
     public ResponseEntity<JobRunner> getJobRunner(@PathVariable String jobID) {
+        jobParserService.setOrgDID(getDIDFromOrgId(jobParserService.getOrgId()));
         JobGetPo jobGetPo = new JobGetPo();
         jobGetPo.setJobID(jobID);
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());

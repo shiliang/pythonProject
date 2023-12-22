@@ -11,7 +11,6 @@ import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
 import com.chainmaker.jobservice.api.model.bo.job.service.ReferEndpoint;
 import com.chainmaker.jobservice.api.model.bo.job.service.Service;
-import com.chainmaker.jobservice.api.model.bo.job.task.Input;
 import com.chainmaker.jobservice.api.model.bo.job.task.Task;
 import com.chainmaker.jobservice.api.model.bo.job.task.TaskInputData;
 import com.chainmaker.jobservice.api.model.po.contract.JobInfoPo;
@@ -21,7 +20,6 @@ import com.chainmaker.jobservice.api.model.po.data.ServiceValueParam;
 import com.chainmaker.jobservice.api.model.po.data.UserInfo;
 import com.chainmaker.jobservice.api.model.vo.*;
 import com.chainmaker.jobservice.api.response.ParserException;
-import com.chainmaker.jobservice.api.response.ContractException;
 import com.chainmaker.jobservice.api.service.JobParserService;
 import com.chainmaker.jobservice.core.SqlParser;
 import org.springframework.web.client.RestTemplate;
@@ -39,29 +37,31 @@ import java.util.*;
 public class JobParserServiceImpl implements JobParserService {
     private CatalogConfig catalogConfig;
     private String orgId;
+    private String orgDID;
     private HashMap<String, JobGraph> jobGraphHashMap = new HashMap<>();
     private HashMap<String, CatalogCache> catalogCacheHashMap = new HashMap<>();
 
     public void setCatalogConfig(CatalogConfig catalogConfig) {
         this.catalogConfig = catalogConfig;
     }
+    @Override
     public void setOrgId(String orgId) {
         this.orgId = orgId;
     }
-    private String getOrgDID() {
-        if (!this.orgId.isEmpty()) {
-            if (this.orgId.equals("wx-org1.chainmaker.org")) {
-                return "wx-org1.chainmaker.orgDID";
-            } else if (this.orgId.equals("wx-org2.chainmaker.org")) {
-                return "wx-org2.chainmaker.orgDID";
-            } else if (this.orgId.equals("wx-org3.chainmaker.org")) {
-                return "wx-org3.chainmaker.orgDID";
-            } else {
-                throw new ContractException("获取DID失败");
-            }
-        } else {
-            throw new ContractException("orgId为空");
-        }
+
+    @Override
+    public String getOrgId() {
+        return null;
+    }
+
+    @Override
+    public String getOrgDID() {
+        return orgDID;
+    }
+
+    @Override
+    public void setOrgDID(String orgDID) {
+        this.orgDID = orgDID;
     }
 
     @Override
