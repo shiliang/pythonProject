@@ -46,14 +46,14 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private class TaskNode {
         int taskID;
         boolean isMerged;
-        HashSet<String> partyIds;
+        LinkedHashSet<String> partyIds;
         List<TaskNode> inputs;
         List<TaskNode> fathers;
 
         TaskNode (int id) {
             taskID = id;
             isMerged = false;
-            partyIds = new HashSet<>();
+            partyIds = new LinkedHashSet<>();
             inputs = new ArrayList<>();
             fathers = new ArrayList<>();
         }
@@ -78,7 +78,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private List<Task> tasks = new ArrayList<>();
     private List<Task> mergedTasks = new ArrayList<>();
     private List<Task> taskcp = new ArrayList<>();
-    private HashSet<String> jobParties = new HashSet<>();
+    private LinkedHashSet<String> jobParties = new LinkedHashSet<>();
     private LogicalPlan OriginPlan;
     private LogicalHint hint;
     private HashMap<String, String> columnInfoMap;
@@ -226,7 +226,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      */
     public void notifyPSIOthers() {
         int n = tasks.size();
-        HashSet<String> notifyList = new HashSet<>();
+        LinkedHashSet<String> notifyList = new LinkedHashSet<>();
         HashMap<String, String> affectedOutputNames = new HashMap<>();
         int maxPSIid = 0;
         String leader1 = null;  // 多方PSI后最后的通知方，选择一个即可，留两个是为了之后可能会选择更优的那个来进行通知
@@ -362,7 +362,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // parties信息
         List<Party> parties = new ArrayList<>();
-        HashSet<String> partySet = new HashSet<>();
+        LinkedHashSet<String> partySet = new LinkedHashSet<>();
         for (TaskInputData inputData : inputDatas) {
             partySet.add(inputData.getDomainID());
         }
@@ -412,8 +412,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
 //        // 找出所有的OTPSI 的 input、output、parties信息
 //        List<TaskInputData> inputDataList = new ArrayList<>();
-//        HashSet<Party> parties = new HashSet<>();
-//        HashSet<String> outputNames = new HashSet<>();
+//        LinkedHashSet<Party> parties = new LinkedHashSet<>();
+//        LinkedHashSet<String> outputNames = new LinkedHashSet<>();
 //        int lastOTPSItaskId = -1;
 //        for (int i = 0; i < tasks.size(); i++) {
 //            Task t = tasks.get(i);
@@ -455,7 +455,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 continue;
             }
             // 记录旧的outputName
-            HashSet<String> outputNames = new HashSet<>();
+            LinkedHashSet<String> outputNames = new LinkedHashSet<>();
             int n = t.getOutput().getData().size();
             for (int i = 0; i < n; i++) {
                 outputNames.add(t.getOutput().getData().get(i).getDataName());
@@ -529,8 +529,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         Task ans = taskcp.get(root.taskID);
         String sql = "select ProjectString from TableJoinString where PredicateString";
         String ProjectString = "", TableJoinString = "", PredicateString = "";
-        HashSet<String> inputTables = new HashSet<>();
-        HashSet<String> outputTables = new HashSet<>();
+        LinkedHashSet<String> inputTables = new LinkedHashSet<>();
+        LinkedHashSet<String> outputTables = new LinkedHashSet<>();
         Queue<TaskNode> q = new ArrayDeque<>();
         q.add(root);
         List<Boolean> vis = new ArrayList<>(root.taskID+1);
@@ -758,7 +758,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     public TaskNode buildTaskTree() {
         TaskNode root = new TaskNode(-1);
         List<TaskNode> nodes = new ArrayList<>();
-        HashSet<String> PSIPartyIds = new HashSet<>();
+        LinkedHashSet<String> PSIPartyIds = new LinkedHashSet<>();
         for (int i = 0; i < tasks.size(); i++) {
             Task t = tasks.get(i);
             TaskNode node = new TaskNode(i);
@@ -891,7 +891,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // party
         List<Party> parties = new ArrayList<>();
-        HashSet<String> partySet = new HashSet<>();
+        LinkedHashSet<String> partySet = new LinkedHashSet<>();
         for (TaskInputData inputData : inputDataList) {
             partySet.add(inputData.getDomainID());
         }
@@ -972,7 +972,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // party
         List<Party> parties = new ArrayList<>();
-        HashSet<String> partySet = new HashSet<>();
+        LinkedHashSet<String> partySet = new LinkedHashSet<>();
         for (TaskInputData inputData : inputDataList) {
             partySet.add(inputData.getDomainID());
         }
@@ -1230,7 +1230,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // parties信息
         List<Party> parties = new ArrayList<>();
-        HashSet<String> partySet = new HashSet<>();
+        LinkedHashSet<String> partySet = new LinkedHashSet<>();
         for (TaskInputData inputData : input.getData()) {
             partySet.add(inputData.getDomainID());
         }
@@ -1367,7 +1367,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // parties信息
         List<Party> parties = new ArrayList<>();
-        HashSet<String> partySet = new HashSet<>();
+        LinkedHashSet<String> partySet = new LinkedHashSet<>();
         for (TaskInputData inputData : input.getData()) {
             partySet.add(inputData.getDomainID());
         }
@@ -1473,7 +1473,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // parties信息
         List<Party> parties = new ArrayList<>();
-        HashSet<String> partySet = new HashSet<>();
+        LinkedHashSet<String> partySet = new LinkedHashSet<>();
         for (TaskInputData inputData : input.getData()) {
             partySet.add(inputData.getDomainID());
         }
@@ -1910,7 +1910,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // parties信息
         List<Party> parties = new ArrayList<>();
-        HashSet<String> partySet = new HashSet<>();
+        LinkedHashSet<String> partySet = new LinkedHashSet<>();
         for (TaskInputData inputData : inputDatas) {
             partySet.add(inputData.getDomainID());
         }
@@ -2128,7 +2128,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             tasks.get(flag).setInput(input);
             tasks.get(flag).setOutput(output);
             List<Party> parties = new ArrayList<>();
-            HashSet<String> partySet = new HashSet<>();
+            LinkedHashSet<String> partySet = new LinkedHashSet<>();
             for (TaskInputData taskInputData : input.getData()) {
                 partySet.add(taskInputData.getDomainID());
             }
