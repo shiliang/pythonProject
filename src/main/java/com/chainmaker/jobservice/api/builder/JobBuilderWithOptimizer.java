@@ -821,7 +821,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             List<NamedExpression> namedExpressionList = ((LogicalProject) node).getProjectList().getValues();
             for (NamedExpression ne : namedExpressionList) {
                 Expression expr = ne.getExpression();
-                if (modelType == 2 && expr instanceof FunctionCallExpression) {
+                boolean funcTee = false;
+                for (HintExpression kv : hint.getValues()) {
+                    if (kv.getKey().equals("FUNC") && kv.getValues().get(0).equals("TEE")) {
+                        funcTee = true;
+                    }
+                }
+                if (funcTee && expr instanceof FunctionCallExpression) {
                     // TESTT[ADATA.A1, BDATA.B1]
                     tasks.add(parseTEE((FunctionCallExpression) expr));
                 }

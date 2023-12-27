@@ -4,23 +4,18 @@ import com.chainmaker.jobservice.core.calcite.cost.MPCCost;
 import com.chainmaker.jobservice.core.calcite.cost.MPCRelMetaDataProvider;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
-import com.chainmaker.jobservice.core.calcite.utils.RexNodeRowCounter;
 import com.chainmaker.jobservice.core.parser.plans.*;
 import com.chainmaker.jobservice.core.parser.tree.*;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.*;
-import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.*;
@@ -32,9 +27,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
-import org.aspectj.apache.bcel.classfile.ConstantDouble;
 
-import java.math.BigDecimal;
 import java.util.*;
 
 import static com.chainmaker.jobservice.core.calcite.utils.ConstExprJudgement.isInteger;
@@ -55,7 +48,9 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
     private RelBuilder builder;                 // RelNode生成器
 
     private RexBuilder rexBuilder;              // RexNode生成器
-    private Integer modelType;                      // 需要处理的任务类型
+    private Integer modelType;                      // 需要处理的任务类型（已弃用，用Hint代替）
+
+    private LogicalHint hints;                   // 替换modelType，识别TEE
 
     List<String> multiTableList = new ArrayList<>(); // 用于存储参加join的属性名
 
@@ -127,6 +122,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
     @Override
     public RelNode visit(LogicalHint node) {
         RelNode ans = null;
+        hints = node;
         int childNum = node.getChildren().size();
         RelNode[] childs = new RelNode[childNum];
         for (int i = 0; i < childNum; i++) {
@@ -250,7 +246,13 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
             String alias = exp.getIdentifier().getIdentifier();
 //            System.out.println("Project Expression = " + expr.toString());
 //            System.out.println("expression class = " + expr.getClass());
-            if (modelType == 2 && expr instanceof FunctionCallExpression) {
+            boolean funcTee = false;
+            for (HintExpression kv : hints.getValues()) {
+                if (kv.getKey().equals("FUNC") && kv.getValues().get(0).equals("TEE")) {
+                    funcTee = true;
+                }
+            }
+            if (funcTee && expr instanceof FunctionCallExpression) {
                 continue;
             }
             RexNode proj = dealWithExpression(expr);

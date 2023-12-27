@@ -54,7 +54,8 @@ public class Driver {
 //        String query = "SELECT SUM(WYC_DATA.DATA+JTW_DATA.DATA) FROM WYC_DATA,DT_DATA,JTW_DATA WHERE WYC_DATA.ID=DT_DATA.ID AND WYC_DATA.ID=JTW_DATA.ID";
 
 //        String query = "SELECT ATEST1.ID FROM ATEST1,BTEST1,CTEST1 WHERE ATEST1.ID=BTEST1.ID AND ATEST1.ID=CTEST1.ID";
-        String query = "SELECT  MUL(T_MULXX_1.VAL1,T_MULXX_2.VAL1,T_MULXX_3.VAL1) FROM T_MULXX_1, T_MULXX_2, T_MULXX_3";
+        String query = "SELECT /*+ FUNC(TEE) */ MUL(T_MULXX_1.VAL1,T_MULXX_2.VAL1,T_MULXX_3.VAL1), T_MULXX_3.VAL1 FROM T_MULXX_1, T_MULXX_2, T_MULXX_3";
+//        String query = "SELECT /*+ FUNC(TEE) JOIN(TEE) */ MUL(ATEST.K,BTEST.K) FROM ATEST, BTEST WHERE ATEST.ID=BTEST.ID";
 
         // modelType:
         // 0： 联邦查询
@@ -64,7 +65,7 @@ public class Driver {
         // 0: 任务类型
         // 1: 服务类型
 
-        Integer isStream = 0, modelType = 2;
+        Integer isStream = 0, modelType = 0;
 
         String sql = query.replace("\"", "");
         SqlParser sqlParser = new SqlParser(sql, modelType, isStream);
