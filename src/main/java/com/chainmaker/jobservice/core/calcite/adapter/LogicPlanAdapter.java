@@ -247,9 +247,11 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
 //            System.out.println("Project Expression = " + expr.toString());
 //            System.out.println("expression class = " + expr.getClass());
             boolean funcTee = false;
-            for (HintExpression kv : hints.getValues()) {
-                if (kv.getKey().equals("FUNC") && kv.getValues().get(0).equals("TEE")) {
-                    funcTee = true;
+            if (hints != null) {
+                for (HintExpression kv : hints.getValues()) {
+                    if (kv.getKey().equals("FUNC") && kv.getValues().get(0).equals("TEE")) {
+                        funcTee = true;
+                    }
                 }
             }
             if (funcTee && expr instanceof FunctionCallExpression) {

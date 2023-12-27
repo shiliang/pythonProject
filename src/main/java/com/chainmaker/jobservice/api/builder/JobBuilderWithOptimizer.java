@@ -822,9 +822,11 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             for (NamedExpression ne : namedExpressionList) {
                 Expression expr = ne.getExpression();
                 boolean funcTee = false;
-                for (HintExpression kv : hint.getValues()) {
-                    if (kv.getKey().equals("FUNC") && kv.getValues().get(0).equals("TEE")) {
-                        funcTee = true;
+                if (hint != null) {
+                    for (HintExpression kv : hint.getValues()) {
+                        if (kv.getKey().equals("FUNC") && kv.getValues().get(0).equals("TEE")) {
+                            funcTee = true;
+                        }
                     }
                 }
                 if (funcTee && expr instanceof FunctionCallExpression) {
