@@ -7,8 +7,6 @@ import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.aspect.WebLog;
 import com.chainmaker.jobservice.api.model.bo.*;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
-import com.chainmaker.jobservice.api.model.bo.job.task.Output;
-import com.chainmaker.jobservice.api.model.bo.job.task.Task;
 import com.chainmaker.jobservice.api.model.bo.job.task.TaskOutputData;
 import com.chainmaker.jobservice.api.model.po.contract.JobGetPo;
 import com.chainmaker.jobservice.api.model.po.contract.JobInfoPo;
@@ -516,5 +514,17 @@ public class ParserController {
             }
         }
         return new ResponseEntity<JSONObject>(resultJson, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/did/pk/{name}", method = RequestMethod.GET)
+    public ResponseEntity<JSONObject> getPKFromDID(@PathVariable String name) {
+        System.out.println("===SAVE DataCatalog===");
+        Map<String, byte[]> params = new HashMap<>();
+        params.put("orgDID", name.getBytes(StandardCharsets.UTF_8));
+        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_org_pk_from_did", params);
+        JSONObject res = csr.toJSON(false);
+        HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+        System.out.println(responseStatus);
+        return new ResponseEntity<JSONObject>(res, responseStatus);
     }
 }
