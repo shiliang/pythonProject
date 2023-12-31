@@ -1438,9 +1438,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 if (kv.getKey().equals("JOIN") && kv.getValues().get(0).equals("TEE")) {
                     moduleName = TaskType.TEEPSI.name();
                     module.setModuleName(moduleName);
-                    module.getParams().put("teeHost", "127.0.0.1");
-                    module.getParams().put("teePort", "30000");
-                    module.getParams().put("domainID", "");
+                    module.getParams().put("teeHost", "192.168.40.21");
+                    module.getParams().put("teePort", "30091");
+                    module.getParams().put("domainID", "wx-org3.chainmaker.orgDID");
                     return module;
                 }
             }
@@ -1464,9 +1464,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 if (kv.getKey().equals("FUNC") && kv.getValues().get(0).equals("TEE")) {
                     temp.setModuleName(TaskType.TEE.name());
                     temp.getParams().put("methodName", modelList.get(0));
-                    temp.getParams().put("teeHost", "127.0.0.1");
-                    temp.getParams().put("teePort", "30000");
-                    temp.getParams().put("domainID", "");
+                    temp.getParams().put("teeHost", "192.168.40.21");
+                    temp.getParams().put("teePort", "30091");
+                    temp.getParams().put("domainID", "wx-org3.chainmaker.orgDID");
                     temp.getParams().remove("function");
                     temp.getParams().remove("expression");
                     System.out.println("module:" + temp);
