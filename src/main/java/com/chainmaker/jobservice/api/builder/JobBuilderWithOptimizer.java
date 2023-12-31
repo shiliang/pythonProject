@@ -73,6 +73,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private final String createTime, jobID;
     private final MPCMetadata metadata;
     private int cnt;
+    private List<String> modelList = new ArrayList<>();
     private Job job = new Job();
     private List<ServiceVo> services = new ArrayList<>();
     private List<Task> tasks = new ArrayList<>();
@@ -135,10 +136,11 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         HashMap<RelNode, Task> phyTaskMap = new HashMap<>();
         // 生成tasks
-        tasks.addAll(dfsPlan(phyPlan, phyTaskMap));
-        updateTeePsi();
-        // 特殊处理联邦学习相关的tasks
         generateFLTasks(OriginPlan);
+        tasks.addAll(dfsPlan(phyPlan, phyTaskMap));
+//        updateTeePsi();
+        // 特殊处理联邦学习相关的tasks
+
         // 合并OTPSI，暂时放弃
 //        mergeOTPSI();
         // PSI后通知所有参与表
@@ -831,85 +833,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 }
                 if (funcTee && expr instanceof FunctionCallExpression) {
                     // TESTT[ADATA.A1, BDATA.B1]
-                    tasks.add(parseTEE((FunctionCallExpression) expr));
+                    modelList.add(((FunctionCallExpression) expr).getFunction().toString());
                 }
             }
         } else {
             ;
         }
-    }
-
-    public Task parseTEE(FunctionCallExpression expr) {
-        // basic info
-        Task task = basicTask(String.valueOf(cnt++));
-
-        // module
-        Module module = new Module();
-        module.setModuleName(TaskType.TEE.name());
-        JSONObject moduleParams = new JSONObject(true);
-        moduleParams.put("methodName", expr.getFunction().toString());
-        moduleParams.put("domainID", "wx-org3.chainmaker.orgDID");
-        moduleParams.put("teeHost", "172.16.12.230");
-        moduleParams.put("teePort", "30091");
-        module.setParams(moduleParams);
-        task.setModule(module);
-
-        // input
-        Input input = new Input();
-        List<TaskInputData> inputDataList = new ArrayList<>();
-
-        for (Expression e : expr.getExpressions()) {
-            TaskInputData data = new TaskInputData();
-            String table = e.toString().split("\\.")[0];
-            String field = e.toString().split("\\.")[1];
-            data.setDataName(table);
-            data.setDataID(data.getDataName());
-            data.setDomainID(metadata.getTableOrgId(table));
-            data.setRole("client");
-            data.setTaskSrc("");
-            JSONObject dataParams = new JSONObject(true);
-            dataParams.put("table", table);
-            dataParams.put("field", field);
-            dataParams.put("type", columnInfoMap.get(table+field));
-            data.setParams(dataParams);
-            inputDataList.add(data);
-        }
-        input.setData(inputDataList);
-        task.setInput(input);
-
-        // output
-        Output output = new Output();
-        List<TaskOutputData> outputDataList = new ArrayList<>();
-        TaskOutputData outputData = new TaskOutputData();
-        outputData.setDataID("");
-        outputData.setDataName(expr.getFunction() + "-" + cnt);
-        outputData.setDomainID("");
-        outputData.setFinalResult("Y");
-        outputDataList.add(outputData);
-        output.setData(outputDataList);
-        task.setOutput(output);
-
-        // party
-        List<Party> parties = new ArrayList<>();
-        LinkedHashSet<String> partySet = new LinkedHashSet<>();
-        for (TaskInputData inputData : inputDataList) {
-            partySet.add(inputData.getDomainID());
-        }
-        partySet.add(module.getParams().get("domainID").toString());
-        for (String value : partySet) {
-            Party party = new Party();
-            party.setServerInfo(null);
-            party.setStatus(null);
-            party.setTimestamp(null);
-            party.setPartyID(value);
-            parties.add(party);
-        }
-        task.setParties(parties);
-        for (Party p : parties) {
-            jobParties.add(p.getPartyID());
-        }
-
-        return task;
     }
 
     public Task parseFederatedLearning(FederatedLearning node) {
@@ -1083,9 +1012,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 //                notifyPSIOthers(tasks);
                 for (int i = 0; i < phyPlan.getRowType().getFieldNames().size(); i++) {
                     RexNode node = ((MPCProject) phyPlan).getProjects().get(i);
-                    List<String> inputList = new ArrayList<String>(List.of(phyPlan.getRowType().getFieldNames().get(i).split("\\+|-|\\*|/|%|\\[|]|\\(|\\)")));
+                    List<String> inputList = new ArrayList<String>(List.of(phyPlan.getRowType().getFieldNames().get(i).split("\\+|-|\\*|/|%|\\[|]|\\(|\\)|,")));
                     // 删除如 SUM[ADATA.A1] 这种split出来剩余 SUM 的情况
                     for (int j = 0; j < inputList.size(); j++) {
+                        inputList.set(j,inputList.get(j).strip());
                         if (!(inputList.get(j).contains("."))) {
                             inputList.remove(j);
                             j--;
@@ -1531,11 +1461,14 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     public Module checkMpcModule(Module temp) {
         if (hint != null) {
             for (HintExpression kv : hint.getValues()) {
-                if (kv.getKey().equals("TEEAVG")) {
-                    temp.setModuleName(TaskType.TEEAVG.name());
-                    temp.getParams().put("teeHost", "192.168.40.230");
-                    temp.getParams().put("teePort", "30091");
+                if (kv.getKey().equals("FUNC") && kv.getValues().get(0).equals("TEE")) {
+                    temp.setModuleName(TaskType.TEE.name());
+                    temp.getParams().put("methodName", modelList.get(0));
+                    temp.getParams().put("teeHost", "127.0.0.1");
+                    temp.getParams().put("teePort", "30000");
                     temp.getParams().put("domainID", "");
+                    temp.getParams().remove("function");
+                    temp.getParams().remove("expression");
                     System.out.println("module:" + temp);
                     return temp;
                 }

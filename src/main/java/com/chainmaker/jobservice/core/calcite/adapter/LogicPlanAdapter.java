@@ -246,17 +246,17 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
             String alias = exp.getIdentifier().getIdentifier();
 //            System.out.println("Project Expression = " + expr.toString());
 //            System.out.println("expression class = " + expr.getClass());
-            boolean funcTee = false;
-            if (hints != null) {
-                for (HintExpression kv : hints.getValues()) {
-                    if (kv.getKey().equals("FUNC") && kv.getValues().get(0).equals("TEE")) {
-                        funcTee = true;
-                    }
-                }
-            }
-            if (funcTee && expr instanceof FunctionCallExpression) {
-                continue;
-            }
+//            boolean funcTee = false;
+//            if (hints != null) {
+//                for (HintExpression kv : hints.getValues()) {
+//                    if (kv.getKey().equals("FUNC") && kv.getValues().get(0).equals("TEE")) {
+//                        funcTee = true;
+//                    }
+//                }
+//            }
+//            if (funcTee && expr instanceof FunctionCallExpression) {
+//                continue;
+//            }
             RexNode proj = dealWithExpression(expr);
             projectionNames.add(expr.toString());
 //            System.out.println(expr.toString() + " : " + proj);
