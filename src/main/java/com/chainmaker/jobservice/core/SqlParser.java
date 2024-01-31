@@ -1,10 +1,7 @@
 package com.chainmaker.jobservice.core;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.serializer.FieldSerializer;
 import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
 import com.chainmaker.jobservice.api.model.vo.ModelParamsVo;
-import com.chainmaker.jobservice.core.analyzer.Analyzer;
 import com.chainmaker.jobservice.core.analyzer.catalog.DataCatalogDetailInfo;
 import com.chainmaker.jobservice.core.analyzer.catalog.DataCatalogInfo;
 import com.chainmaker.jobservice.core.analyzer.catalog.MissionDetailVO;
@@ -19,10 +16,11 @@ import com.chainmaker.jobservice.core.optimizer.plans.PhysicalPlan;
 import com.chainmaker.jobservice.core.parser.LogicalPlanBuilderV2;
 import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
 import com.chainmaker.jobservice.core.parser.printer.LogicalPlanPrinter;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import lombok.Data;
 import org.apache.calcite.rel.RelNode;
 
-import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -33,40 +31,57 @@ import java.util.List;
  * @version: 1.0.0
  */
 
+@Data
 public class SqlParser {
     private final String sql;
     private final Integer isStream;
     private final Integer modelType;
-    private List<MissionDetailVO> missionDetailVOs = new ArrayList<>();
-    private List<ModelParamsVo> modelParamsVos = new ArrayList<>();
+
+    private List<DataCatalogInfo> dataCatalogInfoList;
+
+    private List<ModelParamsVo> modelParamsVos;
+
+    private List<MissionDetailVO> missionDetailVOs = Lists.newArrayList();
+
+    private HashMap<String, String> columnInfoMap = Maps.newHashMap();
+
     private CatalogConfig catalogConfig;
-    private HashMap<String, String> columnInfoMap;
 
-    public void setCatalogConfig(CatalogConfig catalogConfig) {
-        this.catalogConfig = catalogConfig;
-    }
 
-    public List<MissionDetailVO> getMissionDetailVOs() {
-        return missionDetailVOs;
-    }
+    private static final String TEE_PARTY_KEY = "TEE-PARTY";
+    private static final String TEE_PARTY = "69vkhy6org.cm-5w2wtw3afr";
 
-    public List<ModelParamsVo> getModelParamsVos() {
-        return modelParamsVos;
-    }
-    public HashMap<String, String> getColumnInfoMap() {
-        return columnInfoMap;
-    }
-
-    public SqlParser(String sql, Integer modelType, Integer isStream) {
+    public SqlParser(String sql, Integer isStream, Integer modelType,
+                     List<DataCatalogInfo> dataCatalogInfoList,
+                     List<ModelParamsVo> modelParamsVos) {
         this.sql = sql;
         this.isStream = isStream;
         this.modelType = modelType;
+        this.dataCatalogInfoList = dataCatalogInfoList;
+        if(modelType == 2) {
+            this.modelParamsVos = modelParamsVos;
+        }
     }
 
-    public SqlParser(String sql) {
-        this.sql = sql;
-        this.isStream = 0;
-        this.modelType = 0;
+
+    public HashMap<String, String> buildMetaData(List<DataCatalogInfo> dataCatalogInfoList){
+        HashMap<String, String> tableOwnerMap = new HashMap<>();
+        for (DataCatalogInfo dataCatalogInfo : dataCatalogInfoList) {
+            tableOwnerMap.put(dataCatalogInfo.getName(), dataCatalogInfo.getOrgDID());
+            MissionDetailVO missionDetailVO = new MissionDetailVO();
+            missionDetailVO.setName(dataCatalogInfo.getName());
+            missionDetailVO.setRemark(dataCatalogInfo.getRemark());
+            missionDetailVO.setVersion(dataCatalogInfo.getVersion());
+            missionDetailVO.setOrgId(dataCatalogInfo.getOrgId());
+            missionDetailVO.setDatacatalogId(dataCatalogInfo.getId());
+            missionDetailVOs.add(missionDetailVO);
+            System.out.println("dataCatalogInfo: " + dataCatalogInfo);
+            for (DataCatalogDetailInfo dataCatalogDetailInfo : dataCatalogInfo.getItemVOList()) {
+                columnInfoMap.put(dataCatalogInfo.getName().toUpperCase()+"."+dataCatalogDetailInfo.getName().toUpperCase(), String.valueOf(dataCatalogDetailInfo.getDataType()));
+            }
+        }
+        tableOwnerMap.put(TEE_PARTY_KEY, TEE_PARTY);
+        return tableOwnerMap;
     }
 
     public DAG<PhysicalPlan> parser() {
@@ -75,12 +90,7 @@ public class SqlParser {
         LogicalPlanPrinter printer = new LogicalPlanPrinter();
         printer.visitTree(logicalPlan, 0);
         System.out.println(printer.logicalPlanString);
-        Analyzer analyzer = new Analyzer(this.catalogConfig);
-
-        HashMap<String, String> tableOwnerMap = analyzer.getMetaData(logicalPlanBuilder.getTableNameMap(), logicalPlanBuilder.getModelNameList(), this.modelType);
-        missionDetailVOs = analyzer.getMissionDetailVOs();
-        modelParamsVos = analyzer.getModelParamsVos();
-        columnInfoMap = analyzer.getColumnInfoMap();
+        HashMap<String, String> tableOwnerMap = buildMetaData(dataCatalogInfoList);
 
         PlanOptimizer optimizer = new PlanOptimizer(this.modelType, this.isStream, tableOwnerMap);
         optimizer.visit(logicalPlan);
@@ -100,18 +110,12 @@ public class SqlParser {
         printer.visitTree(logicalPlan, 0);
         System.out.println(printer.logicalPlanString);
 
-        Analyzer analyzer = new Analyzer(this.catalogConfig);
+        HashMap<String, String> tableOwnerMap = buildMetaData(dataCatalogInfoList);
 
-        HashMap<String, String> tableOwnerMap = analyzer.getMetaData(logicalPlanBuilder.getTableNameMap(), logicalPlanBuilder.getModelNameList(), this.modelType);
-        missionDetailVOs = analyzer.getMissionDetailVOs();
-        modelParamsVos = analyzer.getModelParamsVos();
-        columnInfoMap = analyzer.getColumnInfoMap();
-
-        JSONArray dataCatalogInfoList = analyzer.getDataCatalogInfoList();
         HashMap<String, TableInfo> metadata = new HashMap<>();
 
         // 获取所需的元数据，即HashMap<String, TableInfo>
-        for (DataCatalogInfo dataCatalogInfo : dataCatalogInfoList.toJavaObject(DataCatalogInfo[].class)) {
+        for (DataCatalogInfo dataCatalogInfo : dataCatalogInfoList) {
             String tableName = dataCatalogInfo.getName().toUpperCase();
             HashMap<String, FieldInfo> fields = new HashMap<>();
             for (DataCatalogDetailInfo detailInfo : dataCatalogInfo.getItemVOList()) {

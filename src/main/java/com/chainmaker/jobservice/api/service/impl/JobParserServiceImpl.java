@@ -22,6 +22,7 @@ import com.chainmaker.jobservice.api.model.vo.*;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.api.service.JobParserService;
 import com.chainmaker.jobservice.core.SqlParser;
+import com.chainmaker.jobservice.core.parser.LogicalPlanBuilderV2;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -330,10 +331,22 @@ public class JobParserServiceImpl implements JobParserService {
         return serviceUpdatePo;
     }
 
+    public JSONObject analyzeSql(String sql) {
+        LogicalPlanBuilderV2 logicalPlanBuilder = new LogicalPlanBuilderV2(sql);
+        Map<String, String>tableNames = logicalPlanBuilder.getTableNameMap();
+        List<String> modelNames = logicalPlanBuilder.getModelNameList();
+        JSONObject json = new JSONObject();
+        json.put("tables", tableNames);
+        json.put("models", modelNames);
+        return json;
+    }
+
+
+
     @Override
     public JobMissionDetail parserSql(SqlVo sqlVo) {
         String sqltext = sqlVo.getSqltext().replace("\"", "");
-        SqlParser sqlParser = new SqlParser(sqltext, sqlVo.getModelType(), sqlVo.getIsStream());
+        SqlParser sqlParser = new SqlParser(sqltext, sqlVo.getModelType(), sqlVo.getIsStream(), sqlVo.getDataCatalogInfoList(), sqlVo.getModelParams());
         sqlParser.setCatalogConfig(catalogConfig);
         if (sqlVo.getIsStream() == 1) {
             JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser(), getOrgDID());

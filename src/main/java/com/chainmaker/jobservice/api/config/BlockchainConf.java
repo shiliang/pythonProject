@@ -13,8 +13,10 @@ import org.yaml.snakeyaml.Yaml;
 
 import javax.annotation.PostConstruct;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.InputStream;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,6 +39,11 @@ public class BlockchainConf {
             String sdkCP = System.getenv("SDKCP");
             if (sdkCP == null || sdkCP.isEmpty()) {
                 sdkCP = "/home/workspace/sdk/sdk_config.yml";
+                boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
+                if(isWindows){
+//                    sdkCP = this.getClass().getClassLoader().getResource("sdk_config.yml").getPath();
+                    sdkCP = Paths.get(System.getProperty("user.dir")).resolve("sdk_config_test.yml").toAbsolutePath().toString();
+                }
 //                sdkCP = "D://sdk_config_test.yml";
             }
             ;

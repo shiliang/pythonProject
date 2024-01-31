@@ -1,5 +1,10 @@
 package com.chainmaker.jobservice.api.model.vo;
 
+import com.chainmaker.jobservice.core.analyzer.catalog.DataCatalogInfo;
+import lombok.Data;
+
+import java.util.List;
+
 /**
  * @author gaokang
  * @date 2022-09-22 21:34
@@ -7,32 +12,13 @@ package com.chainmaker.jobservice.api.model.vo;
  * @version: 1.0.0
  */
 
+@Data
 public class SqlVo {
     private String sqltext;
     private Integer modelType;
     private Integer isStream;
 
-    public String getSqltext() {
-        return sqltext;
-    }
+    private List<DataCatalogInfo> dataCatalogInfoList;
 
-    public void setSqltext(String sqltext) {
-        this.sqltext = sqltext;
-    }
-
-    public Integer getModelType() {
-        return modelType;
-    }
-
-    public void setModelType(Integer modelType) {
-        this.modelType = modelType;
-    }
-
-    public Integer getIsStream() {
-        return isStream;
-    }
-
-    public void setIsStream(Integer isStream) {
-        this.isStream = isStream;
-    }
+    private List<ModelParamsVo> modelParams;
 }

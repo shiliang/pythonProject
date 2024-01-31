@@ -68,7 +68,7 @@ public class Driver {
         Integer isStream = 0, modelType = 0;
 
         String sql = query.replace("\"", "");
-        SqlParser sqlParser = new SqlParser(sql, modelType, isStream);
+        SqlParser sqlParser = new SqlParser(sql, modelType, isStream, null,null);
         sqlParser.setCatalogConfig(catalogConfig);
         if (isStream == 1) {    // 2590ms
             long start = System.currentTimeMillis();

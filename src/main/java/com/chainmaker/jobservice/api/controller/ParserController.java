@@ -97,16 +97,24 @@ public class ParserController {
         if (sqlVo.getSqltext().contains("?")) {
             sqlVo.setIsStream(1);
         }
-        JobGraphVo jobGraphVo= jobParserService.jobPreview(sqlVo);
-        return Result.success(jobGraphVo);
+//        JobGraphVo jobGraphVo= jobParserService.jobPreview(sqlVo);
+        JSONObject json= jobParserService.analyzeSql(sqlVo.getSqltext());
+        return Result.success(json);
     }
 
     @WebLog(description = "提交DAG")
     @RequestMapping(value = "/commit/dag", method = RequestMethod.POST)
     public Result jobCommit(@RequestBody String req) {
-        JobGraphVo jobGraphVo = JSONObject.parseObject(req, JobGraphVo.class, Feature.OrderedField);
+        SqlVo sqlVo = JSONObject.parseObject(req, SqlVo.class, Feature.OrderedField);
+        if (sqlVo.getSqltext().contains("?")) {
+            sqlVo.setIsStream(1);
+        }
+        JobGraphVo jobGraphVo = jobParserService.jobPreview(sqlVo);
         MissionInfoVo missionInfoVo = jobParserService.jobCommit(jobGraphVo);
-        return Result.success(missionInfoVo);
+        JSONObject json = new JSONObject();
+        json.put("jobInfo", jobGraphVo);
+        json.put("missionInfo", missionInfoVo);
+        return Result.success(json);
     }
 
     @WebLog(description = "创建JOB")

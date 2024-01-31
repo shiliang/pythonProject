@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.api.service;
 
+import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.model.bo.*;
 import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
 import com.chainmaker.jobservice.api.model.bo.graph.Dag;
@@ -91,4 +92,5 @@ public interface JobParserService {
     UserInfo getUserInfo(String userName);
 
 
+    JSONObject analyzeSql(String sqltext);
 }
