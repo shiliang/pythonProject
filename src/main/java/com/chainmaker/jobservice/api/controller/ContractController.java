@@ -9,6 +9,8 @@ import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.job.service.Service;
 import com.chainmaker.jobservice.api.model.po.contract.*;
 import com.chainmaker.jobservice.api.model.po.contract.job.ServicePo;
+import com.chainmaker.jobservice.api.model.po.contract.mission.JobCreateReq;
+import com.chainmaker.jobservice.api.model.po.contract.mission.MissionGetReq;
 import com.chainmaker.jobservice.api.response.ContractServiceResponse;
 import com.chainmaker.jobservice.api.response.Result;
 import com.chainmaker.jobservice.api.response.ResultCode;
@@ -220,4 +222,70 @@ public class ContractController {
         return new ResponseEntity<JSONObject>(res, responseStatus);
     }
 
+
+    // queryNotFinishedMissionsBySts 根据missionID和sts查询job实例
+    // @WebLog(description = "根据missionID和sts查询job实例")
+    @RequestMapping(value = "/missions/queryNotFinishedMissionsBySts", method = RequestMethod.GET)
+    public ResponseEntity<JSONObject> queryNotFinishedMissionsBySts(@RequestParam String sts) {
+        MissionGetReq missionGetReq = new MissionGetReq();
+        missionGetReq.setStatus(sts);
+
+     
+        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryNotFinishedMissionsBySts", missionGetReq.toContractParams());
+        String response = csr.toString();
+        JSONArray missionList = JSONArray.parseArray(response);
+        JSONObject res = new JSONObject();
+        res.put("missions", missionList);
+        HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+        return new ResponseEntity<JSONObject>(res, responseStatus);
+    }
+
+    //QueryMissionByMissionIdURL 根据missionID查询mission
+    @RequestMapping(value = "/missions/queryMissionByMissionIdURL", method = RequestMethod.GET)
+    public ResponseEntity<JSONObject> QueryMissionByMissionIdURL(@RequestParam String missionID) {
+        MissionGetReq missionGetReq = new MissionGetReq();
+        missionGetReq.setMissionID(missionID);
+
+        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryMissionByMissionIdURL", missionGetReq.toContractParams());
+        String response = csr.toString();
+        JSONObject res = JSON.parseObject(response, Feature.OrderedField);
+        HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+        return new ResponseEntity<JSONObject>(res, responseStatus);
+    }
+
+    //QueryJobsByMissionIdAndStsURL 根据missionID和sts查询job实例列表
+    @RequestMapping(value = "/jobs/queryJobsByMissionIdAndStsURL", method = RequestMethod.GET)
+    public ResponseEntity<JSONObject> QueryJobsByMissionIdAndStsURL(@RequestParam String missionID, @RequestParam String sts) {
+        MissionGetReq missionGetReq = new MissionGetReq();
+        missionGetReq.setMissionID(missionID);
+        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobsByMissionIdAndStsURL", missionGetReq.toContractParams());
+        String response = csr.toString();
+        JSONArray jobsList = JSONArray.parseArray(response);
+        JSONObject res = new JSONObject();
+        res.put("jobs", jobsList);
+        HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+        return new ResponseEntity<JSONObject>(res, responseStatus);
+    }
+
+    // CreateJobURL 创建job
+    @RequestMapping(value = "/jobs/CreateJob", method = RequestMethod.POST)
+    public ResponseEntity<String> CreateJobURL(@RequestBody String req) {
+        JSONObject request = JSON.parseObject(req);
+        String applicationID = request.getString("applicationID");
+        String tasks = request.getString("tasks");
+        String job = request.getString("job");
+        String missionID = request.getString("missionID");
+
+        JobCreateReq jobCreateReq = new JobCreateReq();
+        jobCreateReq.setApplicationID(applicationID);
+        jobCreateReq.setTasks(tasks);
+        jobCreateReq.setJob(job);
+        jobCreateReq.setMissionID(missionID);
+
+        ContractServiceResponse csr = blockchainContractService.invokeContract(CONTRACT_NAME, "CreateJobURL", jobCreateReq.toContractParams());
+
+        String response = csr.toString();
+        HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+        return new ResponseEntity<String>(response, responseStatus);
+    }
 }
