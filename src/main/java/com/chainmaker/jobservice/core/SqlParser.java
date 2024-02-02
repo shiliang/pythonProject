@@ -1,9 +1,10 @@
 package com.chainmaker.jobservice.core;
 
+import com.chainmaker.jobservice.api.model.AssetInfo;
+import com.chainmaker.jobservice.api.model.DataInfo;
+import com.chainmaker.jobservice.api.model.SaveTableColumnItem;
 import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
 import com.chainmaker.jobservice.api.model.vo.ModelParamsVo;
-import com.chainmaker.jobservice.core.analyzer.catalog.DataCatalogDetailInfo;
-import com.chainmaker.jobservice.core.analyzer.catalog.DataCatalogInfo;
 import com.chainmaker.jobservice.core.analyzer.catalog.MissionDetailVO;
 import com.chainmaker.jobservice.core.calcite.adapter.LogicPlanAdapter;
 import com.chainmaker.jobservice.core.calcite.optimizer.OptimizerPlanner;
@@ -37,7 +38,7 @@ public class SqlParser {
     private final Integer isStream;
     private final Integer modelType;
 
-    private List<DataCatalogInfo> dataCatalogInfoList;
+    private List<AssetInfo> assetInfoList;
 
     private List<ModelParamsVo> modelParamsVos;
 
@@ -52,32 +53,32 @@ public class SqlParser {
     private static final String TEE_PARTY = "69vkhy6org.cm-5w2wtw3afr";
 
     public SqlParser(String sql, Integer isStream, Integer modelType,
-                     List<DataCatalogInfo> dataCatalogInfoList,
+                     List<AssetInfo> assetInfoList,
                      List<ModelParamsVo> modelParamsVos) {
         this.sql = sql;
         this.isStream = isStream;
         this.modelType = modelType;
-        this.dataCatalogInfoList = dataCatalogInfoList;
+        this.assetInfoList = assetInfoList;
         if(modelType == 2) {
             this.modelParamsVos = modelParamsVos;
         }
     }
 
 
-    public HashMap<String, String> buildMetaData(List<DataCatalogInfo> dataCatalogInfoList){
+    public HashMap<String, String> buildMetaData(List<AssetInfo> dataCatalogInfoList){
         HashMap<String, String> tableOwnerMap = new HashMap<>();
-        for (DataCatalogInfo dataCatalogInfo : dataCatalogInfoList) {
-            tableOwnerMap.put(dataCatalogInfo.getName(), dataCatalogInfo.getOrgDID());
+        for (AssetInfo dataCatalogInfo : dataCatalogInfoList) {
+            tableOwnerMap.put(dataCatalogInfo.getAssetEnName(), dataCatalogInfo.getHolderCompany());
             MissionDetailVO missionDetailVO = new MissionDetailVO();
-            missionDetailVO.setName(dataCatalogInfo.getName());
-            missionDetailVO.setRemark(dataCatalogInfo.getRemark());
-            missionDetailVO.setVersion(dataCatalogInfo.getVersion());
-            missionDetailVO.setOrgId(dataCatalogInfo.getOrgId());
-            missionDetailVO.setDatacatalogId(dataCatalogInfo.getId());
+            missionDetailVO.setName(dataCatalogInfo.getAssetEnName());
+            missionDetailVO.setRemark(dataCatalogInfo.getIntro());
+            missionDetailVO.setVersion(dataCatalogInfo.getScale());
+            missionDetailVO.setDatacatalogId(dataCatalogInfo.getAssetId());
             missionDetailVOs.add(missionDetailVO);
             System.out.println("dataCatalogInfo: " + dataCatalogInfo);
-            for (DataCatalogDetailInfo dataCatalogDetailInfo : dataCatalogInfo.getItemVOList()) {
-                columnInfoMap.put(dataCatalogInfo.getName().toUpperCase()+"."+dataCatalogDetailInfo.getName().toUpperCase(), String.valueOf(dataCatalogDetailInfo.getDataType()));
+            DataInfo dataInfo = dataCatalogInfo.getDataInfo();
+            for (SaveTableColumnItem dataCatalogDetailInfo : dataInfo.getItemList()) {
+                columnInfoMap.put(dataCatalogInfo.getAssetName().toUpperCase()+"."+dataCatalogDetailInfo.getName().toUpperCase(), String.valueOf(dataCatalogDetailInfo.getDataType()));
             }
         }
         tableOwnerMap.put(TEE_PARTY_KEY, TEE_PARTY);
@@ -90,7 +91,7 @@ public class SqlParser {
         LogicalPlanPrinter printer = new LogicalPlanPrinter();
         printer.visitTree(logicalPlan, 0);
         System.out.println(printer.logicalPlanString);
-        HashMap<String, String> tableOwnerMap = buildMetaData(dataCatalogInfoList);
+        HashMap<String, String> tableOwnerMap = buildMetaData(assetInfoList);
 
         PlanOptimizer optimizer = new PlanOptimizer(this.modelType, this.isStream, tableOwnerMap);
         optimizer.visit(logicalPlan);
@@ -110,22 +111,24 @@ public class SqlParser {
         printer.visitTree(logicalPlan, 0);
         System.out.println(printer.logicalPlanString);
 
-        HashMap<String, String> tableOwnerMap = buildMetaData(dataCatalogInfoList);
+        HashMap<String, String> tableOwnerMap = buildMetaData(assetInfoList);
 
         HashMap<String, TableInfo> metadata = new HashMap<>();
 
         // 获取所需的元数据，即HashMap<String, TableInfo>
-        for (DataCatalogInfo dataCatalogInfo : dataCatalogInfoList) {
-            String tableName = dataCatalogInfo.getName().toUpperCase();
+        for (AssetInfo assetInfo : assetInfoList) {
             HashMap<String, FieldInfo> fields = new HashMap<>();
-            for (DataCatalogDetailInfo detailInfo : dataCatalogInfo.getItemVOList()) {
-                FieldInfo field = new FieldInfo(tableName+"."+detailInfo.getName().toUpperCase(), detailInfo.getDataType(), null, null, FieldInfo.DistributionType.Uniform,
-                        tableName, detailInfo.getDataLength(), dataCatalogInfo.getOrgDID());
+            DataInfo dataInfo = assetInfo.getDataInfo();
+            String tableName = dataInfo.getTableName().toUpperCase();
+            String assetName = assetInfo.getAssetEnName().toUpperCase();
+            for (SaveTableColumnItem detailInfo : dataInfo.getItemList()) {
+                FieldInfo field = new FieldInfo(assetName+"."+detailInfo.getName().toUpperCase(), detailInfo.getDataType(), null, null, FieldInfo.DistributionType.Uniform,
+                        tableName, detailInfo.getDataLength(), assetInfo.getHolderCompany());
                 fields.put(field.getFieldName(), field);
             }
             // 后续需要添加rowCount的获取
             int rowCount = 100;
-            TableInfo tableInfo = new TableInfo(fields, rowCount, tableName, dataCatalogInfo.getOrgDID());
+            TableInfo tableInfo = new TableInfo(fields, rowCount, tableName, assetInfo.getHolderCompany());
             metadata.put(tableName, tableInfo);
         }
 

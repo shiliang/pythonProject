@@ -119,7 +119,7 @@ public class MPCMetadata {
                 HashMap<String, FieldInfo> fieldInfos = new HashMap<>();
                 for (String fieldName : sqlTableFieldMap.get(key)) {
                     String totalName = key + "." + fieldName;
-                    FieldInfo field = new FieldInfo(totalName, 2, 100*cnt, 1, FieldInfo.DistributionType.Uniform, key, 8, "domain1");
+                    FieldInfo field = new FieldInfo(totalName, "Integer", 100*cnt, 1, FieldInfo.DistributionType.Uniform, key, 8, "domain1");
                     fieldInfos.put(totalName, field);
                     fieldNameInfoMap.put(totalName, field);
                 }

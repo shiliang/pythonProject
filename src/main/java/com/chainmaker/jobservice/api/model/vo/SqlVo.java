@@ -1,6 +1,6 @@
 package com.chainmaker.jobservice.api.model.vo;
 
-import com.chainmaker.jobservice.core.analyzer.catalog.DataCatalogInfo;
+import com.chainmaker.jobservice.api.model.AssetInfo;
 import lombok.Data;
 
 import java.util.List;
@@ -18,7 +18,7 @@ public class SqlVo {
     private Integer modelType;
     private Integer isStream;
 
-    private List<DataCatalogInfo> dataCatalogInfoList;
+    private List<AssetInfo> assetInfoList;
 
     private List<ModelParamsVo> modelParams;
 }
