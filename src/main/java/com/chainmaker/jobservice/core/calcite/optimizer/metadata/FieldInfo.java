@@ -15,26 +15,9 @@ public class FieldInfo {
     private String tableName;               // 所属表名
     private String domainID;                // domainID
 
-    public FieldInfo(String name, int type, Object maxValue, Object minValue, DistributionType disType, String tableName, int dataLength, String domainID) {
+    public FieldInfo(String name, String type, Object maxValue, Object minValue, DistributionType disType, String tableName, int dataLength, String domainID) {
         fieldName = name;
-        switch (type) {
-            case 1:
-                fieldType = SqlTypeName.FLOAT;
-                break;
-            case 2:         // 整值型
-            case 3:         // 整型
-                fieldType = SqlTypeName.INTEGER;
-                break;
-            case 4:
-                fieldType = SqlTypeName.VARCHAR;
-                break;
-            case 5:
-                fieldType = SqlTypeName.DOUBLE;
-                break;
-            default:
-                fieldType = SqlTypeName.ANY;
-                break;
-        }
+        fieldType = SqlTypeName.get(type);
         this.maxValue = maxValue;
         this.minValue = minValue;
         this.disType = disType;
