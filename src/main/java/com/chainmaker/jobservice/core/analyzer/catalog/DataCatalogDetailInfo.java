@@ -1,5 +1,8 @@
 package com.chainmaker.jobservice.core.analyzer.catalog;
 
+import lombok.Data;
+
+@Data
 public class DataCatalogDetailInfo {
     private String id;
     private String name;
@@ -8,6 +11,7 @@ public class DataCatalogDetailInfo {
     private int dataLength;
     private int primaryKey;
 
+    private DataCatalogDataSecurityInfo dataSecurity;
 
     public String getId() {
         return id;
