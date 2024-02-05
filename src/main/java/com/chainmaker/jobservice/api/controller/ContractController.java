@@ -241,12 +241,12 @@ public class ContractController {
     }
 
     //QueryMissionByMissionIdURL 根据missionID查询mission
-    @RequestMapping(value = "/missions/queryMissionByMissionIdURL", method = RequestMethod.GET)
+    @RequestMapping(value = "/missions/queryMissionByMissionId", method = RequestMethod.GET)
     public ResponseEntity<JSONObject> QueryMissionByMissionIdURL(@RequestParam String missionID) {
         MissionGetReq missionGetReq = new MissionGetReq();
         missionGetReq.setMissionID(missionID);
 
-        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryMissionByMissionIdURL", missionGetReq.toContractParams());
+        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryMissionByMissionId", missionGetReq.toContractParams());
         String response = csr.toString();
         JSONObject res = JSON.parseObject(response, Feature.OrderedField);
         HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
@@ -254,11 +254,11 @@ public class ContractController {
     }
 
     //QueryJobsByMissionIdAndStsURL 根据missionID和sts查询job实例列表
-    @RequestMapping(value = "/jobs/queryJobsByMissionIdAndStsURL", method = RequestMethod.GET)
+    @RequestMapping(value = "/jobs/queryJobsByMissionIdAndSts", method = RequestMethod.GET)
     public ResponseEntity<JSONObject> QueryJobsByMissionIdAndStsURL(@RequestParam String missionID, @RequestParam String sts) {
         MissionGetReq missionGetReq = new MissionGetReq();
         missionGetReq.setMissionID(missionID);
-        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobsByMissionIdAndStsURL", missionGetReq.toContractParams());
+        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobsByMissionIdAndSts", missionGetReq.toContractParams());
         String response = csr.toString();
         JSONArray jobsList = JSONArray.parseArray(response);
         JSONObject res = new JSONObject();
