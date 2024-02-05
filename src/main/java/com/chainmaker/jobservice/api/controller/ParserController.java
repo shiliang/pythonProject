@@ -536,19 +536,19 @@ public class ParserController {
         return new ResponseEntity<JSONObject>(res, responseStatus);
     }
 
-    @RequestMapping(value = "/jobs/createJob", method = RequestMethod.POST)
-    public ResponseEntity<String> createJob(@RequestBody String req) {
-        Map<String, byte[]> map = JSON.parseObject(req, Map.class);
-        ContractServiceResponse csr = blockchainContractService.invokeContract(CONTRACT_NAME, "CreateJob", map);
-        String response = csr.toString();
-        JSONObject result = new JSONObject();
-        result.put("result", response);
-        HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
-        return new ResponseEntity<String>(result.toJSONString(), responseStatus);
-    }
+//    @RequestMapping(value = "/jobs/createJob", method = RequestMethod.POST)
+//    public ResponseEntity<String> createJob(@RequestBody String req) {
+//        Map<String, byte[]> map = JSON.parseObject(req, Map.class);
+//        ContractServiceResponse csr = blockchainContractService.invokeContract(CONTRACT_NAME, "CreateJob", map);
+//        String response = csr.toString();
+//        JSONObject result = new JSONObject();
+//        result.put("result", response);
+//        HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+//        return new ResponseEntity<String>(result.toJSONString(), responseStatus);
+//    }
 
     //QueryNotFinishedMissionsBySts
-    @RequestMapping(value = "/jobs/search", method = RequestMethod.GET)
+    @RequestMapping(value = "/missions/queryNotFinishedMissionsBySts", method = RequestMethod.GET)
     public ResponseEntity<String> queryNotFinishedMissionsBySts(@RequestParam String partyID, @RequestParam String sts) {
         Map<String, byte[]> map = new HashMap<>();
         map.put("partyID", partyID.getBytes());
@@ -561,8 +561,8 @@ public class ParserController {
         return new ResponseEntity<String>(result.toJSONString(), responseStatus);
     }
 
-    @RequestMapping(value = "/jobs/{missionID}/jobs", method = RequestMethod.GET)
-    public ResponseEntity<String> queryJobsByMissionIdAndStsURL (@RequestParam String missionID, @RequestParam String sts) {
+    @RequestMapping(value = "/jobs/queryJobsByMissionIdAndSts", method = RequestMethod.GET)
+    public ResponseEntity<String> queryJobsByMissionIdAndSts (@RequestParam String missionID, @RequestParam String sts) {
         Map<String, byte[]> map = new HashMap<>();
         map.put("sts", sts.getBytes());
         map.put("missionID", missionID.getBytes());

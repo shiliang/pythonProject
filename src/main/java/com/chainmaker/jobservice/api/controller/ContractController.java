@@ -268,7 +268,7 @@ public class ContractController {
     }
 
     // CreateJobURL 创建job
-    @RequestMapping(value = "/jobs/CreateJob", method = RequestMethod.POST)
+    @RequestMapping(value = "/jobs/createJob", method = RequestMethod.POST)
     public ResponseEntity<String> CreateJobURL(@RequestBody String req) {
         JSONObject request = JSON.parseObject(req);
         String applicationID = request.getString("applicationID");
@@ -282,7 +282,7 @@ public class ContractController {
         jobCreateReq.setJob(job);
         jobCreateReq.setMissionID(missionID);
 
-        ContractServiceResponse csr = blockchainContractService.invokeContract(CONTRACT_NAME, "CreateJobURL", jobCreateReq.toContractParams());
+        ContractServiceResponse csr = blockchainContractService.invokeContract(CONTRACT_NAME, "CreateJob", jobCreateReq.toContractParams());
 
         String response = csr.toString();
         HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;

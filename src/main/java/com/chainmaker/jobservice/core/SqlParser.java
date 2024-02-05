@@ -78,7 +78,7 @@ public class SqlParser {
             System.out.println("dataCatalogInfo: " + dataCatalogInfo);
             DataInfo dataInfo = dataCatalogInfo.getDataInfo();
             for (SaveTableColumnItem dataCatalogDetailInfo : dataInfo.getItemList()) {
-                columnInfoMap.put(dataCatalogInfo.getAssetName().toUpperCase()+"."+dataCatalogDetailInfo.getName().toUpperCase(), String.valueOf(dataCatalogDetailInfo.getDataType()));
+                columnInfoMap.put(dataCatalogInfo.getAssetEnName().toUpperCase()+"."+dataCatalogDetailInfo.getName().toUpperCase(), String.valueOf(dataCatalogDetailInfo.getDataType()));
             }
         }
         tableOwnerMap.put(TEE_PARTY_KEY, TEE_PARTY);
