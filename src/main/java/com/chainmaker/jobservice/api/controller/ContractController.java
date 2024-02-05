@@ -35,7 +35,7 @@ import java.util.Map;
 @RequestMapping("/v1")
 @RestController
 public class ContractController {
-    private static final String CONTRACT_NAME = "job_manager";
+    private static final String CONTRACT_NAME = "mission_manager";
 
 
     @Autowired
