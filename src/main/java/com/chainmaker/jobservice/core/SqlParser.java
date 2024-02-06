@@ -119,17 +119,17 @@ public class SqlParser {
         for (AssetInfo assetInfo : assetInfoList) {
             HashMap<String, FieldInfo> fields = new HashMap<>();
             DataInfo dataInfo = assetInfo.getDataInfo();
-            String tableName = dataInfo.getTableName().toUpperCase();
-            String assetName = assetInfo.getAssetEnName().toUpperCase();
+            String tableName = dataInfo.getTableName();
+            String assetName = assetInfo.getAssetEnName();
             for (SaveTableColumnItem detailInfo : dataInfo.getItemList()) {
-                FieldInfo field = new FieldInfo(assetName+"."+detailInfo.getName().toUpperCase(), detailInfo.getDataType(), null, null, FieldInfo.DistributionType.Uniform,
-                        tableName, detailInfo.getDataLength(), assetInfo.getHolderCompany());
+                FieldInfo field = new FieldInfo(assetName+"."+detailInfo.getName(), detailInfo.getDataType(), null, null, FieldInfo.DistributionType.Uniform,
+                        assetName, detailInfo.getDataLength(), assetInfo.getHolderCompany());
                 fields.put(field.getFieldName(), field);
             }
             // 后续需要添加rowCount的获取
             int rowCount = 100;
             TableInfo tableInfo = new TableInfo(fields, rowCount, tableName, assetInfo.getHolderCompany());
-            metadata.put(tableName, tableInfo);
+            metadata.put(assetInfo.getAssetEnName(), tableInfo);
         }
 
         // 之前的sqlparser约用时1500ms
