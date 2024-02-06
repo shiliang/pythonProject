@@ -17,7 +17,7 @@ public class FieldInfo {
 
     public FieldInfo(String name, String type, Object maxValue, Object minValue, DistributionType disType, String tableName, int dataLength, String domainID) {
         fieldName = name;
-        fieldType = SqlTypeName.get(type);
+        fieldType = SqlTypeName.get(type.toUpperCase());
         this.maxValue = maxValue;
         this.minValue = minValue;
         this.disType = disType;
