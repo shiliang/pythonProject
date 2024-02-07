@@ -226,9 +226,10 @@ public class ContractController {
     // queryNotFinishedMissionsBySts 根据missionID和sts查询job实例
     // @WebLog(description = "根据missionID和sts查询job实例")
     @RequestMapping(value = "/missions/queryNotFinishedMissionsBySts", method = RequestMethod.GET)
-    public ResponseEntity<JSONObject> queryNotFinishedMissionsBySts(@RequestParam String sts) {
+    public ResponseEntity<JSONObject> queryNotFinishedMissionsBySts(@RequestParam String partyID, @RequestParam String sts) {
         MissionGetReq missionGetReq = new MissionGetReq();
         missionGetReq.setStatus(sts);
+        missionGetReq.setPartyID(partyID);
 
      
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryNotFinishedMissionsBySts", missionGetReq.toContractParams());

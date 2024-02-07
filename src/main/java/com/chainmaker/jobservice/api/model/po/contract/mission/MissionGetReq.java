@@ -12,6 +12,7 @@ import java.util.HashMap;
  */
 
 public class MissionGetReq {
+    private String partyID,
     private String missionID;
     private String status;
     public HashMap<String, byte[]> toContractParams() {
@@ -34,5 +35,13 @@ public class MissionGetReq {
 
     public String getMissionID() {
         return missionID;
+    }
+
+    public void setPartyID(String partyID){
+        this.partyID = partyID;
+    }
+
+    public String getPartyId(){
+        return partyID;
     }
 }
