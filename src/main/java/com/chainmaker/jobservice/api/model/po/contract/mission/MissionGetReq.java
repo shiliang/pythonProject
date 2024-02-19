@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.api.model.po.contract.mission;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.annotation.JSONField;
 
 import java.util.HashMap;
 
@@ -12,8 +13,11 @@ import java.util.HashMap;
  */
 
 public class MissionGetReq {
+    @JSONField(name = "partyID")
     private String partyID;
+    @JSONField(name = "missionID")
     private String missionID;
+    @JSONField(name = "status")
     private String status;
     public HashMap<String, byte[]> toContractParams() {
         HashMap<String, byte[]> contractParams = new HashMap<>();
