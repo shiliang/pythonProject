@@ -15,6 +15,9 @@ import com.chainmaker.jobservice.api.response.ContractServiceResponse;
 import com.chainmaker.jobservice.api.response.Result;
 import com.chainmaker.jobservice.api.response.ResultCode;
 import com.chainmaker.jobservice.api.service.BlockchainContractService;
+
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +35,7 @@ import java.util.Map;
  * @version: 1.0.0
  */
 
+@Slf4j
 @RequestMapping("/v1")
 @RestController
 public class ContractController {
@@ -231,8 +235,12 @@ public class ContractController {
         missionGetReq.setStatus(sts);
         missionGetReq.setPartyID(partyID);
 
+        log.info("missionGetReq: {}", JSON.toJSONString(missionGetReq));
      
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryNotFinishedMissionsBySts", missionGetReq.toContractParams());
+
+        log.info("contractServiceResponse: {}", JSON.toJSONString(csr));
+
         String response = csr.toString();
         JSONArray missionList = JSONArray.parseArray(response);
         JSONObject res = new JSONObject();
@@ -247,7 +255,12 @@ public class ContractController {
         MissionGetReq missionGetReq = new MissionGetReq();
         missionGetReq.setMissionID(missionID);
 
+        log.info("missionGetReq: {}", JSON.toJSONString(missionGetReq));
+
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryMissionByMissionId", missionGetReq.toContractParams());
+
+        log.info("contractServiceResponse: {}", JSON.toJSONString(csr));
+
         String response = csr.toString();
         JSONObject res = JSON.parseObject(response, Feature.OrderedField);
         HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
@@ -259,7 +272,13 @@ public class ContractController {
     public ResponseEntity<JSONObject> QueryJobsByMissionIdAndStsURL(@RequestParam String missionID, @RequestParam String sts) {
         MissionGetReq missionGetReq = new MissionGetReq();
         missionGetReq.setMissionID(missionID);
+
+        log.info("missionGetReq: {}", JSON.toJSONString(missionGetReq));
+
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobsByMissionIdAndSts", missionGetReq.toContractParams());
+
+        log.info("contractServiceResponse: {}", JSON.toJSONString(csr));
+
         String response = csr.toString();
         JSONArray jobsList = JSONArray.parseArray(response);
         JSONObject res = new JSONObject();
@@ -283,7 +302,11 @@ public class ContractController {
         jobCreateReq.setJob(job);
         jobCreateReq.setMissionID(missionID);
 
+        log.info("jobCreateReq: {}", JSON.toJSONString(jobCreateReq));
+
         ContractServiceResponse csr = blockchainContractService.invokeContract(CONTRACT_NAME, "CreateJob", jobCreateReq.toContractParams());
+
+        log.info("contractServiceResponse: {}", JSON.toJSONString(csr));
 
         String response = csr.toString();
         HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
