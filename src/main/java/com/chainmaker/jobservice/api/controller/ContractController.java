@@ -46,6 +46,7 @@ public class ContractController {
     BlockchainContractService blockchainContractService;
 
 //    @WebLog(description = "获取JOB状态")
+    @WebLog
     @RequestMapping(value = "/jobs/{jobID}/sts", method = RequestMethod.GET)
     public Result queryJobSts(@PathVariable String jobID) {
         JobGetPo jobGetPo = new JobGetPo();
@@ -90,6 +91,7 @@ public class ContractController {
         return new ResponseEntity<String>(response, responseStatus);
     }
 
+    @WebLog
     @RequestMapping(value = "/jobs/{jobID}/services/{serviceID}/actions/sts", method = RequestMethod.POST)
     public ResponseEntity<JSONObject> updateServiceStatus(@PathVariable String jobID,@PathVariable String serviceID,@RequestBody String req) {
         JSONObject request = JSON.parseObject(req);
@@ -110,6 +112,7 @@ public class ContractController {
         return new ResponseEntity<JSONObject>(result, responseStatus);
     }
 
+    @WebLog
     @RequestMapping(value = "/jobs/{jobID}/services/{serviceID}", method = RequestMethod.GET)
     public ResponseEntity<Service> queryServiceDetails(@PathVariable String jobID,@PathVariable String serviceID) {
         JobGetServicePo jobGetServicePo = new JobGetServicePo();
@@ -124,6 +127,7 @@ public class ContractController {
     }
 
 //    @WebLog(description = "更改TASK参与方状态")
+    @WebLog
     @RequestMapping(value = "/jobs/{jobID}/tasks/{taskName}/actions/sts", method = RequestMethod.POST)
     public ResponseEntity<String> setTaskStsINIT(@PathVariable String jobID, @PathVariable String taskName, @RequestBody String req) {
         JSONObject request = JSON.parseObject(req);
@@ -229,6 +233,7 @@ public class ContractController {
 
     // queryNotFinishedMissionsBySts 根据missionID和sts查询job实例
     // @WebLog(description = "根据missionID和sts查询job实例")
+    @WebLog
     @RequestMapping(value = "/missions/queryNotFinishedMissionsBySts", method = RequestMethod.GET)
     public ResponseEntity<JSONObject> queryNotFinishedMissionsBySts(@RequestParam String partyID, @RequestParam String sts) {
         MissionGetReq missionGetReq = new MissionGetReq();
@@ -250,6 +255,7 @@ public class ContractController {
     }
 
     //QueryMissionByMissionIdURL 根据missionID查询mission
+    @WebLog
     @RequestMapping(value = "/missions/queryMissionByMissionId", method = RequestMethod.GET)
     public ResponseEntity<JSONObject> QueryMissionByMissionIdURL(@RequestParam String missionID) {
         MissionGetReq missionGetReq = new MissionGetReq();
@@ -268,6 +274,7 @@ public class ContractController {
     }
 
     //QueryJobsByMissionIdAndStsURL 根据missionID和sts查询job实例列表
+    @WebLog
     @RequestMapping(value = "/jobs/queryJobsByMissionIdAndSts", method = RequestMethod.GET)
     public ResponseEntity<JSONObject> QueryJobsByMissionIdAndStsURL(@RequestParam String missionID, @RequestParam String sts) {
         MissionGetReq missionGetReq = new MissionGetReq();
@@ -288,6 +295,7 @@ public class ContractController {
     }
 
     // CreateJobURL 创建job
+    @WebLog
     @RequestMapping(value = "/jobs/createJob", method = RequestMethod.POST)
     public ResponseEntity<String> CreateJobURL(@RequestBody String req) {
         JSONObject request = JSON.parseObject(req);
