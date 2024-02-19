@@ -320,4 +320,15 @@ public class ContractController {
         HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
         return new ResponseEntity<String>(response, responseStatus);
     }
+
+    @WebLog
+    @RequestMapping(value = "/chain/queryChainByKey", method = RequestMethod.GET)
+    public ResponseEntity<String> queryChainByKey(@RequestParam String keyPrefix) {
+        QueryChainByKeyRequest queryChainByKeyRequest = new QueryChainByKeyRequest();
+        queryChainByKeyRequest.setKey(keyPrefix);
+        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryChainByKey", queryChainByKeyRequest.toContractParams());
+        String response = csr.toString();
+        HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+        return new ResponseEntity<String>(response, responseStatus);
+    }
 }
