@@ -21,8 +21,15 @@ public class MissionGetReq {
     private String status;
     public HashMap<String, byte[]> toContractParams() {
         HashMap<String, byte[]> contractParams = new HashMap<>();
-        contractParams.put("partyID", this.getPartyId().getBytes());
-        contractParams.put("status", this.getStatus().getBytes());
+        if(this.partyID != null){
+            contractParams.put("partyID", this.getPartyId().getBytes());
+        }
+        if (this.missionID != null) {
+            contractParams.put("missionID", this.getMissionID().getBytes());
+        }
+        if (this.status != null) {
+            contractParams.put("status", this.getStatus().getBytes());
+        }
         return contractParams;
     }
 
