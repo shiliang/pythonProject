@@ -290,6 +290,7 @@ public class ContractController {
         JSONObject request = JSON.parseObject(req);
         String applicationID = request.getString("applicationID");
         String tasks = request.getString("tasks");
+        String services = request.getString("services");
         String job = request.getString("job");
         String missionID = request.getString("missionID");
 
@@ -297,7 +298,10 @@ public class ContractController {
         jobCreateReq.setApplicationID(applicationID);
         jobCreateReq.setTasks(tasks);
         jobCreateReq.setJob(job);
+        jobCreateReq.setServices(services);
         jobCreateReq.setMissionID(missionID);
+
+        log.info("jobCreateReq is {}", jobCreateReq);
 
         ContractServiceResponse csr = blockchainContractService.invokeContract(CONTRACT_NAME, "CreateJob", jobCreateReq.toContractParams());
 

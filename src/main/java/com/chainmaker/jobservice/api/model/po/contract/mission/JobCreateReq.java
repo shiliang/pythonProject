@@ -1,18 +1,24 @@
 package com.chainmaker.jobservice.api.model.po.contract.mission;
 
+import lombok.Data;
+
 import java.util.HashMap;
 
+@Data
 public class JobCreateReq {
    private String applicationID;
     private String tasks;
     private String job;
     private String missionID;
 
+    private String services;
+
     public HashMap<String, byte[]> toContractParams() {
         HashMap<String, byte[]> contractParams = new HashMap<>();
         contractParams.put("applicationID", this.getApplicationID().getBytes());
         contractParams.put("tasks", this.getTasks().getBytes());
         contractParams.put("job", this.getJob().getBytes());
+        contractParams.put("services", this.getServices().getBytes());
         contractParams.put("missionID", this.getMissionID().getBytes());
         return contractParams;
     }
