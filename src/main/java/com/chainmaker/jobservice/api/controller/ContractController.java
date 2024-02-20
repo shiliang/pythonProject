@@ -257,7 +257,7 @@ public class ContractController {
     //QueryMissionByMissionIdURL 根据missionID查询mission
     @WebLog
     @RequestMapping(value = "/missions/queryMissionByMissionId", method = RequestMethod.GET)
-    public ResponseEntity<JSONObject> QueryMissionByMissionIdURL(@RequestParam String missionID) {
+    public ResponseEntity<JSONObject> QueryMissionByMissionId(@RequestParam String missionID) {
         MissionGetReq missionGetReq = new MissionGetReq();
         missionGetReq.setMissionID(missionID);
 
@@ -279,6 +279,7 @@ public class ContractController {
     public ResponseEntity<JSONObject> QueryJobsByMissionIdAndStsURL(@RequestParam String missionID, @RequestParam String sts) {
         MissionGetReq missionGetReq = new MissionGetReq();
         missionGetReq.setMissionID(missionID);
+        missionGetReq.setStatus(sts);
 
         log.info("missionGetReq: {}", JSON.toJSONString(missionGetReq));
 
