@@ -56,6 +56,6 @@ public class JobCreateReq {
     }
 
     public String toString() {
-        return "JobCreateReq(applicationID=" + this.getApplicationID() + ", tasks=" + this.getTasks() + ", job=" + this.getJob() + ", missionID=" + this.getMissionID() + ")";
+        return "JobCreateReq(applicationID=" + this.getApplicationID() + ", tasks=" + this.getTasks() + ", job=" + this.getJob() + ", missionID=" + this.getMissionID() + ", services=" + this.getServices() + ")";
     }
 }
