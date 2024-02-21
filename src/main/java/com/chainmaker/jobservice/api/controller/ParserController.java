@@ -170,6 +170,7 @@ public class ParserController {
     }
 
     // @WebLog(description = "获取JOB信息")
+    @WebLog
     @RequestMapping(value = "/jobs/{jobID}", method = RequestMethod.GET)
     public ResponseEntity<JobRunner> getJobRunner(@PathVariable String jobID) {
         jobParserService.setOrgDID(getDIDFromOrgId(jobParserService.getOrgId()));
@@ -376,6 +377,7 @@ public class ParserController {
         HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
         return new ResponseEntity<JSONObject>(res, responseStatus);
     }
+    @WebLog
     @RequestMapping(value = "/jobs/address/{jobID}", method = RequestMethod.GET)
     public ResponseEntity<JSONObject> getAddress(@PathVariable String jobID) {
         JobGetPo jobGetPo = new JobGetPo();
@@ -390,6 +392,7 @@ public class ParserController {
         HttpStatus responseStatus = res_csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
         return new ResponseEntity<JSONObject>(res, responseStatus);
     }
+    @WebLog
     @RequestMapping(value = "/jobs/result/list/{jobID}", method = RequestMethod.GET)
     public ResponseEntity<JSONObject> getResultList(@PathVariable String jobID) {
         JSONObject result = new JSONObject();
@@ -445,6 +448,7 @@ public class ParserController {
         result.put("data", dataIdList);
         return new ResponseEntity<JSONObject>(result, HttpStatus.OK);
     }
+    @WebLog
     @RequestMapping(value = "/jobs/get/result/enc/{jobID}/{dataID}/{orgDID}", method = RequestMethod.GET)
     public ResponseEntity<JSONObject> getEncResult(@PathVariable String jobID, @PathVariable String dataID, @PathVariable String orgDID) {
         JSONObject result = new JSONObject();
@@ -461,6 +465,7 @@ public class ParserController {
         return new ResponseEntity<JSONObject>(result, HttpStatus.OK);
     }
 //    todo
+    @WebLog
     @RequestMapping(value = "/jobs/get/result/dec/{jobID}/{dataID}/{orgDID}", method = RequestMethod.GET)
     public ResponseEntity<JSONObject> getDecResult(@PathVariable String jobID, @PathVariable String dataID, @PathVariable String orgDID) {
         JSONObject result = new JSONObject();
@@ -485,6 +490,7 @@ public class ParserController {
 
         return new ResponseEntity<JSONObject>(result, HttpStatus.OK);
     }
+    @WebLog
     @RequestMapping(value = "/jobs/result/download/{jobID}", method = RequestMethod.GET)
     public ResponseEntity<JSONObject> getResult(@PathVariable String jobID) {
         HashMap<String, List<String>> resultMap = new HashMap<>();
