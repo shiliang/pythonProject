@@ -38,7 +38,7 @@ import java.util.*;
 public class ParserController {
     private static final String WASM_PATH = "/home/workspace/sdk/wasm/";
 //    private static final String WASM_PATH = "D://";
-    private static final String CONTRACT_NAME = "job_manager";
+    private static final String CONTRACT_NAME = "mission_manager";
     private static final String CONTRACT_FILE_PATH = "job_manager.wasm";
     private static final String CONTRACT_NAME_2 = "catalog_contract2";
     private static final String CONTRACT_FILE_PATH_2 = "catalog_contract.wasm";
