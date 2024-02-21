@@ -184,6 +184,7 @@ public class ContractController {
     }
 
 //    @WebLog(description = "获取参与方的JOB")
+    @WebLog
     @RequestMapping(value = "/jobs/search", method = RequestMethod.GET)
     public ResponseEntity<JSONObject> queryJobsBySts(@RequestParam String partyID, @RequestParam String sts) {
         JobSearchPo jobSearchPo = new JobSearchPo();
