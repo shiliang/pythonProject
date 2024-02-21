@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.api.model.bo.job;
 
+import com.chainmaker.jobservice.api.model.AssetDetail;
 import com.chainmaker.jobservice.api.model.bo.job.service.Service;
 import com.chainmaker.jobservice.api.model.bo.job.task.Party;
 import com.chainmaker.jobservice.api.model.bo.job.task.Task;
@@ -17,6 +18,8 @@ public class JobInfo {
     private Job job;
     private List<Task> tasks;
     private List<Service> services;
+
+    private List<AssetDetail> assetDetailList;
     public void update() {
         for (Task task : this.tasks) {
             if (task.getModule().getParams().containsKey("domainID")) {
@@ -99,12 +102,21 @@ public class JobInfo {
         this.services = services;
     }
 
+    public List<AssetDetail> getAssetDetailList() {
+        return assetDetailList;
+    }
+
+    public void setAssetDetailList(List<AssetDetail> assetDetailList) {
+        this.assetDetailList = assetDetailList;
+    }
+
     @Override
     public String toString() {
         return "JobInfo{" +
                 "job=" + job +
                 ", tasks=" + tasks +
                 ", services=" + services +
+                ", assetDetailList=" + assetDetailList +
                 '}';
     }
 }

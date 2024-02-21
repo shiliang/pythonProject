@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.core;
 
+import com.chainmaker.jobservice.api.model.AssetDetail;
 import com.chainmaker.jobservice.api.model.AssetInfo;
 import com.chainmaker.jobservice.api.model.DataInfo;
 import com.chainmaker.jobservice.api.model.SaveTableColumnItem;
@@ -48,6 +49,8 @@ public class SqlParser {
 
     private CatalogConfig catalogConfig;
 
+    private List<AssetDetail> assetDetailList;
+
 
     private static final String TEE_PARTY_KEY = "TEE-PARTY";
     private static final String TEE_PARTY = "69vkhy6org.cm-5w2wtw3afr";
@@ -79,6 +82,17 @@ public class SqlParser {
             DataInfo dataInfo = dataCatalogInfo.getDataInfo();
             for (SaveTableColumnItem dataCatalogDetailInfo : dataInfo.getItemList()) {
                 columnInfoMap.put(dataCatalogInfo.getAssetEnName().toUpperCase()+"."+dataCatalogDetailInfo.getName().toUpperCase(), String.valueOf(dataCatalogDetailInfo.getDataType()));
+                AssetDetail assetDetail = new AssetDetail();
+                assetDetail.setDBName(dataInfo.getDbName());
+                assetDetail.setAssetId(dataCatalogInfo.getAssetId());
+                assetDetail.setAssetName(dataCatalogInfo.getAssetEnName());
+                assetDetail.setType(dataCatalogDetailInfo.getDataType());
+                assetDetail.setLength(dataCatalogDetailInfo.getDataLength());
+                assetDetail.setTableName(dataInfo.getTableName());
+//                assetDetail.setOrgId();
+                assetDetail.setColumnName(dataCatalogDetailInfo.getName());
+                assetDetail.setComments(dataCatalogDetailInfo.getDescription());
+                assetDetailList.add(assetDetail);
             }
         }
         tableOwnerMap.put(TEE_PARTY_KEY, TEE_PARTY);

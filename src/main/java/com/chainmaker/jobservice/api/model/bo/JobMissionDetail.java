@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.api.model.bo;
 
+import com.chainmaker.jobservice.api.model.AssetDetail;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
 import com.chainmaker.jobservice.api.model.vo.ModelParamsVo;
@@ -18,6 +19,8 @@ public class JobMissionDetail {
     private JobTemplate jobTemplate;
     private List<MissionDetailVO> missionDetailVOList;
     private List<ModelParamsVo> modelParamsVoList;
+
+    private List<AssetDetail> assetDetailList;
 
     public List<ModelParamsVo> getModelParamsVoList() {
         return modelParamsVoList;
@@ -43,12 +46,21 @@ public class JobMissionDetail {
         this.missionDetailVOList = missionDetailVOList;
     }
 
+    public List<AssetDetail> getAssetDetailList() {
+        return assetDetailList;
+    }
+
+    public void setAssetDetailList(List<AssetDetail> assetDetailList) {
+        this.assetDetailList = assetDetailList;
+    }
+
     @Override
     public String toString() {
         return "JobMissionDetail{" +
                 "jobTemplate=" + jobTemplate +
                 ", missionDetailVOList=" + missionDetailVOList +
                 ", modelParamsVoList=" + modelParamsVoList +
+                ", assetDetailList=" + assetDetailList +
                 '}';
     }
 }

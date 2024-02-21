@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.builder.JobBuilder;
 import com.chainmaker.jobservice.api.builder.JobBuilderWithOptimizer;
+import com.chainmaker.jobservice.api.model.AssetDetail;
 import com.chainmaker.jobservice.api.model.bo.*;
 import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
 import com.chainmaker.jobservice.api.model.bo.graph.*;
@@ -131,8 +132,12 @@ public class JobParserServiceImpl implements JobParserService {
     public JobGraphVo jobPreview(SqlVo sqlVo) {
         JobMissionDetail jobMissionDetail = parserSql(sqlVo);
         JobTemplate jobTemplate = jobMissionDetail.getJobTemplate();
+        List<AssetDetail> assetDetailList = jobMissionDetail.getAssetDetailList();
         JobInfoVo jobInfoVo = JobInfoVo.converterToJobInfoVo(jobTemplate);
         JobInfo jobInfo = JobInfo.jobTemplateToJobInfo(jobTemplate);
+        String orgId = getOrgId();
+        assetDetailList.forEach(assetDetail -> assetDetail.setOrgId(orgId));
+        jobInfo.setAssetDetailList(assetDetailList);
 
 
         JobGraphVo jobGraphVo = new JobGraphVo();
@@ -355,6 +360,7 @@ public class JobParserServiceImpl implements JobParserService {
             jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
             jobMissionDetail.setMissionDetailVOList(sqlParser.getMissionDetailVOs());
             jobMissionDetail.setModelParamsVoList(sqlParser.getModelParamsVos());
+            jobMissionDetail.setAssetDetailList(sqlParser.getAssetDetailList());
             return jobMissionDetail;
         } else {
             JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parserWithOptimizer(), sqlParser.getColumnInfoMap());
@@ -363,6 +369,7 @@ public class JobParserServiceImpl implements JobParserService {
             jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
             jobMissionDetail.setMissionDetailVOList(sqlParser.getMissionDetailVOs());
             jobMissionDetail.setModelParamsVoList(sqlParser.getModelParamsVos());
+            jobMissionDetail.setAssetDetailList(sqlParser.getAssetDetailList());
             return jobMissionDetail;
         }
     }

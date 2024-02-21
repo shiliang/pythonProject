@@ -301,7 +301,6 @@ public class ContractController {
         jobCreateReq.setServices(services);
         jobCreateReq.setMissionID(missionID);
 
-        log.info("jobCreateReq is {}", jobCreateReq);
 
         ContractServiceResponse csr = blockchainContractService.invokeContract(CONTRACT_NAME, "CreateJob", jobCreateReq.toContractParams());
 
