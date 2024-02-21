@@ -173,7 +173,7 @@ public class ParserController {
     @WebLog
     @RequestMapping(value = "/jobs/{jobID}", method = RequestMethod.GET)
     public ResponseEntity<JobRunner> getJobRunner(@PathVariable String jobID) {
-        jobParserService.setOrgDID(getDIDFromOrgId(jobParserService.getOrgId()));
+        jobParserService.setOrgDID(jobParserService.getOrgId());
         JobGetPo jobGetPo = new JobGetPo();
         jobGetPo.setJobID(jobID);
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
