@@ -92,7 +92,7 @@ public class ParserController {
     @WebLog(description = "预生成DAG")
     @RequestMapping(value = "/preview/dag", method = RequestMethod.POST)
     public Result jobPreview(@RequestBody String req) {
-        jobParserService.setOrgDID(getDIDFromOrgId(jobParserService.getOrgId()));
+        jobParserService.setOrgDID(jobParserService.getOrgId());
         SqlVo sqlVo = JSONObject.parseObject(req, SqlVo.class, Feature.OrderedField);
         if (sqlVo.getSqltext().contains("?")) {
             sqlVo.setIsStream(1);
