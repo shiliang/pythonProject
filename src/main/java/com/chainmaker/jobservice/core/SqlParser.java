@@ -78,7 +78,7 @@ public class SqlParser {
             missionDetailVO.setRemark(dataCatalogInfo.getIntro());
             char[] charArray = dataCatalogInfo.getScale().toCharArray();
             char[] newVerArray = Arrays.copyOfRange(charArray, 0, charArray.length - 1);
-            missionDetailVO.setVersion(Integer.parseInt(newVerArray.toString()));
+//            missionDetailVO.setVersion(Integer.parseInt(newVerArray.toString()));
             missionDetailVO.setDatacatalogId(dataCatalogInfo.getAssetId());
             missionDetailVOs.add(missionDetailVO);
             System.out.println("dataCatalogInfo: " + dataCatalogInfo);
