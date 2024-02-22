@@ -32,7 +32,7 @@ public class AssetInfo {
     /**
      * 更新周期
      */
-    private Integer cycle;
+    private String cycle;
 
     /**
      * 时间跨度
