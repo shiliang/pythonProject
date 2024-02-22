@@ -20,6 +20,7 @@ import com.chainmaker.jobservice.api.response.ResultCode;
 import com.chainmaker.jobservice.api.service.BlockchainContractService;
 import com.chainmaker.jobservice.api.service.JobParserService;
 import com.chainmaker.jobservice.api.util.CsvUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -32,7 +33,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-
+@Slf4j
 @RequestMapping("/v1")
 @RestController
 public class ParserController {
@@ -179,6 +180,7 @@ public class ParserController {
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
         HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
         JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class, Feature.OrderedField);
+        log.info("getJobRunner: {}", csr.toString());
         JobRunner jobRunner = jobParserService.getJobRunner(jobInfoPo);
         return new ResponseEntity<JobRunner>(jobRunner, responseStatus);
     }
