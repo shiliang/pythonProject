@@ -11,7 +11,6 @@ import org.springframework.core.io.ClassPathResource;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -81,58 +80,58 @@ public class ServiceVo {
         return JSONObject.parseObject(serviceVoStr, ServiceVo.class);
     }
 
-    public static ServiceVo serviceToServiceVo(Service service, String templateId) {
-        ServiceVo serviceVo = ServiceVo.templateToServiceVo(templateId, service.getServiceClass());
-        serviceVo.setId(service.getId());
-        serviceVo.setVersion(service.getVersion());
-        serviceVo.setManual(service.getManual());
-        serviceVo.setStatus(service.getStatus());
-        serviceVo.setCreateTime(service.getCreateTime());
-        serviceVo.setUpdateTime(service.getUpdateTime());
-        serviceVo.setOrgDID(service.getOrgDID());
-        serviceVo.setServiceClass(service.getServiceClass());
-        serviceVo.setServiceName(service.getServiceName());
-        serviceVo.setNodePort(service.getNodePort());
-
-        for (ExposeEndpointVo exposeEndpointVo : serviceVo.getExposeEndpoints()) {
-            for (String key : service.getExposeEndpoints().keySet()) {
-                if (Objects.equals(exposeEndpointVo.getName(), key)) {
-                    for (ExposeFormVo exposeFormVo : exposeEndpointVo.getForm()) {
-                        if (service.getExposeEndpoints().get(key).get(exposeFormVo.getKey()) == null) {
-                            exposeFormVo.setValues("");
-                        } else {
-                            exposeFormVo.setValues(service.getExposeEndpoints().get(key).get(exposeFormVo.getKey()));
-                        }
-                    }
-                }
-            }
-        }
-
-
-
-        List<ReferEndpoint> referEndpoints = new ArrayList<>(service.getReferEndpoints().values());
-        serviceVo.setReferEndpoints(referEndpoints);
-
-        List<ValueVo> valueVos = new ArrayList<>();
-        for (String key : service.getValues().keySet()) {
-            ValueVo valueVo = new ValueVo();
-            valueVo.setKey(key);
-            valueVo.setValue(service.getValues().get(key));
-            valueVos.add(valueVo);
-        }
-        serviceVo.setValues(valueVos);
-
-        List<ReferValueVo> referValueVos = new ArrayList<>();
-        for (String key : service.getReferValues().keySet()) {
-            ReferValueVo referValueVo = new ReferValueVo();
-            referValueVo.setKey(key);
-            referValueVos.add(referValueVo);
-
-        }
-        serviceVo.setReferValues(referValueVos);
-        return serviceVo;
-
-    }
+//    public static ServiceVo serviceToServiceVo(Service service, String templateId) {
+//        ServiceVo serviceVo = ServiceVo.templateToServiceVo(templateId, service.getServiceClass());
+//        serviceVo.setId(service.getId());
+//        serviceVo.setVersion(service.getVersion());
+//        serviceVo.setManual(service.getManual());
+//        serviceVo.setStatus(service.getStatus());
+//        serviceVo.setCreateTime(service.getCreateTime());
+//        serviceVo.setUpdateTime(service.getUpdateTime());
+//        serviceVo.setOrgDID(service.getOrgId());
+//        serviceVo.setServiceClass(service.getServiceClass());
+//        serviceVo.setServiceName(service.getServiceName());
+//        serviceVo.setNodePort(service.getNodePort());
+//
+//        for (ExposeEndpointVo exposeEndpointVo : serviceVo.getExposeEndpoints()) {
+//            for (String key : service.getExposeEndpoints().keySet()) {
+//                if (Objects.equals(exposeEndpointVo.getName(), key)) {
+//                    for (ExposeFormVo exposeFormVo : exposeEndpointVo.getForm()) {
+//                        if (service.getExposeEndpoints().get(key).get(exposeFormVo.getKey()) == null) {
+//                            exposeFormVo.setValues("");
+//                        } else {
+//                            exposeFormVo.setValues(service.getExposeEndpoints().get(key).get(exposeFormVo.getKey()));
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//
+//
+//        List<ReferEndpoint> referEndpoints = new ArrayList<>(service.getReferEndpoints());
+//        serviceVo.setReferEndpoints(referEndpoints);
+//
+//        List<ValueVo> valueVos = new ArrayList<>();
+//        for (String key : service.getValues().keySet()) {
+//            ValueVo valueVo = new ValueVo();
+//            valueVo.setKey(key);
+//            valueVo.setValue(service.getValues().get(key));
+//            valueVos.add(valueVo);
+//        }
+//        serviceVo.setValues(valueVos);
+//
+//        List<ReferValueVo> referValueVos = new ArrayList<>();
+//        for (String key : service.getReferValues().keySet()) {
+//            ReferValueVo referValueVo = new ReferValueVo();
+//            referValueVo.setKey(key);
+//            referValueVos.add(referValueVo);
+//
+//        }
+//        serviceVo.setReferValues(referValreueVos);
+//        return serviceVo;
+//
+//    }
 
 
 

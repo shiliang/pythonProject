@@ -10,7 +10,9 @@ import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
 import com.chainmaker.jobservice.api.model.bo.graph.*;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
+import com.chainmaker.jobservice.api.model.bo.job.service.ExposeEndpoint;
 import com.chainmaker.jobservice.api.model.bo.job.service.ReferEndpoint;
+import com.chainmaker.jobservice.api.model.bo.job.service.ReferExposeEndpoint;
 import com.chainmaker.jobservice.api.model.bo.job.service.Service;
 import com.chainmaker.jobservice.api.model.bo.job.task.Task;
 import com.chainmaker.jobservice.api.model.bo.job.task.TaskInputData;
@@ -190,7 +192,7 @@ public class JobParserServiceImpl implements JobParserService {
             serviceParamsVo.setServiceName(service.getServiceName());
             serviceParamsVo.setServiceClass(service.getServiceClass());
             serviceParamsVo.setServiceID(service.getId());
-            serviceParamsVo.setOrgDID(service.getOrgDID());
+            serviceParamsVo.setOrgDID(service.getOrgId());
             serviceParamsVos.add(serviceParamsVo);
 
         }
@@ -233,19 +235,19 @@ public class JobParserServiceImpl implements JobParserService {
         int nodePort = 31004;
         if (jobInfo.getServices() != null) {
             for (Service service : jobInfo.getServices()) {
-                if (service.getOrgDID().equals(getOrgDID())) {
-                    UserInfo userInfo = getUserInfo(service.getOrgDID());
+                if (service.getOrgId().equals(getOrgDID())) {
+                    UserInfo userInfo = getUserInfo(service.getOrgId());
                     service.setNodePort(nodePort);
                     nodePort += 1;
-                    for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints().values()) {
-                        exposeEndpoint.put("serviceCa", userInfo.getCaCert());
-                        exposeEndpoint.put("serviceCert", userInfo.getTlsCert());
-                        exposeEndpoint.put("serviceKey", userInfo.getTlsKey());
-                    }
+//                    for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints()) {
+//                        exposeEndpoint.put("serviceCa", userInfo.getCaCert());
+//                        exposeEndpoint.put("serviceCert", userInfo.getTlsCert());
+//                        exposeEndpoint.put("serviceKey", userInfo.getTlsKey());
+//                    }
                 }
             }
         }
-        JobInfoVo jobInfoVo = JobInfoVo.jobInfoToJobInfoVo(jobInfo);
+//        JobInfoVo jobInfoVo = JobInfoVo.jobInfoToJobInfoVo(jobInfo);
 
 
         JobGraphVo jobGraphVo = new JobGraphVo();
@@ -257,7 +259,7 @@ public class JobParserServiceImpl implements JobParserService {
             Dag dag = taskToDag(jobInfo.getTasks(), jobInfoPo.getJob().getStatus());
             jobGraphVo.setDag(dag);
         }
-        jobGraphVo.setJobInfo(jobInfoVo);
+//        jobGraphVo.setJobInfo(jobInfoVo);
 //        jobGraphVo.checkSql(jobInfoPo.getJob().getRequestData());
         return jobGraphVo;
     }
@@ -294,8 +296,7 @@ public class JobParserServiceImpl implements JobParserService {
         JobInfo jobInfo = JobInfo.converterToJobInfo(jobInfoPo);
         String jobID = jobInfo.getJob().getJobID();
         String orgDID = getOrgDID();
-        List<ServiceValueParam> serviceValueParams = get(orgDID, jobID);
-        List<ServiceRunner> serviceRunners = converterToServiceRunner(jobInfo.getServices(), serviceValueParams, orgDID);
+        List<ServiceRunner> serviceRunners = converterToServiceRunner(jobInfo.getServices(), orgDID);
         JobRunner jobRunner = new JobRunner();
         jobRunner.setJob(jobInfo.getJob());
         jobRunner.setTasks(jobInfo.getTasks());
@@ -315,15 +316,15 @@ public class JobParserServiceImpl implements JobParserService {
                 Service service = Service.serviceVoToService(serviceVo, jobID);
                 ServiceValueParam serviceValueParam = new ServiceValueParam();
                 serviceValueParam.setId(service.getId());
-                serviceValueParam.setOrgDID(service.getOrgDID());
+                serviceValueParam.setOrgDID(service.getOrgId());
                 serviceValueParam.setJobID(service.getJobID());
                 serviceValueParam.setName(service.getServiceName());
                 serviceValueParam.setNodePort(String.valueOf(service.getNodePort()));
-                for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints().values()) {
-                    serviceValueParam.setServiceCa(exposeEndpoint.get("serviceCa").getBytes());
-                    serviceValueParam.setServiceCert(exposeEndpoint.get("serviceCert").getBytes());
-                    serviceValueParam.setServiceKey(exposeEndpoint.get("serviceKey").getBytes());
-                }
+//                for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints().values()) {
+//                    serviceValueParam.setServiceCa(exposeEndpoint.get("serviceCa").getBytes());
+//                    serviceValueParam.setServiceCert(exposeEndpoint.get("serviceCert").getBytes());
+//                    serviceValueParam.setServiceKey(exposeEndpoint.get("serviceKey").getBytes());
+//                }
                 serviceValueParamList.add(serviceValueParam);
 
                 ServiceParamsPo serviceParamsPo = ServiceParamsPo.converterToServiceParamsPo(service);
@@ -454,11 +455,11 @@ public class JobParserServiceImpl implements JobParserService {
                     node.setDataType("SUBROOT");
                 }
                 nodes.add(node);
-                for (ReferEndpoint referEndpoint : service.getReferEndpoints().values()) {
-                    if (!Objects.equals(referEndpoint.getName(), "")) {
+                for (ReferExposeEndpoint referExposeEndpoint : service.getReferEndpoints()) {
+                    if (!Objects.equals(referExposeEndpoint.getName(), "")) {
                         TopologyEdge edge = new TopologyEdge();
                         edge.setSource(service.getId());
-                        edge.setTarget(referEndpoint.getReferServiceID());
+                        edge.setTarget(referExposeEndpoint.getReferServiceId());
                         TopologyEdgeData topologyEdgeData = new TopologyEdgeData();
                         topologyEdgeData.setType("data");
                         edge.setData(topologyEdgeData);
@@ -480,55 +481,52 @@ public class JobParserServiceImpl implements JobParserService {
     }
 
     @Override
-    public List<ServiceRunner> converterToServiceRunner(List<Service> services, List<ServiceValueParam> serviceValueParams, String orgDID) {
+    public List<ServiceRunner> converterToServiceRunner(List<Service> services, String orgDID) {
         List<ServiceRunner> serviceRunners = new ArrayList<>();
 
-        HashMap<String, HashMap<String, String>> exposeEndpointMap = new HashMap<>();
+        HashMap<String, ExposeEndpoint> exposeEndpointMap = new HashMap<>();
         HashMap<String, String> clientIdMap = new HashMap<>();
         if (services != null) {
             for (Service service : services) {
                 clientIdMap.put(service.getId(), "");
             }
             for (Service service : services) {
-                for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints().values()) {
+                for (ExposeEndpoint exposeEndpoint : service.getExposeEndpoints()) {
                     exposeEndpointMap.put(service.getId(), exposeEndpoint);
                 }
-                for (ReferEndpoint referEndpoint : service.getReferEndpoints().values()) {
-                    if (!Objects.equals(referEndpoint.getReferServiceID(), "") && referEndpoint.getReferServiceID() != null) {
-                        clientIdMap.put(referEndpoint.getReferServiceID(), service.getId());
+                for (ReferExposeEndpoint referEndpoint : service.getReferEndpoints()) {
+                    if (!Objects.equals(referEndpoint.getReferServiceId(), "") && referEndpoint.getReferServiceId() != null) {
+                        clientIdMap.put(referEndpoint.getReferServiceId(), service.getId());
                     }
                 }
             }
             for (Service service : services) {
-                if (Objects.equals(service.getOrgDID(), orgDID)) {
-                    for (ServiceValueParam serviceValueParam : serviceValueParams) {
-                        if (Objects.equals(service.getId(), serviceValueParam.getId())) {
-                            String serviceStr = JSONObject.toJSONString(service);
-                            ServiceRunner serviceRunner = JSONObject.parseObject(serviceStr, ServiceRunner.class, Feature.OrderedField);
-                            serviceRunner.setNodePort(Integer.parseInt(serviceValueParam.getNodePort()));
-                            for (HashMap<String, String> exposeEndpoint : serviceRunner.getExposeEndpoints().values()) {
-                                if (!Objects.equals(clientIdMap.get(serviceRunner.getId()), "")) {
-                                    HashMap<String, String> clientExposeEndpoint = exposeEndpointMap.get(clientIdMap.get(serviceRunner.getId()));
-                                    exposeEndpoint.put("clientCa", clientExposeEndpoint.get("serviceCa"));
-                                    exposeEndpoint.put("clientCert", clientExposeEndpoint.get("serviceCert"));
-                                }
-                                exposeEndpoint.put("serviceKey", new String(serviceValueParam.getServiceKey()));
-                            }
-                            for (ReferEndpointRunner referEndpointRunner : serviceRunner.getReferEndpoints().values()) {
-                                if (referEndpointRunner != null) {
-                                    if (!Objects.equals(referEndpointRunner.getName(), "")) {
-                                        HashMap<String, String> referExposeEndpoint = exposeEndpointMap.get(referEndpointRunner.getReferServiceID());
-                                        referEndpointRunner.setAddress(referExposeEndpoint.get("address"));
-                                        referEndpointRunner.setPath(referExposeEndpoint.get("path"));
-                                        referEndpointRunner.setMethod(referExposeEndpoint.get("method"));
-                                        referEndpointRunner.setServiceCa(referExposeEndpoint.get("serviceCa"));
-                                        referEndpointRunner.setServiceCert(referExposeEndpoint.get("serviceCert"));
-                                    }
-                                }
-                            }
-                            serviceRunners.add(serviceRunner);
-                        }
-                    }
+                if (Objects.equals(service.getOrgId(), orgDID)) {
+
+                    String serviceStr = JSONObject.toJSONString(service);
+                    ServiceRunner serviceRunner = JSONObject.parseObject(serviceStr, ServiceRunner.class, Feature.OrderedField);
+                    serviceRunner.setNodePort(service.getNodePort());
+//                    for (ExposeEndpoint exposeEndpoint : serviceRunner.getExposeEndpoints()) {
+//                        if (!Objects.equals(clientIdMap.get(serviceRunner.getId()), "")) {
+//                            HashMap<String, String> clientExposeEndpoint = exposeEndpointMap.get(clientIdMap.get(serviceRunner.getId()));
+//                            exposeEndpoint.put("clientCa", clientExposeEndpoint.get("serviceCa"));
+//                            exposeEndpoint.put("clientCert", clientExposeEndpoint.get("serviceCert"));
+//                        }
+////                        exposeEndpoint.put("serviceKey", new String(serviceValueParam.getServiceKey()));
+//                    }
+//                    for (ReferExposeEndpoint referExposeEndpoint : serviceRunner.getReferEndpoints()) {
+//                        if (referExposeEndpoint != null) {
+//                            if (!Objects.equals(referExposeEndpoint.getName(), "")) {
+//                                HashMap<String, String> referExposeEndpoint = exposeEndpointMap.get(ReferExposeEndpoint.getReferServiceID());
+//                                referEndpointRunner.setAddress(referExposeEndpoint.get("address"));
+//                                referEndpointRunner.setPath(referExposeEndpoint.get("path"));
+//                                referEndpointRunner.setMethod(referExposeEndpoint.get("method"));
+//                                referEndpointRunner.setServiceCa(referExposeEndpoint.get("serviceCa"));
+//                                referEndpointRunner.setServiceCert(referExposeEndpoint.get("serviceCert"));
+//                            }
+//                        }
+//                    }
+                    serviceRunners.add(serviceRunner);
                 }
             }
         }

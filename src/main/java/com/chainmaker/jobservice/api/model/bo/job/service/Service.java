@@ -2,10 +2,12 @@ package com.chainmaker.jobservice.api.model.bo.job.service;
 import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.model.po.contract.job.ServicePo;
 import com.chainmaker.jobservice.api.model.vo.*;
+import lombok.Data;
 
-import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author gaokang
@@ -13,7 +15,7 @@ import java.util.List;
  * @description:服务类结构
  * @version: 1.0.0
  */
-
+@Data
 public class Service {
     /** 不可为空，service id */
     private String id;
@@ -33,7 +35,7 @@ public class Service {
     /** service更新日期时间戳 */
     private String updateTime;
     /** 不可为空，服务方的DID */
-    private String orgDID;
+    private String orgId;
     /**
      * 不可为空，服务类型：
      * DataSourceAllInOne4RISC 输入服务
@@ -46,12 +48,12 @@ public class Service {
     private String serviceName;
     private Integer nodePort;
     /** 配置参数 */
-    private HashMap<String, HashMap<String, String>> exposeEndpoints;
+    private List<ExposeEndpoint> exposeEndpoints;
     /** 引用的服务 */
-    private HashMap<String, ReferEndpoint> referEndpoints;
+    private List<ReferExposeEndpoint> referEndpoints;
     /** 自定义配置参数 */
-    private HashMap<String, String> values;
-    private HashMap<String, ReferValue> referValues;
+//    private HashMap<String, String> values;
+//    private HashMap<String, ReferValue> referValues;
 
     public static Service servicePoToService(ServicePo servicePo) {
         Service service = new Service();
@@ -62,20 +64,12 @@ public class Service {
         service.setStatus(servicePo.getStatus());
         service.setCreateTime(servicePo.getCreateTime());
         service.setUpdateTime(servicePo.getUpdateTime());
-        service.setOrgDID(servicePo.getOrgDID());
+        service.setOrgId(servicePo.getOrgId());
 
         service.setServiceClass(servicePo.getServiceClass());
         service.setServiceName(servicePo.getServiceName());
-
         service.setExposeEndpoints(servicePo.getExposeEndpoints());
         service.setReferEndpoints(servicePo.getReferEndpoints());
-        if (!servicePo.getValues().equals("{}")) {
-            service.setValues(servicePo.getValues());
-        }
-
-        if (!servicePo.getReferValues().equals("{}")) {
-            service.setReferValues(servicePo.getReferValues());
-        }
         return service;
     }
 
@@ -88,199 +82,116 @@ public class Service {
         service.setStatus(serviceVo.getStatus());
         service.setCreateTime(serviceVo.getCreateTime());
         service.setUpdateTime(serviceVo.getUpdateTime());
-        service.setOrgDID(serviceVo.getOrgDID());
+        service.setOrgId(serviceVo.getOrgDID());
         service.setServiceClass(serviceVo.getServiceClass());
         service.setServiceName(serviceVo.getServiceName());
         service.setNodePort(serviceVo.getNodePort());
 
-        HashMap<String, HashMap<String, String>> exposeEndpoints = new HashMap<>();
+        List<Value> values = new ArrayList<>();
+        for (ValueVo valueVo : serviceVo.getValues()) {
+            Value value = new Value();
+            value.setValue(valueVo.getValue());
+            value.setKey(valueVo.getKey());
+            values.add(value);
+        }
+        List<ExposeEndpoint> exposeEndpoints = new ArrayList<>();
         for (ExposeEndpointVo exposeEndpointVo : serviceVo.getExposeEndpoints()) {
-            HashMap<String, String> exposeEndpoint = new HashMap<>();
-            for (ExposeFormVo exposeFormVo : exposeEndpointVo.getForm()) {
-                exposeEndpoint.put(exposeFormVo.getKey(), exposeFormVo.getValues());
+            List<ExposeFormVo> form = exposeEndpointVo.getForm();
+            HashMap<String, String> tmpEndPointMap = new HashMap<>();
+            for (ExposeFormVo exposeFormVo : form) {
+                tmpEndPointMap.put(exposeFormVo.getKey(), exposeFormVo.getValues());
             }
-            exposeEndpoints.put(exposeEndpointVo.getName(), exposeEndpoint);
+            String jsonString = JSONObject.toJSONString(tmpEndPointMap);
+            ExposeEndpoint exposeEndpoint = JSONObject.parseObject(jsonString, ExposeEndpoint.class);
+            exposeEndpoint.setValueList(values);
+            exposeEndpoints.add(exposeEndpoint);
         }
         service.setExposeEndpoints(exposeEndpoints);
 
-        HashMap<String, ReferEndpoint> referEndpoints = new HashMap<>();
-        for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
-            referEndpoints.put(referEndpoint.getName(), referEndpoint);
-        }
-        service.setReferEndpoints(referEndpoints);
-
-        HashMap<String, String> values = new HashMap<>();
-        for (ValueVo valueVo : serviceVo.getValues()) {
-            values.put(valueVo.getKey(), valueVo.getValue());
-        }
-        service.setValues(values);
-        HashMap<String, ReferValue> referValues = new HashMap<>();
+        Map<String, List<ReferValue>> referValueMap = new HashMap<>();
         for (ReferValueVo referValueVo : serviceVo.getReferValues()) {
             ReferValue referValue = new ReferValue();
             referValue.setKey(referValueVo.getReferKey());
             referValue.setReferServiceID(referValueVo.getReferServiceID());
-            referValues.put(referValueVo.getKey(), referValue);
+            List<ReferValue> referValueList = referValueMap.getOrDefault(referValue, new ArrayList<>());
+            referValueList.add(referValue);
+            referValueMap.put(referValueVo.getReferServiceID(), referValueList);
         }
-        service.setReferValues(referValues);
+
+        List<ReferExposeEndpoint> referEndpoints = new ArrayList<>();
+        for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
+            ReferExposeEndpoint referExposeEndpoint = new ReferExposeEndpoint();
+            referExposeEndpoint.setReferEndpointName(referEndpoint.getReferEndpointName());
+            referExposeEndpoint.setName(referEndpoint.getName());
+            referExposeEndpoint.setProtocol(referEndpoint.getProtocol());
+            referExposeEndpoint.setReferServiceId(referEndpoint.getReferServiceID());
+            List<ReferValue> referValueList = referValueMap.get(referEndpoint.getReferServiceID());
+            referExposeEndpoint.setReferValueList(referValueList);
+            referEndpoints.add(referExposeEndpoint);
+        }
+        service.setReferEndpoints(referEndpoints);
         return service;
     }
 
-
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public void setVersion(String version) {
-        this.version = version;
-    }
-
-    public String getJobID() {
-        return jobID;
-    }
-
-    public void setJobID(String jobID) {
-        this.jobID = jobID;
-    }
-
-    public Boolean getManual() {
-        return manual;
-    }
-
-    public void setManual(Boolean manual) {
-        this.manual = manual;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getCreateTime() {
-        return createTime;
-    }
-
-    public void setCreateTime(String createTime) {
-        this.createTime = createTime;
-    }
-
-    public String getUpdateTime() {
-        return updateTime;
-    }
-
-    public void setUpdateTime(String updateTime) {
-        this.updateTime = updateTime;
-    }
-
-    public String getOrgDID() {
-        return orgDID;
-    }
-
-    public void setOrgDID(String orgDID) {
-        this.orgDID = orgDID;
-    }
-
-    public String getServiceClass() {
-        return serviceClass;
-    }
-
-    public void setServiceClass(String serviceClass) {
-        this.serviceClass = serviceClass;
-    }
-
-    public String getServiceName() {
-        return serviceName;
-    }
-
-    public void setServiceName(String serviceName) {
-        this.serviceName = serviceName;
-    }
-
-    public HashMap<String, HashMap<String, String>> getExposeEndpoints() {
-        return exposeEndpoints;
-    }
-
     public Integer getNodePort() {
-        return nodePort;
+        ExposeEndpoint exposeEndpoint = exposeEndpoints.get(0);
+        String[] split = exposeEndpoint.getAddress().split(":");
+        String portStr = split[1];
+        return Integer.parseInt(portStr);
     }
 
-    public void setNodePort(Integer nodePort) {
-        this.nodePort = nodePort;
-    }
+    //    public void setExposeEndpoints( exposeEndpointsString) {
+//        HashMap<String, HashMap<String, String>> exposeEndpoints = new HashMap<>();
+//        JSONObject data = JSONObject.parseObject(exposeEndpointsString);
+//        for (String key : data.keySet()) {
+//            HashMap<String, String> value = JSONObject.parseObject(data.getString(key), HashMap.class);
+//            exposeEndpoints.put(key, value);
+//        }
+//        this.exposeEndpoints = exposeEndpoints;
+//    }
 
-    public void setExposeEndpoints(HashMap<String, HashMap<String, String>> exposeEndpoints) {
-        this.exposeEndpoints = exposeEndpoints;
-    }
-    public void setExposeEndpoints(String exposeEndpointsString) {
-        HashMap<String, HashMap<String, String>> exposeEndpoints = new HashMap<>();
-        JSONObject data = JSONObject.parseObject(exposeEndpointsString);
-        for (String key : data.keySet()) {
-            HashMap<String, String> value = JSONObject.parseObject(data.getString(key), HashMap.class);
-            exposeEndpoints.put(key, value);
-        }
-        this.exposeEndpoints = exposeEndpoints;
-    }
+//    public void setReferEndpoints( referEndpointsString) {
+//        HashMap<String, ReferEndpoint> referEndpoints = new HashMap<>();
+//        JSONObject data = JSONObject.parseObject(referEndpointsString);
+//        for (String key : data.keySet()) {
+//            ReferEndpoint value = JSONObject.parseObject(data.getString(key), ReferEndpoint.class);
+//            referEndpoints.put(key, value);
+//        }
+//        this.referEndpoints = referEndpoints;
+//    }
 
-    public HashMap<String, ReferEndpoint> getReferEndpoints() {
-        return referEndpoints;
-    }
+//    public HashMap<String, String> getValues() {
+//        return values;
+//    }
 
-    public void setReferEndpoints(HashMap<String, ReferEndpoint> referEndpoints) {
-        this.referEndpoints = referEndpoints;
-    }
-    public void setReferEndpoints(String referEndpointsString) {
-        HashMap<String, ReferEndpoint> referEndpoints = new HashMap<>();
-        JSONObject data = JSONObject.parseObject(referEndpointsString);
-        for (String key : data.keySet()) {
-            ReferEndpoint value = JSONObject.parseObject(data.getString(key), ReferEndpoint.class);
-            referEndpoints.put(key, value);
-        }
-        this.referEndpoints = referEndpoints;
-    }
-
-    public HashMap<String, String> getValues() {
-        return values;
-    }
-
-    public void setValues(HashMap<String, String> values) {
-        this.values = values;
-    }
-    public void setValues(String valuesString) {
-        HashMap<String, String> values = new HashMap<>();
-        JSONObject data = JSONObject.parseObject(valuesString);
-        for (String key : data.keySet()) {
-            values.put(key, data.getString(key));
-        }
-        this.values = values;
-    }
-
-    public HashMap<String, ReferValue> getReferValues() {
-        return referValues;
-    }
-
-    public void setReferValues(HashMap<String, ReferValue> referValues) {
-        this.referValues = referValues;
-    }
-    public void setReferValues(String referValuesString) {
-        HashMap<String, ReferValue> referValues = new HashMap<>();
-        JSONObject data = JSONObject.parseObject(referValuesString);
-        for (String key : data.keySet()) {
-            ReferValue value = JSONObject.parseObject(data.getString(key), ReferValue.class);
-            referValues.put(key, value);
-        }
-        this.referValues = referValues;
-    }
+//    public void setValues(HashMap<String, String> values) {
+//        this.values = values;
+//    }
+//    public void setValues(String valuesString) {
+//        HashMap<String, String> values = new HashMap<>();
+//        JSONObject data = JSONObject.parseObject(valuesString);
+//        for (String key : data.keySet()) {
+//            values.put(key, data.getString(key));
+//        }
+//        this.values = values;
+//    }
+//
+//    public HashMap<String, ReferValue> getReferValues() {
+//        return referValues;
+//    }
+//
+//    public void setReferValues(HashMap<String, ReferValue> referValues) {
+//        this.referValues = referValues;
+//    }
+//    public void setReferValues(String referValuesString) {
+//        HashMap<String, ReferValue> referValues = new HashMap<>();
+//        JSONObject data = JSONObject.parseObject(referValuesString);
+//        for (String key : data.keySet()) {
+//            ReferValue value = JSONObject.parseObject(data.getString(key), ReferValue.class);
+//            referValues.put(key, value);
+//        }
+//        this.referValues = referValues;
+//    }
 
     @Override
     public String toString() {
@@ -292,13 +203,11 @@ public class Service {
                 ", status='" + status + '\'' +
                 ", createTime='" + createTime + '\'' +
                 ", updateTime='" + updateTime + '\'' +
-                ", orgDID='" + orgDID + '\'' +
+                ", orgDID='" + orgId + '\'' +
                 ", serviceClass='" + serviceClass + '\'' +
                 ", serviceName='" + serviceName + '\'' +
                 ", exposeEndpoints=" + exposeEndpoints +
                 ", referEndpoints=" + referEndpoints +
-                ", values=" + values +
-                ", referValues=" + referValues +
                 '}';
     }
 }

@@ -48,9 +48,9 @@ public class JobInfoVo {
                     templateId = "3";
                 }
                 List<ServiceVo> serviceVos = new ArrayList<>();
-                for (Service service : jobInfo.getServices()) {
-                    serviceVos.add(ServiceVo.serviceToServiceVo(service, templateId));
-                }
+//                for (Service service : jobInfo.getServices()) {
+//                    serviceVos.add(ServiceVo.serviceToServiceVo(service, templateId));
+//                }
                 jobInfoVo.setServices(serviceVos);
             }
         }
