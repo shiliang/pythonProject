@@ -28,7 +28,7 @@ public class AssetInfo {
     /**
      * 数据规模
      */
-    private Integer scale;
+    private String scale;
     /**
      * 更新周期
      */

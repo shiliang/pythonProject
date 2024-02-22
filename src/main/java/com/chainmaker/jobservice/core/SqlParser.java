@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import lombok.Data;
 import org.apache.calcite.rel.RelNode;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -75,7 +76,9 @@ public class SqlParser {
             MissionDetailVO missionDetailVO = new MissionDetailVO();
             missionDetailVO.setName(dataCatalogInfo.getAssetEnName());
             missionDetailVO.setRemark(dataCatalogInfo.getIntro());
-            missionDetailVO.setVersion(dataCatalogInfo.getScale());
+            char[] charArray = dataCatalogInfo.getScale().toCharArray();
+            char[] newVerArray = Arrays.copyOfRange(charArray, 0, charArray.length - 1);
+            missionDetailVO.setVersion(Integer.parseInt(newVerArray.toString()));
             missionDetailVO.setDatacatalogId(dataCatalogInfo.getAssetId());
             missionDetailVOs.add(missionDetailVO);
             System.out.println("dataCatalogInfo: " + dataCatalogInfo);
