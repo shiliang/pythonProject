@@ -5,13 +5,13 @@ import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.builder.JobBuilder;
 import com.chainmaker.jobservice.api.builder.JobBuilderWithOptimizer;
 import com.chainmaker.jobservice.api.model.AssetDetail;
+import com.chainmaker.jobservice.api.model.OrgInfo;
 import com.chainmaker.jobservice.api.model.bo.*;
 import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
 import com.chainmaker.jobservice.api.model.bo.graph.*;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
 import com.chainmaker.jobservice.api.model.bo.job.service.ExposeEndpoint;
-import com.chainmaker.jobservice.api.model.bo.job.service.ReferEndpoint;
 import com.chainmaker.jobservice.api.model.bo.job.service.ReferExposeEndpoint;
 import com.chainmaker.jobservice.api.model.bo.job.service.Service;
 import com.chainmaker.jobservice.api.model.bo.job.task.Task;
@@ -22,10 +22,12 @@ import com.chainmaker.jobservice.api.model.po.contract.ServiceUpdatePo;
 import com.chainmaker.jobservice.api.model.po.data.ServiceValueParam;
 import com.chainmaker.jobservice.api.model.po.data.UserInfo;
 import com.chainmaker.jobservice.api.model.vo.*;
+import com.chainmaker.jobservice.api.response.HttpResponse;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.api.service.JobParserService;
 import com.chainmaker.jobservice.core.SqlParser;
 import com.chainmaker.jobservice.core.parser.LogicalPlanBuilderV2;
+import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -40,32 +42,35 @@ import java.util.*;
 @org.springframework.stereotype.Service
 public class JobParserServiceImpl implements JobParserService {
     private CatalogConfig catalogConfig;
-    private String orgId;
-    private String orgDID;
     private HashMap<String, JobGraph> jobGraphHashMap = new HashMap<>();
     private HashMap<String, CatalogCache> catalogCacheHashMap = new HashMap<>();
 
     public void setCatalogConfig(CatalogConfig catalogConfig) {
         this.catalogConfig = catalogConfig;
     }
-    @Override
-    public void setOrgId(String orgId) {
-        this.orgId = orgId;
-    }
 
     @Override
     public String getOrgId() {
-        return this.orgId;
-    }
+        String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/v1/mira/configuration/GetOrgInfo";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
 
-    @Override
-    public String getOrgDID() {
-        return orgDID;
-    }
+        HttpEntity<String> request = new HttpEntity<>(headers);
 
-    @Override
-    public void setOrgDID(String orgDID) {
-        this.orgDID = orgDID;
+        // 发送POST请求
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+        if (response == null && HttpStatus.OK.value() != response.getStatusCodeValue()) {
+            throw new ParserException("获取组织信息失败");
+        }
+        HttpResponse<OrgInfo> httpResponse = JSONObject.parseObject(response.getBody(), HttpResponse.class);
+        if (httpResponse == null
+                && HttpStatus.OK.value() != httpResponse.getCode()
+                && httpResponse.getData() == null) {
+            throw new ParserException("获取组织信息失败");
+        }
+        OrgInfo orgInfo = JSONObject.parseObject(JSONObject.toJSONString(httpResponse.getData()), OrgInfo.class);
+        return orgInfo.getOrgId();
     }
 
     @Override
@@ -222,7 +227,7 @@ public class JobParserServiceImpl implements JobParserService {
 //        for (MissionDetailInfo missionDetailInfo : missionInfo.getMissionDetailInfos()) {
 //            parties.add(missionDetailInfo.getOrgId());
 //        }
-        for (String value: jobInfo.getJob().getParties()) {
+        for (String value : jobInfo.getJob().getParties()) {
             parties.add(value);
         }
         jobInfo.getJob().setParties(new ArrayList<>(parties));
@@ -236,7 +241,7 @@ public class JobParserServiceImpl implements JobParserService {
         int nodePort = 31004;
         if (jobInfo.getServices() != null) {
             for (Service service : jobInfo.getServices()) {
-                if (service.getOrgId().equals(getOrgDID())) {
+                if (service.getOrgId().equals(getOrgId())) {
                     UserInfo userInfo = getUserInfo(service.getOrgId());
                     service.setNodePort(nodePort);
                     nodePort += 1;
@@ -296,8 +301,8 @@ public class JobParserServiceImpl implements JobParserService {
     public JobRunner getJobRunner(JobInfoPo jobInfoPo) {
         JobInfo jobInfo = JobInfo.converterToJobInfo(jobInfoPo);
         String jobID = jobInfo.getJob().getJobID();
-        String orgDID = getOrgDID();
-        List<ServiceRunner> serviceRunners = converterToServiceRunner(jobInfo.getServices(), orgDID);
+        String orgId = getOrgId();
+        List<ServiceRunner> serviceRunners = converterToServiceRunner(jobInfo.getServices(), orgId);
         JobRunner jobRunner = new JobRunner();
         jobRunner.setJob(jobInfo.getJob());
         jobRunner.setTasks(jobInfo.getTasks());
@@ -340,7 +345,7 @@ public class JobParserServiceImpl implements JobParserService {
 
     public JSONObject analyzeSql(String sql) {
         LogicalPlanBuilderV2 logicalPlanBuilder = new LogicalPlanBuilderV2(sql);
-        Map<String, String>tableNames = logicalPlanBuilder.getTableNameMap();
+        Map<String, String> tableNames = logicalPlanBuilder.getTableNameMap();
         List<String> modelNames = logicalPlanBuilder.getModelNameList();
         JSONObject json = new JSONObject();
         json.put("tables", tableNames);
@@ -349,14 +354,13 @@ public class JobParserServiceImpl implements JobParserService {
     }
 
 
-
     @Override
     public JobMissionDetail parserSql(SqlVo sqlVo) {
         String sqltext = sqlVo.getSqltext().replace("\"", "");
         SqlParser sqlParser = new SqlParser(sqltext, sqlVo.getModelType(), sqlVo.getIsStream(), sqlVo.getAssetInfoList(), sqlVo.getModelParams());
         sqlParser.setCatalogConfig(catalogConfig);
         if (sqlVo.getIsStream() == 1) {
-            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser(), getOrgDID());
+            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser(), getOrgId());
             jobBuilder.build();
             JobMissionDetail jobMissionDetail = new JobMissionDetail();
             jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
@@ -397,7 +401,7 @@ public class JobParserServiceImpl implements JobParserService {
             nodes.add(dagNode);
 
             String taskName = task.getTaskName();
-            for (TaskInputData taskInputData: task.getInput().getData()) {
+            for (TaskInputData taskInputData : task.getInput().getData()) {
                 if (!Objects.equals(taskInputData.getTaskSrc(), "")) {
                     DagEdge dagEdge = new DagEdge();
                     dagEdge.setFrom(Integer.parseInt(taskInputData.getTaskSrc()));
@@ -533,7 +537,6 @@ public class JobParserServiceImpl implements JobParserService {
         }
         return serviceRunners;
     }
-
 
 
 }

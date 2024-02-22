@@ -78,7 +78,6 @@ public class BlockchainConf {
                 blockchainContractService.setChainClient(chainManager.createChainClient(sdkConfig));
             }
             blockchainContractService.setAdminUserList(AdminLoader.loadAdminList(sdkConfig));
-            jobParserService.setOrgId(sdkConfig.getChain_client().getOrgId());
         } catch (Exception e) {
             System.err.println(e.fillInStackTrace());
         }
