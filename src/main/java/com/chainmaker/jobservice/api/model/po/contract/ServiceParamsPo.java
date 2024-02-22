@@ -33,12 +33,12 @@ public class ServiceParamsPo {
         }
         serviceParamsPo.setJobID(service.getJobID());
         serviceParamsPo.setTimestamp(String.valueOf(System.currentTimeMillis()));
-        for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints().values()) {
-            exposeEndpoint.remove("serviceKey");
-        }
-        serviceParamsPo.setExposeEndpoints(JSON.toJSONString(service.getExposeEndpoints()));
-        serviceParamsPo.setValues(JSON.toJSONString(service.getValues()));
-        serviceParamsPo.setReferValues(JSON.toJSONString(service.getReferValues()));
+//        for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints().values()) {
+//            exposeEndpoint.remove("serviceKey");
+//        }
+//        serviceParamsPo.setExposeEndpoints(JSON.toJSONString(service.getExposeEndpoints()));
+//        serviceParamsPo.setValues(JSON.toJSONString(service.getValues()));
+//        serviceParamsPo.setReferValues(JSON.toJSONString(service.getReferValues()));
         return serviceParamsPo;
     }
 
