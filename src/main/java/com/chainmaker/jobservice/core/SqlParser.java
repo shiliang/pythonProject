@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import lombok.Data;
 import org.apache.calcite.rel.RelNode;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +51,7 @@ public class SqlParser {
 
     private CatalogConfig catalogConfig;
 
-    private List<AssetDetail> assetDetailList;
+    private List<AssetDetail> assetDetailList = new ArrayList<>();
 
 
     private static final String TEE_PARTY_KEY = "TEE-PARTY";
