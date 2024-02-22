@@ -68,8 +68,8 @@ public class Service {
 
         service.setServiceClass(servicePo.getServiceClass());
         service.setServiceName(servicePo.getServiceName());
-        service.setExposeEndpoints(servicePo.getExposeEndpoints());
-        service.setReferEndpoints(servicePo.getReferEndpoints());
+        service.setExposeEndpoints(servicePo.getExposeEndpointList());
+        service.setReferEndpoints(servicePo.getReferEndpointList());
         return service;
     }
 

@@ -46,9 +46,9 @@ public class ServicePo {
     /** 服务名称 */
     private String serviceName;
     /** 配置参数 */
-    private List<ExposeEndpoint> exposeEndpoints;
+    private List<ExposeEndpoint> exposeEndpointList;
     /** 引用的服务 */
-    private List<ReferExposeEndpoint> referEndpoints;
+    private List<ReferExposeEndpoint> referEndpointList;
     /** 自定义配置参数 */
 
     public static ServicePo converterToServicePo(Service service) {
@@ -86,8 +86,8 @@ public class ServicePo {
                 ", orgDID='" + orgId + '\'' +
                 ", serviceClass='" + serviceClass + '\'' +
                 ", serviceName='" + serviceName + '\'' +
-                ", exposeEndpoints='" + exposeEndpoints + '\'' +
-                ", referEndpoints='" + referEndpoints + '\'' +
+                ", exposeEndpoints='" + exposeEndpointList + '\'' +
+                ", referEndpoints='" + referEndpointList + '\'' +
                 '}';
     }
 }
