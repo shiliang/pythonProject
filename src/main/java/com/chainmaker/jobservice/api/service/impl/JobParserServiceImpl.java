@@ -140,6 +140,7 @@ public class JobParserServiceImpl implements JobParserService {
         String orgId = getOrgId();
         assetDetailList.forEach(assetDetail -> assetDetail.setOrgId(orgId));
         jobInfo.setAssetDetailList(assetDetailList);
+        jobInfoVo.setAssetDetailList(assetDetailList);
 
 
         JobGraphVo jobGraphVo = new JobGraphVo();

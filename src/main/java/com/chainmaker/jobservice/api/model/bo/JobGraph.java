@@ -45,6 +45,7 @@ public class JobGraph {
                 serviceList.add(Service.serviceVoToService(serviceVo, job.getJobID()));
             }
         }
+        jobInfo.setAssetDetailList(jobGraphVo.getJobInfo().getAssetDetailList());
         jobInfo.setServices(serviceList);
         jobGraph.setJobInfo(jobInfo);
         jobGraph.setDag(jobGraphVo.getDag());

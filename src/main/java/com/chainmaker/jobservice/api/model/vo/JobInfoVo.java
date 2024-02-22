@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.api.model.vo;
 
+import com.chainmaker.jobservice.api.model.AssetDetail;
 import com.chainmaker.jobservice.api.model.bo.job.Job;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
@@ -20,6 +21,7 @@ public class JobInfoVo {
     private Job job;
     private List<Task> tasks;
     private List<ServiceVo> services;
+    private List<AssetDetail> assetDetailList;
 
     public static JobInfoVo converterToJobInfoVo(JobTemplate jobTemplate) {
         JobInfoVo jobInfoVo = new JobInfoVo();
@@ -79,6 +81,14 @@ public class JobInfoVo {
 
     public void setServices(List<ServiceVo> services) {
         this.services = services;
+    }
+
+    public List<AssetDetail> getAssetDetailList() {
+        return assetDetailList;
+    }
+
+    public void setAssetDetailList(List<AssetDetail> assetDetailList) {
+        this.assetDetailList = assetDetailList;
     }
 
     @Override
