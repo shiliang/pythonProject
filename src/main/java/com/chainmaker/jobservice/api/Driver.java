@@ -72,14 +72,14 @@ public class Driver {
         sqlParser.setCatalogConfig(catalogConfig);
         if (isStream == 1) {    // 2590ms
             long start = System.currentTimeMillis();
-            JobBuilder jobBuilder = new JobBuilder(modelType, isStream, sqlParser.parser(), "wx-org3.chainmaker.orgDID");
+            JobBuilder jobBuilder = new JobBuilder(modelType, isStream, sqlParser.parser(), "wx-org3.chainmaker.orgDID", sqlParser.getSql());
             jobBuilder.build();
             System.out.println(JSONObject.toJSONString(jobBuilder.getJobTemplate(), SerializerFeature.DisableCircularReferenceDetect, SerializerFeature.PrettyFormat, SerializerFeature.WriteMapNullValue, SerializerFeature.WriteDateUseDateFormat));
             long end = System.currentTimeMillis();
             System.out.println("Origin Plan: " + String.valueOf(end-start) + "ms");
         } else {    // 4758ms
             long start = System.currentTimeMillis();
-            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(modelType, isStream, sqlParser.parserWithOptimizer(), sqlParser.getColumnInfoMap());     // 4000+ ms
+            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(modelType, isStream, sqlParser.parserWithOptimizer(), sqlParser.getColumnInfoMap(), "wx-org3.chainmaker.orgDID", sqlParser.getSql());     // 4000+ ms
             jobBuilder.build(); // <50 ms
             long end = System.currentTimeMillis();
             System.out.println("Optimizer Plan: " + String.valueOf(end-start) + "ms");

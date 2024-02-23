@@ -356,7 +356,7 @@ public class JobParserServiceImpl implements JobParserService {
         SqlParser sqlParser = new SqlParser(sqltext, sqlVo.getModelType(), sqlVo.getIsStream(), sqlVo.getAssetInfoList(), sqlVo.getModelParams());
         sqlParser.setCatalogConfig(catalogConfig);
         if (sqlVo.getIsStream() == 1) {
-            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser(), getOrgDID());
+            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser(), getOrgDID(), sqlParser.getSql());
             jobBuilder.build();
             JobMissionDetail jobMissionDetail = new JobMissionDetail();
             jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
@@ -365,7 +365,7 @@ public class JobParserServiceImpl implements JobParserService {
             jobMissionDetail.setAssetDetailList(sqlParser.getAssetDetailList());
             return jobMissionDetail;
         } else {
-            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parserWithOptimizer(), sqlParser.getColumnInfoMap());
+            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parserWithOptimizer(), sqlParser.getColumnInfoMap(), getOrgDID(), sqlParser.getSql());
             jobBuilder.build();
             JobMissionDetail jobMissionDetail = new JobMissionDetail();
             jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());

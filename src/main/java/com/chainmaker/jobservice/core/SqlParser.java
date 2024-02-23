@@ -141,7 +141,7 @@ public class SqlParser {
             String assetName = assetInfo.getAssetEnName();
             for (SaveTableColumnItem detailInfo : dataInfo.getItemList()) {
                 FieldInfo field = new FieldInfo(assetName+"."+detailInfo.getName(), detailInfo.getDataType(), null, null, FieldInfo.DistributionType.Uniform,
-                        assetName, detailInfo.getDataLength(), assetInfo.getHolderCompany());
+                        assetName, detailInfo.getDataLength(), assetInfo.getHolderCompany(), detailInfo.getDescription(), tableName);
                 fields.put(field.getFieldName(), field);
             }
             // 后续需要添加rowCount的获取

@@ -9,6 +9,7 @@ import com.chainmaker.jobservice.api.model.vo.ServiceVo;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.FieldInfo;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
+import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCFilter;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCJoin;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCProject;
@@ -29,6 +30,7 @@ import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.aspectj.apache.bcel.classfile.ModulePackages;
 
 import java.util.*;
@@ -83,8 +85,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private LogicalPlan OriginPlan;
     private LogicalHint hint;
     private HashMap<String, String> columnInfoMap;
+    private String orgID;
+    private String sql;
 
-    public JobBuilderWithOptimizer(Integer modelType, Integer isStream, parserWithOptimizerReturnValue value, HashMap<String, String> columnInfoMap) {
+    public JobBuilderWithOptimizer(Integer modelType, Integer isStream, parserWithOptimizerReturnValue value, HashMap<String, String> columnInfoMap, String orgID, String sql) {
         this.modelType = modelType;
         this.isStream = isStream;
         this.phyPlan = value.getPhyPlan();
@@ -99,6 +103,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             hint = null;
         }
         this.columnInfoMap = columnInfoMap;
+        this.orgID = orgID;
+        this.sql = sql;
     }
 
     public JobTemplate getJobTemplate() {
@@ -149,10 +155,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 //        mergeLocalTasks();
 
         job.setJobID(jobID);
+        job.setJobName(jobID);
         job.setJobType(jobType);
         job.setStatus(jobStatus);
         job.setCreateTime(createTime);
         job.setUpdateTime(createTime);
+        job.setSubmitter(orgID);
+        job.setRequestData(sql);
         job.setTasksDAG(taskDAG);
         job.setParties(new ArrayList<>(jobParties));
     }
@@ -298,6 +307,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         inputData1.setDomainID(tasks.get(firstIdx).getInput().getData().get(0).getDomainID());
         inputData1.setDataName(inputData1.getDomainID() + "-" + affectedOutputNames.get(inputData1.getDomainID()));
         inputData1.setTaskSrc(String.valueOf(Integer.parseInt(affectedOutputNames.get(inputData1.getDomainID()))-1));
+//        inputData1.setComments();
         JSONObject inputData1Params = new JSONObject(true);
         inputData1Params.put("table", tasks.get(firstIdx).getInput().getData().get(0).getParams().get("table"));
         inputData1Params.put("field", tasks.get(firstIdx).getInput().getData().get(0).getParams().get("field"));
@@ -1132,8 +1142,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 inputdata.setRole("client");
             }
             JSONObject inputParam = new JSONObject(true);
-            inputParam.put("table", tableField.split("\\.")[0]);
-            inputParam.put("field", tableField.split("\\.")[1]);
+            String table = tableField.split("\\.")[0];
+            String field = tableField.split("\\.")[1];
+            inputParam.put("table", table);
+            inputParam.put("field", field);
             if (module.getModuleName().equals("EXP") || module.getModuleName().equals("AGG")) {
                 inputParam.put("type", columnInfoMap.get(tableField));
                 List<Integer> list = new ArrayList<>();
@@ -1141,6 +1153,14 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 inputParam.put("index", Arrays.toString(list.toArray()));
             }
             inputdata.setParams(inputParam);
+            inputdata.setType(columnInfoMap.get(tableField.toUpperCase()));
+            TableInfo tableInfo = metadata.getTables().get(table);
+            inputdata.setTableName(tableInfo.getName());
+            FieldInfo fieldInfo = tableInfo.getFields().get(tableField);
+            inputdata.setColumnName(fieldInfo.getComments());
+            inputdata.setDatabaseName(fieldInfo.getDatabaseName());
+            inputdata.setComments(fieldInfo.getComments());
+            inputdata.setLength(fieldInfo.getDataLength());
             inputDatas.add(inputdata);
         }
 

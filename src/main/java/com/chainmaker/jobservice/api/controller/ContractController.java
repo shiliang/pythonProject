@@ -284,6 +284,19 @@ public class ContractController {
         return new ResponseEntity<JSONObject>(res, responseStatus);
     }
 
+    @WebLog(description = "撤销JOB")
+    @RequestMapping(value = "/jobs/{jobID}/task/{taskID}/detail", method = RequestMethod.GET)
+    public ResponseEntity<String> queryTaskDetail(@PathVariable String jobID, @RequestBody String taskID) {
+        Map<String, byte[]> param = new HashMap<>();
+        param.put("jobID", jobID.getBytes());
+        param.put("taskID", taskID.getBytes());
+        log.info("param: ", JSONObject.toJSONString(param));
+        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryTaskDetail", param);
+        String response = csr.toString();
+        HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+        return new ResponseEntity<String>(response, responseStatus);
+    }
+
     // CreateJobURL 创建job
     @WebLog
     @RequestMapping(value = "/jobs/createJob", method = RequestMethod.POST)

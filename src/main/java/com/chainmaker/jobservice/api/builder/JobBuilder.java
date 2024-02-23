@@ -2,19 +2,14 @@ package com.chainmaker.jobservice.api.builder;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.chainmaker.jobservice.api.config.BlockchainConf;
 import com.chainmaker.jobservice.api.model.bo.job.Job;
-import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
 import com.chainmaker.jobservice.api.model.bo.job.service.ReferEndpoint;
-import com.chainmaker.jobservice.api.model.bo.job.service.Service;
 import com.chainmaker.jobservice.api.model.bo.job.task.*;
 import com.chainmaker.jobservice.api.model.bo.job.task.Module;
-import com.chainmaker.jobservice.api.model.vo.JobInfoVo;
 import com.chainmaker.jobservice.api.model.vo.ServiceVo;
 import com.chainmaker.jobservice.api.model.vo.ValueVo;
 import com.chainmaker.jobservice.api.response.ParserException;
-import com.chainmaker.jobservice.api.response.ContractException;
 import com.chainmaker.jobservice.core.optimizer.model.FL.FlInputData;
 import com.chainmaker.jobservice.core.optimizer.model.InputData;
 import com.chainmaker.jobservice.core.optimizer.model.OutputData;
@@ -39,7 +34,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
     private enum TaskType {
         QUERY, PSI, MPC, TEE, FL
     }
-    private final String orgDID;
+    private final String orgID;
 
     private final Integer modelType;
     private final Integer isStream;
@@ -53,14 +48,16 @@ public class JobBuilder extends PhysicalPlanVisitor {
     private HashSet<String> jobParties = new HashSet<>();
 
     private Integer templateId = 1;
+    private String sql;
 
-    public JobBuilder(Integer modelType, Integer isStream, DAG<PhysicalPlan> dag, String orgDID) {
+    public JobBuilder(Integer modelType, Integer isStream, DAG<PhysicalPlan> dag, String orgID, String sql) {
         this.modelType = modelType;
         this.isStream = isStream;
         this.dag = dag;
         this.createTime = String.valueOf(System.currentTimeMillis());
         this.jobID = UUID.randomUUID().toString().replace("-", "").toLowerCase();
-        this.orgDID = orgDID;
+        this.orgID = orgID;
+        this.sql = sql;
     }
 
     public JobTemplate getJobTemplate() {
@@ -100,6 +97,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
         job.setCreateTime(createTime);
         job.setUpdateTime(createTime);
         job.setTasksDAG(taskDAG);
+        job.setSubmitter(orgID);
+        job.setRequestData(sql);
         job.setParties(new ArrayList<>(jobParties));
     }
 
@@ -158,7 +157,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
                     referEndpoint.setReferServiceID(map.get(referEndpoint.getName()));
                 }
                 if (serviceVo.getServiceClass().equals("PirClient4Query")) {
-                    serviceVo.setOrgDID(orgDID);
+                    serviceVo.setOrgDID(orgID);
                 } else {
                     serviceVo.setOrgDID(defaultOdgDID);
                 }
@@ -205,7 +204,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
                     referEndpoint.setReferServiceID(map.get(referEndpoint.getName()));
                 }
                 if (serviceVo.getServiceClass().equals("TeePirClient4Query")) {
-                    serviceVo.setOrgDID(orgDID);
+                    serviceVo.setOrgDID(orgID);
                 } else {
                     serviceVo.setOrgDID(defaultOdgDID);
                 }
