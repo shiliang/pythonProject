@@ -20,6 +20,7 @@ import com.chainmaker.jobservice.api.response.Result;
 import com.chainmaker.jobservice.api.response.ResultCode;
 import com.chainmaker.jobservice.api.service.BlockchainContractService;
 
+import com.chainmaker.jobservice.api.service.JobParserService;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 
@@ -49,10 +50,10 @@ public class ContractController {
     private static final String CONTRACT_NAME = "mission_manager";
 
     @Autowired
-    CatalogConfig catalogConfig;
+    BlockchainContractService blockchainContractService;
 
     @Autowired
-    BlockchainContractService blockchainContractService;
+    JobParserService jobParserService;
 
 //    @WebLog(description = "获取JOB状态")
     @WebLog
@@ -333,15 +334,21 @@ public class ContractController {
     @WebLog
     @RequestMapping(value = "/config/queryPlatformInfo",method = RequestMethod.GET)
     public PlatformInfo queryPlatformInfo(){
-        String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/configuration/GetOrgInfo";
-        RestTemplate restTemplate = new RestTemplate();
-        JSONObject response = restTemplate.postForObject(url, PlatformInfo.class, JSONObject.class);
-        if (response == null) {
-            throw new ParserException("GetOrgInfo 获取平台信息/id失败");
-        }
+//        String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/configuration/GetOrgInfo";
+//        RestTemplate restTemplate = new RestTemplate();
+//        log.info("GetOrgInfo url = {}", url);
+//        JSONObject response = restTemplate.postForObject(url, PlatformInfo.class, JSONObject.class);
+//        if (response == null) {
+//            throw new ParserException("GetOrgInfo 获取平台信息/id失败");
+//        }
+//        PlatformInfo platformInfo = new PlatformInfo();
+//        platformInfo.setOrgId(response.getString("orgId"));
+//        platformInfo.setOrgName(response.getString("orgName"));
+        String orgId = jobParserService.getOrgId();
         PlatformInfo platformInfo = new PlatformInfo();
-        platformInfo.setOrgId(response.getString("orgId"));
-        platformInfo.setOrgName(response.getString("orgName"));
+        platformInfo.setOrgId(orgId);
+        platformInfo.setOrgName(orgId);
+
         return platformInfo;
     }
 }
