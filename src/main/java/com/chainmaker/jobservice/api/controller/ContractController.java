@@ -5,24 +5,31 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.aspect.WebLog;
+import com.chainmaker.jobservice.api.model.PlatformInfo;
+import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.job.service.Service;
 import com.chainmaker.jobservice.api.model.po.contract.*;
 import com.chainmaker.jobservice.api.model.po.contract.job.ServicePo;
 import com.chainmaker.jobservice.api.model.po.contract.mission.JobCreateReq;
 import com.chainmaker.jobservice.api.model.po.contract.mission.MissionGetReq;
+import com.chainmaker.jobservice.api.model.po.data.UserInfo;
 import com.chainmaker.jobservice.api.response.ContractServiceResponse;
+import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.api.response.Result;
 import com.chainmaker.jobservice.api.response.ResultCode;
 import com.chainmaker.jobservice.api.service.BlockchainContractService;
 
+import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +48,8 @@ import java.util.Map;
 public class ContractController {
     private static final String CONTRACT_NAME = "mission_manager";
 
+    @Autowired
+    CatalogConfig catalogConfig;
 
     @Autowired
     BlockchainContractService blockchainContractService;
@@ -319,5 +328,20 @@ public class ContractController {
         String response = csr.toString();
         HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
         return new ResponseEntity<String>(response, responseStatus);
+    }
+
+    @WebLog
+    @RequestMapping(value = "/config/queryPlatformInfo",method = RequestMethod.GET)
+    public PlatformInfo queryPlatformInfo(){
+        String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/configuration/GetOrgInfo";
+        RestTemplate restTemplate = new RestTemplate();
+        JSONObject response = restTemplate.postForObject(url, PlatformInfo.class, JSONObject.class);
+        if (response == null) {
+            throw new ParserException("GetOrgInfo 获取平台信息/id失败");
+        }
+        PlatformInfo platformInfo = new PlatformInfo();
+        platformInfo.setOrgId(response.getString("orgId"));
+        platformInfo.setOrgName(response.getString("orgName"));
+        return platformInfo;
     }
 }
