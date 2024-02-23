@@ -16,6 +16,7 @@
 <properties>
     <java.version>11</java.version>
     <bouncycastle.version>1.69</bouncycastle.version>
+    <validation-api.version>2.0.1.Final</validation-api.version>
 </properties>
 <dependencies>
     <dependency>
@@ -181,7 +182,11 @@
         <artifactId>slf4j-api</artifactId>
     </dependency>
 
-
+    <dependency>
+        <groupId>javax.validation</groupId>
+        <artifactId>validation-api</artifactId>
+        <version>${validation-api.version}</version>
+    </dependency>
 </dependencies>
 
 <build>

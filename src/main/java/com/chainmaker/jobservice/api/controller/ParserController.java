@@ -93,7 +93,6 @@ public class ParserController {
     @WebLog(description = "预生成DAG")
     @RequestMapping(value = "/preview/dag", method = RequestMethod.POST)
     public Result jobPreview(@RequestBody String req) {
-        jobParserService.setOrgDID(jobParserService.getOrgId());
         SqlVo sqlVo = JSONObject.parseObject(req, SqlVo.class, Feature.OrderedField);
         if (sqlVo.getSqltext().contains("?")) {
             sqlVo.setIsStream(1);
@@ -140,7 +139,6 @@ public class ParserController {
     @WebLog(description = "查询Job待审批信息")
     @RequestMapping(value = "/jobs/dag/{jobID}", method = RequestMethod.GET)
     public Result getJobApproval(@PathVariable String jobID) {
-        jobParserService.setOrgDID(getDIDFromOrgId(jobParserService.getOrgId()));
         JobGetPo jobGetPo = new JobGetPo();
         jobGetPo.setJobID(jobID);
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
@@ -174,7 +172,6 @@ public class ParserController {
     @WebLog
     @RequestMapping(value = "/jobs/{jobID}", method = RequestMethod.GET)
     public ResponseEntity<JobRunner> getJobRunner(@PathVariable String jobID) {
-        jobParserService.setOrgDID(jobParserService.getOrgId());
         JobGetPo jobGetPo = new JobGetPo();
         jobGetPo.setJobID(jobID);
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
@@ -543,6 +540,12 @@ public class ParserController {
         System.out.println(responseStatus);
         return new ResponseEntity<JSONObject>(res, responseStatus);
     }
+    @PostMapping(value = "/GetOrgId")
+    public String getOrgId(){
+       return jobParserService.getOrgId();
+    }
+
+
 
 //    @RequestMapping(value = "/jobs/createJob", method = RequestMethod.POST)
 //    public ResponseEntity<String> createJob(@RequestBody String req) {
