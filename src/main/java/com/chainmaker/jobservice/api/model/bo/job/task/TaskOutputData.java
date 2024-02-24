@@ -16,4 +16,5 @@ public class TaskOutputData {
     private String dataID = "";
     private String columnName;
     private String type;
+    private Integer length;
 }

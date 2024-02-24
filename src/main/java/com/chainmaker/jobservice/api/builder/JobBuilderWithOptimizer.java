@@ -367,6 +367,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             outputData.setDataName(metadata.getTableOrgId((String) inputData.getParams().get("table")) + "-" + task.getTaskName());
             outputData.setDomainID(inputData.getDomainID());
             outputData.setColumnName(inputData.getColumnName());
+            outputData.setLength(inputData.getLength());
             outputData.setType(inputData.getType());
             outputData.setFinalResult("N");
             outputDatas.add(outputData);
@@ -908,6 +909,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         outputData.setDomainID(inputDataList.get(0).getDomainID());
         outputData.setType(inputDataList.get(0).getType());
         outputData.setColumnName(inputDataList.get(0).getColumnName());
+        outputData.setLength(inputDataList.get(0).getLength());
         outputData.setFinalResult("Y");
         outputDataList.add(outputData);
         output.setData(outputDataList);
@@ -1176,6 +1178,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         TaskOutputData outputdata = new TaskOutputData();
         outputdata.setDataName(inputDatas.get(0).getDomainID() + "-" + cnt);
         outputdata.setColumnName(inputDatas.get(0).getColumnName());
+        outputdata.setLength(inputDatas.get(0).getLength());
         outputdata.setType(inputDatas.get(0).getType());
         outputdata.setFinalResult("Y");
         outputdata.setDomainID(inputDatas.get(0).getDomainID());
@@ -1349,14 +1352,16 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         outputdata1.setDataName(inputdata1.getDomainID() + "-" + cnt);
         outputdata1.setType(inputdata1.getType());
+        outputdata1.setLength(inputdata1.getLength());
         outputdata1.setColumnName(inputdata1.getColumnName());
         outputdata1.setFinalResult("N");
         outputdata1.setDomainID(inputdata1.getDomainID());
         outputdata1.setDataID("");
 
         outputdata2.setDataName(inputdata2.getDomainID() + "-" + cnt);
-        outputdata2.setType(inputdata1.getType());
-        outputdata2.setColumnName(inputdata1.getColumnName());
+        outputdata2.setType(inputdata2.getType());
+        outputdata2.setLength(inputdata2.getLength());
+        outputdata2.setColumnName(inputdata2.getColumnName());
         outputdata2.setFinalResult("N");
         outputdata2.setDomainID(inputdata2.getDomainID());
         outputdata2.setDataID("");
@@ -1436,6 +1441,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         TaskOutputData outputdata = new TaskOutputData();
         outputdata.setDataName(inputdata.getDomainID() + "-" + cnt);
         outputdata.setColumnName(inputdata.getColumnName());
+        outputdata.setLength(inputdata.getLength());
         outputdata.setType(inputdata.getType());
         outputdata.setFinalResult("N");
         outputdata.setDomainID(inputdata.getDomainID());
@@ -1912,6 +1918,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         String inputDataName1 = "";
         String outputDomainID = "";
         String outputColumnName = "";
+        Integer outputColumnLength =null;
         String outputColumnType = "";
         for (TaskInputData taskInputData : inputDatas) {
             if (taskInputData.getDomainID().equals(parties.get(0).getPartyID())) {
@@ -1919,6 +1926,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 outputDomainID = taskInputData.getDomainID();
                 outputColumnName = taskInputData.getColumnName();
                 outputColumnType = taskInputData.getType();
+                outputColumnLength = taskInputData.getLength();
             }
         }
         String outputPrefix = "";
@@ -1940,6 +1948,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 }
                 outputdata1.setType(taskInputData0.getType());
                 outputdata1.setColumnName(taskInputData0.getColumnName());
+                outputdata1.setLength(taskInputData0.getLength());
                 outputdata1.setFinalResult("N");
                 outputdata1.setDomainID(inputDatas.get(0).getDomainID());
                 outputdata1.setDataID("");
@@ -1952,8 +1961,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 } else {
                     outputdata2.setDataName(inputDataName2 + "-" + curTaskName);
                 }
-                outputdata1.setType(taskInputData1.getType());
-                outputdata1.setColumnName(taskInputData1.getColumnName());
+                outputdata2.setType(taskInputData1.getType());
+                outputdata2.setColumnName(taskInputData1.getColumnName());
+                outputdata2.setLength(taskInputData1.getLength());
                 outputdata2.setFinalResult("N");
                 outputdata2.setDomainID(inputDatas.get(1).getDomainID());
                 outputdata2.setDataID("");
@@ -1972,6 +1982,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             case "QUERY":
                 outputdata1.setDataName(outputPrefix+"-"+curTaskName);
                 outputdata1.setColumnName(outputColumnName);
+                outputdata1.setLength(outputColumnLength);
                 outputdata1.setType(outputColumnType);
                 outputdata1.setFinalResult("N");
                 outputdata1.setDomainID(outputDomainID);
