@@ -370,6 +370,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
             TaskOutputData taskOutputData = new TaskOutputData();
             taskOutputData.setDataName(outputData.getTableName().toLowerCase() + "-" + plan.getId());
             taskOutputData.setDomainID(outputData.getDomainID());
+//            taskOutputData.setType(outputData.getOutputSymbol());
+//            taskOutputData.setColumnName(outputData.getDomainID());
             if (plan.isFinalResult()) {
                 taskOutputData.setFinalResult("Y");
             }
