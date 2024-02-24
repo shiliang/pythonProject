@@ -1398,9 +1398,20 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         } else {
             childTask = phyTaskMap.get(((RelSubset) phyPlan.getInput()).getBest());
         }
+        String table = tableField.split("\\.")[0];
         inputdata.setTaskSrc(childTask.getTaskName());
         inputdata.setDataName(childTask.getOutput().getData().get(0).getDataName());
         inputdata.setDomainID(getFieldDomainID(tableField));
+        inputdata.setType(columnInfoMap.get(tableField.toUpperCase()));
+
+        TableInfo tableInfo = metadata.getTables().get(table);
+        inputdata.setTableName(tableInfo.getName());
+        FieldInfo fieldInfo = tableInfo.getFields().get(tableField);
+        inputdata.setTableName(tableInfo.getName());
+        inputdata.setColumnName(fieldInfo.getComments());
+        inputdata.setDatabaseName(fieldInfo.getDatabaseName());
+        inputdata.setComments(fieldInfo.getComments());
+        inputdata.setLength(fieldInfo.getDataLength());
         inputdata.setDataID(childTask.getOutput().getData().get(0).getDataID());
         inputdata.setRole("server");
         JSONObject inputParam = new JSONObject(true);
