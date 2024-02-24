@@ -296,7 +296,7 @@ public class ContractController {
 
     @WebLog(description = "查询task detail")
     @RequestMapping(value = "/jobs/{jobID}/task/{taskID}/detail", method = RequestMethod.GET)
-    public ResponseEntity<JSONObject> queryTaskDetail(@PathVariable String jobID, @RequestBody String taskID) {
+    public ResponseEntity<JSONObject> queryTaskDetail(@PathVariable String jobID, @PathVariable String taskID) {
         Map<String, byte[]> param = new HashMap<>();
         param.put("jobID", jobID.getBytes());
         param.put("taskID", taskID.getBytes());
