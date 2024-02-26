@@ -21,6 +21,9 @@ public class FieldInfo {
 
     public FieldInfo(String name, String type, Object maxValue, Object minValue, DistributionType disType, String tableName, int dataLength, String domainID, String comments, String databaseName) {
         fieldName = name;
+        if (type.equalsIgnoreCase("INT")){
+            type = "INTEGER";
+        }
         fieldType = SqlTypeName.get(type.toUpperCase());
         this.maxValue = maxValue;
         this.minValue = minValue;
