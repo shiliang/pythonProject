@@ -1298,8 +1298,18 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             }
         }
 
-        inputData1Params.put("table", leftField.split("\\.")[0]);
-        inputData1Params.put("field", leftField.split("\\.")[1]);
+        String leftTable = leftField.split("\\.")[0];
+        String leftTableField = leftField.split("\\.")[1];
+        inputData1Params.put("table", leftTable);
+        inputData1Params.put("field", leftTableField);
+        inputdata1.setType(columnInfoMap.get(leftField.toUpperCase()));
+        TableInfo leftTableInfo = metadata.getTables().get(leftTable);
+        inputdata1.setTableName(leftTableInfo.getName());
+        FieldInfo leftFieldInfo = leftTableInfo.getFields().get(leftField);
+        inputdata1.setColumnName(leftFieldInfo.getComments());
+        inputdata1.setDatabaseName(leftFieldInfo.getDatabaseName());
+        inputdata1.setComments(leftFieldInfo.getComments());
+        inputdata1.setLength(leftFieldInfo.getDataLength());
         inputdata1.setParams(inputData1Params);
 
         inputdata2.setTaskSrc(rightChild.getTaskName());
@@ -1317,8 +1327,18 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             }
         }
 
-        inputData2Params.put("table", rightField.split("\\.")[0]);
-        inputData2Params.put("field", rightField.split("\\.")[1]);
+        String rightTable = rightField.split("\\.")[0];
+        String rightTableField = rightField.split("\\.")[1];
+        inputData2Params.put("table", rightTable);
+        inputData2Params.put("field", rightTableField);
+        inputdata2.setType(columnInfoMap.get(rightField.toUpperCase()));
+        TableInfo rightTableInfo = metadata.getTables().get(rightTable);
+        inputdata2.setTableName(rightTableInfo.getName());
+        FieldInfo rightFieldInfo = rightTableInfo.getFields().get(rightField);
+        inputdata2.setColumnName(rightFieldInfo.getComments());
+        inputdata2.setDatabaseName(rightFieldInfo.getDatabaseName());
+        inputdata2.setComments(rightFieldInfo.getComments());
+        inputdata2.setLength(rightFieldInfo.getDataLength());
         inputdata2.setParams(inputData2Params);
 
         input.setData(List.of(inputdata1, inputdata2));
