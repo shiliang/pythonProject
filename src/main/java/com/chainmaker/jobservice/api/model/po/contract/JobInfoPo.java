@@ -16,6 +16,7 @@ import com.chainmaker.jobservice.core.analyzer.catalog.DataCatalogDetailInfo;
 import com.chainmaker.jobservice.core.analyzer.catalog.DataCatalogInfo;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -74,10 +75,10 @@ public class JobInfoPo {
         for(TaskPo po: tasks){
             List<TaskInputDataPo> list = po.getInput().getData();
             for(TaskInputDataPo inputDataPo: list) {
-                if (inputDataPo.getParams() != null) {
+                if (inputDataPo.getParams() != null && StringUtils.isNotEmpty(inputDataPo.getDataID())) {
                     JSONObject params = JSONObject.parseObject(inputDataPo.getParams());
                     String orgDID = inputDataPo.getDomainID();
-                    String dataCatalogName = params.getString("table");
+                    String dataCatalogName = inputDataPo.getDataID();
                     String fieldName = params.getString("field");
                     DataCatalogInfo info = DataCatalogCache.getByDIDAndName(orgDID, dataCatalogName);
                     assert info != null;
