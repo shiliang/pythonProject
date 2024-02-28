@@ -1163,7 +1163,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             TableInfo tableInfo = metadata.getTables().get(table);
             inputdata.setTableName(tableInfo.getName());
             FieldInfo fieldInfo = tableInfo.getFields().get(tableField);
-            inputdata.setColumnName(fieldInfo.getComments());
+            inputdata.setColumnName(fieldInfo.getFieldName());
             inputdata.setDatabaseName(fieldInfo.getDatabaseName());
             inputdata.setComments(fieldInfo.getComments());
             inputdata.setLength(fieldInfo.getDataLength());
@@ -1306,7 +1306,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         TableInfo leftTableInfo = metadata.getTables().get(leftTable);
         inputdata1.setTableName(leftTableInfo.getName());
         FieldInfo leftFieldInfo = leftTableInfo.getFields().get(leftField);
-        inputdata1.setColumnName(leftFieldInfo.getComments());
+        inputdata1.setColumnName(leftFieldInfo.getFieldName());
         inputdata1.setDatabaseName(leftFieldInfo.getDatabaseName());
         inputdata1.setComments(leftFieldInfo.getComments());
         inputdata1.setLength(leftFieldInfo.getDataLength());
@@ -1335,7 +1335,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         TableInfo rightTableInfo = metadata.getTables().get(rightTable);
         inputdata2.setTableName(rightTableInfo.getName());
         FieldInfo rightFieldInfo = rightTableInfo.getFields().get(rightField);
-        inputdata2.setColumnName(rightFieldInfo.getComments());
+        inputdata2.setColumnName(rightFieldInfo.getFieldName());
         inputdata2.setDatabaseName(rightFieldInfo.getDatabaseName());
         inputdata2.setComments(rightFieldInfo.getComments());
         inputdata2.setLength(rightFieldInfo.getDataLength());
@@ -1443,7 +1443,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         inputdata.setTableName(tableInfo.getName());
         FieldInfo fieldInfo = tableInfo.getFields().get(tableField);
         inputdata.setTableName(tableInfo.getName());
-        inputdata.setColumnName(fieldInfo.getComments());
+        inputdata.setColumnName(fieldInfo.getFieldName());
         inputdata.setDatabaseName(fieldInfo.getDatabaseName());
         inputdata.setComments(fieldInfo.getComments());
         inputdata.setLength(fieldInfo.getDataLength());

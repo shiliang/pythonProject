@@ -138,10 +138,11 @@ public class SqlParser {
             HashMap<String, FieldInfo> fields = new HashMap<>();
             DataInfo dataInfo = assetInfo.getDataInfo();
             String tableName = dataInfo.getTableName();
+            String databaseName = dataInfo.getDbName();
             String assetName = assetInfo.getAssetEnName();
             for (SaveTableColumnItem detailInfo : dataInfo.getItemList()) {
                 FieldInfo field = new FieldInfo(assetName+"."+detailInfo.getName(), detailInfo.getDataType(), null, null, FieldInfo.DistributionType.Uniform,
-                        assetName, detailInfo.getDataLength(), assetInfo.getHolderCompany(), detailInfo.getDescription(), tableName);
+                        assetName, detailInfo.getDataLength(), assetInfo.getHolderCompany(), detailInfo.getDescription(), databaseName);
                 fields.put(field.getFieldName(), field);
             }
             // 后续需要添加rowCount的获取
