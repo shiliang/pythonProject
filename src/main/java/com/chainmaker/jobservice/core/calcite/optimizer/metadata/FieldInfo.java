@@ -18,9 +18,11 @@ public class FieldInfo {
     private String domainID;                // domainID
     private String databaseName;
     private String comments;
+    private String uniqueName;
 
-    public FieldInfo(String name, String type, Object maxValue, Object minValue, DistributionType disType, String tableName, int dataLength, String domainID, String comments, String databaseName) {
+    public FieldInfo(String name, String type, Object maxValue, Object minValue, DistributionType disType, String tableName, int dataLength, String domainID, String comments, String databaseName, String assetName) {
         fieldName = name;
+        uniqueName = assetName+"."+name;
         if (type.equalsIgnoreCase("INT")){
             type = "INTEGER";
         }
