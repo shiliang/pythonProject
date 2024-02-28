@@ -47,7 +47,6 @@ public class TaskPo {
         for (TaskInputData taskInputData : task.getInput().getData()) {
             TaskInputDataPo taskInputDataPo = new TaskInputDataPo();
             taskInputDataPo.setDataID(taskInputData.getDataID());
-            taskInputDataPo.setAssetEnName(taskInputData.getDataID());
             taskInputDataPo.setDataName(taskInputData.getDataName());
             taskInputDataPo.setTaskSrc(taskInputData.getTaskSrc());
             taskInputDataPo.setDomainID(taskInputData.getDomainID());

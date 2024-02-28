@@ -49,8 +49,6 @@ public class SqlParser {
 
     private HashMap<String, String> columnInfoMap = Maps.newHashMap();
 
-    public static HashMap<String, String> assetTableMap = Maps.newHashMap();
-
     private CatalogConfig catalogConfig;
 
     private List<AssetDetail> assetDetailList = new ArrayList<>();
@@ -100,7 +98,6 @@ public class SqlParser {
                 assetDetail.setComments(dataCatalogDetailInfo.getDescription());
                 assetDetailList.add(assetDetail);
             }
-            assetTableMap.put(dataCatalogInfo.getAssetEnName(), dataInfo.getTableName());
         }
         tableOwnerMap.put(TEE_PARTY_KEY, TEE_PARTY);
         return tableOwnerMap;
