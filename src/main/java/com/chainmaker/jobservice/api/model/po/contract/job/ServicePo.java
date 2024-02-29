@@ -51,26 +51,6 @@ public class ServicePo {
     private List<ReferExposeEndpoint> referEndpointList;
     /** 自定义配置参数 */
 
-    public static ServicePo converterToServicePo(Service service) {
-        ServicePo servicePo = new ServicePo();
-//        servicePo.setId(service.getId());
-//        servicePo.setVersion(service.getVersion());
-//        servicePo.setJobID(service.getJobID());
-//        servicePo.setManual(service.getManual());
-//        servicePo.setStatus(service.getStatus());
-//        servicePo.setCreateTime(service.getCreateTime());
-//        servicePo.setUpdateTime(service.getUpdateTime());
-//        servicePo.setOrgDID(service.getOrgId());
-//        servicePo.setServiceClass(service.getServiceClass());
-//        servicePo.setServiceName(service.getServiceName());
-//
-//        for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints().values()) {
-//            exposeEndpoint.remove("serviceKey");
-//        }
-//        servicePo.setExposeEndpoints(service.getExposeEndpoints());
-//        servicePo.setReferEndpoints(service.getReferEndpoints());
-        return servicePo;
-    }
 
 
     @Override
