@@ -1,7 +1,7 @@
 package com.chainmaker.jobservice.api.model.bo.job;
 
 import com.chainmaker.jobservice.api.model.AssetDetail;
-import com.chainmaker.jobservice.api.model.bo.job.service.Service;
+import com.chainmaker.jobservice.api.model.Service;
 import com.chainmaker.jobservice.api.model.bo.job.task.Party;
 import com.chainmaker.jobservice.api.model.bo.job.task.Task;
 import com.chainmaker.jobservice.api.model.bo.job.task.TaskInputData;
@@ -59,7 +59,7 @@ public class JobInfo {
         if (jobInfoPo.getServices() != null) {
             List<Service> services = new ArrayList<>();
             for (ServicePo servicePo : jobInfoPo.getServices()) {
-                services.add(Service.servicePoToService(servicePo));
+//                services.add(Service.servicePoToService(servicePo));
             }
             jobInfo.setServices(services);
         }
@@ -69,12 +69,7 @@ public class JobInfo {
         JobInfo jobInfo = new JobInfo();
         jobInfo.setJob(jobTemplate.getJob());
         jobInfo.setTasks(jobTemplate.getTasks());
-        List<Service> services = new ArrayList<>();
-        for (ServiceVo serviceVo : jobTemplate.getServices()) {
-            Service service = Service.serviceVoToService(serviceVo, jobTemplate.getJob().getJobID());
-            services.add(service);
-        }
-        jobInfo.setServices(services);
+        jobInfo.setServices(jobTemplate.getServices());
         return jobInfo;
     }
 

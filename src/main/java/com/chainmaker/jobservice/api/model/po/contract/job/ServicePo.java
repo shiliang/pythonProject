@@ -1,8 +1,8 @@
 package com.chainmaker.jobservice.api.model.po.contract.job;
 
-import com.chainmaker.jobservice.api.model.bo.job.service.ExposeEndpoint;
-import com.chainmaker.jobservice.api.model.bo.job.service.ReferExposeEndpoint;
-import com.chainmaker.jobservice.api.model.bo.job.service.Service;
+import com.chainmaker.jobservice.api.model.ExposeEndpoint;
+import com.chainmaker.jobservice.api.model.ReferExposeEndpoint;
+import com.chainmaker.jobservice.api.model.Service;
 import lombok.Data;
 
 import java.util.List;

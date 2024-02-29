@@ -1,10 +1,10 @@
 package com.chainmaker.jobservice.api.model.vo;
 
 import com.chainmaker.jobservice.api.model.AssetDetail;
+import com.chainmaker.jobservice.api.model.Service;
 import com.chainmaker.jobservice.api.model.bo.job.Job;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
-import com.chainmaker.jobservice.api.model.bo.job.service.Service;
 import com.chainmaker.jobservice.api.model.bo.job.task.Task;
 
 import java.util.ArrayList;
@@ -20,7 +20,7 @@ import java.util.List;
 public class JobInfoVo {
     private Job job;
     private List<Task> tasks;
-    private List<ServiceVo> services;
+    private List<Service> services;
     private List<AssetDetail> assetDetailList;
 
     public static JobInfoVo converterToJobInfoVo(JobTemplate jobTemplate) {
@@ -53,7 +53,7 @@ public class JobInfoVo {
 //                for (Service service : jobInfo.getServices()) {
 //                    serviceVos.add(ServiceVo.serviceToServiceVo(service, templateId));
 //                }
-                jobInfoVo.setServices(serviceVos);
+//                jobInfoVo.setServices(serviceVos);
             }
         }
         return jobInfoVo;
@@ -75,11 +75,11 @@ public class JobInfoVo {
         this.tasks = tasks;
     }
 
-    public List<ServiceVo> getServices() {
+    public List<Service> getServices() {
         return services;
     }
 
-    public void setServices(List<ServiceVo> services) {
+    public void setServices(List<Service> services) {
         this.services = services;
     }
 

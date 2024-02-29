@@ -3,16 +3,13 @@ package com.chainmaker.jobservice.api.model.vo;
 
 import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.model.bo.job.service.ReferEndpoint;
-import com.chainmaker.jobservice.api.model.bo.job.service.Service;
 import org.antlr.v4.runtime.CharStreams;
 import org.apache.commons.codec.Charsets;
 import org.springframework.core.io.ClassPathResource;
 
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * @author gaokang
@@ -23,7 +20,7 @@ import java.util.Objects;
 
 public class ServiceVo {
     /** 不可为空，service id */
-    private String id;
+    private String serviceId;
     /** service格式版本 */
     private String version;
 
@@ -159,8 +156,8 @@ public class ServiceVo {
         this.serviceClass = serviceClass;
     }
 
-    public String getId() {
-        return id;
+    public String getServiceId() {
+        return serviceId;
     }
 
 
@@ -188,8 +185,8 @@ public class ServiceVo {
         this.updateTime = updateTime;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setServiceId(String serviceId) {
+        this.serviceId = serviceId;
     }
 
     public List<ExposeEndpointVo> getExposeEndpoints() {
@@ -254,7 +251,7 @@ public class ServiceVo {
                 "orgDID='" + orgDID + '\'' +
                 ", serviceName='" + serviceName + '\'' +
                 ", serviceClass='" + serviceClass + '\'' +
-                ", id='" + id + '\'' +
+                ", id='" + serviceId + '\'' +
                 ", nodePort='" + nodePort + '\'' +
                 ", version='" + version + '\'' +
                 ", manual=" + manual +

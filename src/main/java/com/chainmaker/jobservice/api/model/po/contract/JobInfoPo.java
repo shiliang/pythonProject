@@ -3,8 +3,8 @@ package com.chainmaker.jobservice.api.model.po.contract;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.DataCatalogCache;
+import com.chainmaker.jobservice.api.model.Service;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
-import com.chainmaker.jobservice.api.model.bo.job.service.Service;
 import com.chainmaker.jobservice.api.model.bo.job.task.Task;
 import com.chainmaker.jobservice.api.model.po.contract.job.JobPo;
 import com.chainmaker.jobservice.api.model.po.contract.job.ServicePo;
@@ -55,10 +55,10 @@ public class JobInfoPo {
 
         if (jobInfo.getServices() != null) {
             List<ServicePo> servicePoList = new ArrayList<>();
-            for (Service service : jobInfo.getServices()) {
-                ServicePo servicePo = ServicePo.converterToServicePo(service);
-                servicePoList.add(servicePo);
-            }
+//            for (Service service : jobInfo.getServices()) {
+//                ServicePo servicePo = ServicePo.converterToServicePo(service);
+//                servicePoList.add(servicePo);
+//            }
             jobInfoPo.setServices(servicePoList);
         }
         return jobInfoPo;

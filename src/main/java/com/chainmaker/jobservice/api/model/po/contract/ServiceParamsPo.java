@@ -1,11 +1,6 @@
 package com.chainmaker.jobservice.api.model.po.contract;
 
-import com.alibaba.fastjson.JSON;
-import com.chainmaker.jobservice.api.model.bo.job.service.ReferValue;
-import com.chainmaker.jobservice.api.model.bo.job.service.Service;
-import com.chainmaker.jobservice.api.model.vo.ReferValueVo;
-import com.chainmaker.jobservice.api.model.vo.ServiceVo;
-import com.chainmaker.jobservice.api.model.vo.ValueVo;
+import com.chainmaker.jobservice.api.model.Service;
 
 import java.util.HashMap;
 
@@ -28,10 +23,10 @@ public class ServiceParamsPo {
 
     public static ServiceParamsPo converterToServiceParamsPo(Service service) {
         ServiceParamsPo serviceParamsPo = new ServiceParamsPo();
-        if (service.getId() != null) {
-            serviceParamsPo.setId(service.getId());
+        if (service.getServiceId() != null) {
+            serviceParamsPo.setId(service.getServiceId());
         }
-        serviceParamsPo.setJobID(service.getJobID());
+//        serviceParamsPo.setJobID(service.g());
         serviceParamsPo.setTimestamp(String.valueOf(System.currentTimeMillis()));
 //        for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints().values()) {
 //            exposeEndpoint.remove("serviceKey");

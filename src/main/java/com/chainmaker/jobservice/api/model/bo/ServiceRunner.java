@@ -1,13 +1,10 @@
 package com.chainmaker.jobservice.api.model.bo;
 
-import com.chainmaker.jobservice.api.model.bo.job.service.ExposeEndpoint;
-import com.chainmaker.jobservice.api.model.bo.job.service.ReferEndpoint;
-import com.chainmaker.jobservice.api.model.bo.job.service.ReferExposeEndpoint;
-import com.chainmaker.jobservice.api.model.bo.job.service.ReferValue;
+import com.chainmaker.jobservice.api.model.ExposeEndpoint;
+import com.chainmaker.jobservice.api.model.ReferExposeEndpoint;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
-import java.util.HashMap;
 import java.util.List;
 
 @Data

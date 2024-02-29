@@ -1,20 +1,14 @@
 package com.chainmaker.jobservice.api.model.bo;
 
+import com.chainmaker.jobservice.api.model.Service;
 import com.chainmaker.jobservice.api.model.bo.graph.Dag;
 import com.chainmaker.jobservice.api.model.bo.graph.Topology;
 import com.chainmaker.jobservice.api.model.bo.job.Job;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
-import com.chainmaker.jobservice.api.model.bo.job.service.ReferValue;
-import com.chainmaker.jobservice.api.model.bo.job.service.Service;
 import com.chainmaker.jobservice.api.model.vo.JobGraphVo;
-import com.chainmaker.jobservice.api.model.vo.ServiceVo;
-import com.chainmaker.jobservice.api.model.vo.ValueVo;
-import com.chainmaker.jobservice.api.response.ParserException;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * @author gaokang
@@ -41,8 +35,8 @@ public class JobGraph {
         jobInfo.setTasks(jobGraphVo.getJobInfo().getTasks());
         List<Service> serviceList = new ArrayList<>();
         if (jobGraphVo.getJobInfo().getServices() != null) {
-            for (ServiceVo serviceVo : jobGraphVo.getJobInfo().getServices()) {
-                serviceList.add(Service.serviceVoToService(serviceVo, job.getJobID()));
+            for (Service service : jobGraphVo.getJobInfo().getServices()) {
+                serviceList.add(service);
             }
         }
         jobInfo.setAssetDetailList(jobGraphVo.getJobInfo().getAssetDetailList());

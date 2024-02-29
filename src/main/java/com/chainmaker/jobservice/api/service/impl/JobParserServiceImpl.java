@@ -4,16 +4,12 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.builder.JobBuilder;
 import com.chainmaker.jobservice.api.builder.JobBuilderWithOptimizer;
-import com.chainmaker.jobservice.api.model.AssetDetail;
-import com.chainmaker.jobservice.api.model.OrgInfo;
+import com.chainmaker.jobservice.api.model.*;
 import com.chainmaker.jobservice.api.model.bo.*;
 import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
 import com.chainmaker.jobservice.api.model.bo.graph.*;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
-import com.chainmaker.jobservice.api.model.bo.job.service.ExposeEndpoint;
-import com.chainmaker.jobservice.api.model.bo.job.service.ReferExposeEndpoint;
-import com.chainmaker.jobservice.api.model.bo.job.service.Service;
 import com.chainmaker.jobservice.api.model.bo.job.task.Task;
 import com.chainmaker.jobservice.api.model.bo.job.task.TaskInputData;
 import com.chainmaker.jobservice.api.model.po.contract.JobInfoPo;
@@ -161,13 +157,13 @@ public class JobParserServiceImpl implements JobParserService {
             jobGraphVo.setTopology(topology);
             jobGraph.setTopology(topology);
         }
-        if (jobInfoVo.getServices() != null) {
-            for (ServiceVo serviceVo : jobInfoVo.getServices()) {
-                for (ExposeEndpointVo exposeEndpointVo : serviceVo.getExposeEndpoints()) {
-                    exposeEndpointVo.getForm().removeIf(exposeFormVo -> Objects.equals(exposeFormVo.getKey(), "serviceCa") || Objects.equals(exposeFormVo.getKey(), "serviceCert") || Objects.equals(exposeFormVo.getKey(), "serviceKey"));
-                }
-            }
-        }
+//        if (jobInfoVo.getServices() != null) {
+//            for (Service service : jobInfoVo.getServices()) {
+//                for (ExposeEndpointVo exposeEndpointVo : service.getExposeEndpointList()) {
+//                    exposeEndpointVo.getForm().removeIf(exposeFormVo -> Objects.equals(exposeFormVo.getKey(), "serviceCa") || Objects.equals(exposeFormVo.getKey(), "serviceCert") || Objects.equals(exposeFormVo.getKey(), "serviceKey"));
+//                }
+//            }
+//        }
         jobGraphVo.setJobInfo(jobInfoVo);
         jobGraph.setJobInfo(jobInfo);
 
@@ -198,7 +194,7 @@ public class JobParserServiceImpl implements JobParserService {
             ServiceParamsVo serviceParamsVo = new ServiceParamsVo();
             serviceParamsVo.setServiceName(service.getServiceName());
             serviceParamsVo.setServiceClass(service.getServiceClass());
-            serviceParamsVo.setServiceID(service.getId());
+            serviceParamsVo.setServiceID(service.getServiceId());
             serviceParamsVo.setOrgDID(service.getOrgId());
             serviceParamsVos.add(serviceParamsVo);
 
@@ -244,7 +240,7 @@ public class JobParserServiceImpl implements JobParserService {
             for (Service service : jobInfo.getServices()) {
                 if (service.getOrgId().equals(getOrgId())) {
                     UserInfo userInfo = getUserInfo(service.getOrgId());
-                    service.setNodePort(nodePort);
+//                    service.setNodePort(nodePort);
                     nodePort += 1;
 //                    for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints()) {
 //                        exposeEndpoint.put("serviceCa", userInfo.getCaCert());
@@ -286,11 +282,11 @@ public class JobParserServiceImpl implements JobParserService {
             Topology topology = serviceToTopology(jobInfo.getServices(), 1);
             jobGraphVo.setTopology(topology);
 
-            for (ServiceVo serviceVo : jobInfoVo.getServices()) {
-                for (ExposeEndpointVo exposeEndpointVo : serviceVo.getExposeEndpoints()) {
-                    exposeEndpointVo.getForm().removeIf(exposeFormVo -> Objects.equals(exposeFormVo.getKey(), "serviceKey"));
-                }
-            }
+//            for (Service service : jobInfoVo.getServices()) {
+//                for (ExposeEndpointVo exposeEndpointVo : service.getExposeEndpoints()) {
+//                    exposeEndpointVo.getForm().removeIf(exposeFormVo -> Objects.equals(exposeFormVo.getKey(), "serviceKey"));
+//                }
+//            }
         }
         jobGraphVo.setJobInfo(jobInfoVo);
 
@@ -318,27 +314,27 @@ public class JobParserServiceImpl implements JobParserService {
 
         List<ServiceValueParam> serviceValueParamList = new ArrayList<>();
         List<ServiceParamsPo> serviceParamsPoList = new ArrayList<>();
-        for (ServiceVo serviceVo : serviceUpdateVo.getJobInfo().getServices()) {
-            if (Objects.equals(serviceVo.getOrgDID(), orgDID)) {
-                Service service = Service.serviceVoToService(serviceVo, jobID);
-                ServiceValueParam serviceValueParam = new ServiceValueParam();
-                serviceValueParam.setId(service.getId());
-                serviceValueParam.setOrgDID(service.getOrgId());
-                serviceValueParam.setJobID(service.getJobID());
-                serviceValueParam.setName(service.getServiceName());
-                serviceValueParam.setNodePort(String.valueOf(service.getNodePort()));
-//                for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints().values()) {
-//                    serviceValueParam.setServiceCa(exposeEndpoint.get("serviceCa").getBytes());
-//                    serviceValueParam.setServiceCert(exposeEndpoint.get("serviceCert").getBytes());
-//                    serviceValueParam.setServiceKey(exposeEndpoint.get("serviceKey").getBytes());
-//                }
-                serviceValueParamList.add(serviceValueParam);
-
-                ServiceParamsPo serviceParamsPo = ServiceParamsPo.converterToServiceParamsPo(service);
-                serviceParamsPoList.add(serviceParamsPo);
-            }
-        }
-        save(serviceValueParamList);
+//        for (ServiceVo serviceVo : serviceUpdateVo.getJobInfo().getServices()) {
+//            if (Objects.equals(serviceVo.getOrgDID(), orgDID)) {
+//                Service service = Service.serviceVoToService(serviceVo, jobID);
+//                ServiceValueParam serviceValueParam = new ServiceValueParam();
+//                serviceValueParam.setId(service.getId());
+//                serviceValueParam.setOrgDID(service.getOrgId());
+//                serviceValueParam.setJobID(service.getJobID());
+//                serviceValueParam.setName(service.getServiceName());
+//                serviceValueParam.setNodePort(String.valueOf(service.getNodePort()));
+////                for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints().values()) {
+////                    serviceValueParam.setServiceCa(exposeEndpoint.get("serviceCa").getBytes());
+////                    serviceValueParam.setServiceCert(exposeEndpoint.get("serviceCert").getBytes());
+////                    serviceValueParam.setServiceKey(exposeEndpoint.get("serviceKey").getBytes());
+////                }
+//                serviceValueParamList.add(serviceValueParam);
+//
+//                ServiceParamsPo serviceParamsPo = ServiceParamsPo.converterToServiceParamsPo(service);
+//                serviceParamsPoList.add(serviceParamsPo);
+//            }
+//        }
+//        save(serviceValueParamList);
         ServiceUpdatePo serviceUpdatePo = new ServiceUpdatePo();
         serviceUpdatePo.setServiceParamsPoList(serviceParamsPoList);
         return serviceUpdatePo;
@@ -358,7 +354,7 @@ public class JobParserServiceImpl implements JobParserService {
     @Override
     public JobMissionDetail parserSql(SqlVo sqlVo) {
         String sqltext = sqlVo.getSqltext().replace("\"", "");
-        SqlParser sqlParser = new SqlParser(sqltext, sqlVo.getModelType(), sqlVo.getIsStream(), sqlVo.getAssetInfoList(), sqlVo.getModelParams());
+        SqlParser sqlParser = new SqlParser(sqltext, sqlVo.getIsStream(), sqlVo.getModelType(), sqlVo.getAssetInfoList(), sqlVo.getModelParams());
         sqlParser.setCatalogConfig(catalogConfig);
         if (sqlVo.getIsStream() == 1) {
             JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser(), getOrgId(), sqlParser.getSql());
@@ -448,8 +444,8 @@ public class JobParserServiceImpl implements JobParserService {
             List<TopologyEdge> edges = new ArrayList<>();
             for (Service service : services) {
                 TopologyNode node = new TopologyNode();
-                node.setId(service.getId());
-                node.setStatus(service.getStatus());
+                node.setId(service.getServiceId());
+                node.setStatus("WAITING");
                 node.setServiceType(service.getServiceClass());
                 node.setNodeError(true);
                 node.setAverageTime("-");
@@ -457,14 +453,14 @@ public class JobParserServiceImpl implements JobParserService {
                 node.setSuccessRate("-");
                 node.setName(service.getServiceName());
                 node.setDataType("ROOT");
-                if (Integer.parseInt(service.getId()) > 1) {
+                if (Integer.parseInt(service.getServiceId()) > 1) {
                     node.setDataType("SUBROOT");
                 }
                 nodes.add(node);
-                for (ReferExposeEndpoint referExposeEndpoint : service.getReferEndpoints()) {
+                for (ReferExposeEndpoint referExposeEndpoint : service.getReferExposeEndpointList()) {
                     if (!Objects.equals(referExposeEndpoint.getName(), "")) {
                         TopologyEdge edge = new TopologyEdge();
-                        edge.setSource(service.getId());
+                        edge.setSource(service.getServiceId());
                         edge.setTarget(referExposeEndpoint.getReferServiceId());
                         TopologyEdgeData topologyEdgeData = new TopologyEdgeData();
                         topologyEdgeData.setType("data");
@@ -494,15 +490,15 @@ public class JobParserServiceImpl implements JobParserService {
         HashMap<String, String> clientIdMap = new HashMap<>();
         if (services != null) {
             for (Service service : services) {
-                clientIdMap.put(service.getId(), "");
+                clientIdMap.put(service.getServiceId(), "");
             }
             for (Service service : services) {
-                for (ExposeEndpoint exposeEndpoint : service.getExposeEndpoints()) {
-                    exposeEndpointMap.put(service.getId(), exposeEndpoint);
+                for (ExposeEndpoint exposeEndpoint : service.getExposeEndpointList()) {
+                    exposeEndpointMap.put(service.getServiceId(), exposeEndpoint);
                 }
-                for (ReferExposeEndpoint referEndpoint : service.getReferEndpoints()) {
+                for (ReferExposeEndpoint referEndpoint : service.getReferExposeEndpointList()) {
                     if (!Objects.equals(referEndpoint.getReferServiceId(), "") && referEndpoint.getReferServiceId() != null) {
-                        clientIdMap.put(referEndpoint.getReferServiceId(), service.getId());
+                        clientIdMap.put(referEndpoint.getReferServiceId(), service.getServiceId());
                     }
                 }
             }
@@ -511,7 +507,9 @@ public class JobParserServiceImpl implements JobParserService {
 
                     String serviceStr = JSONObject.toJSONString(service);
                     ServiceRunner serviceRunner = JSONObject.parseObject(serviceStr, ServiceRunner.class, Feature.OrderedField);
-                    serviceRunner.setNodePort(service.getNodePort());
+                    String path = service.getExposeEndpointList().get(0).getPath();
+                    Integer port = Integer.valueOf(path.split(":")[1]);
+                    serviceRunner.setNodePort((port));
 //                    for (ExposeEndpoint exposeEndpoint : serviceRunner.getExposeEndpoints()) {
 //                        if (!Objects.equals(clientIdMap.get(serviceRunner.getId()), "")) {
 //                            HashMap<String, String> clientExposeEndpoint = exposeEndpointMap.get(clientIdMap.get(serviceRunner.getId()));

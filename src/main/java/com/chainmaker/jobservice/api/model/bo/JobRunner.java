@@ -1,14 +1,8 @@
 package com.chainmaker.jobservice.api.model.bo;
 
 import com.chainmaker.jobservice.api.model.bo.job.Job;
-import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
-import com.chainmaker.jobservice.api.model.bo.job.service.Service;
 import com.chainmaker.jobservice.api.model.bo.job.task.Task;
-import com.chainmaker.jobservice.api.model.vo.JobInfoVo;
-import com.chainmaker.jobservice.api.model.vo.JobVo;
-import com.chainmaker.jobservice.api.model.vo.ServiceVo;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class JobRunner {

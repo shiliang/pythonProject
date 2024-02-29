@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.api.builder;
 
 import com.alibaba.fastjson.JSONObject;
+import com.chainmaker.jobservice.api.model.Service;
 import com.chainmaker.jobservice.api.model.bo.job.Job;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
 import com.chainmaker.jobservice.api.model.bo.job.task.*;
@@ -77,7 +78,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private int cnt;
     private List<String> modelList = new ArrayList<>();
     private Job job = new Job();
-    private List<ServiceVo> services = new ArrayList<>();
+    private List<Service> services = new ArrayList<>();
     private List<Task> tasks = new ArrayList<>();
     private List<Task> mergedTasks = new ArrayList<>();
     private List<Task> taskcp = new ArrayList<>();

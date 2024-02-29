@@ -1,11 +1,8 @@
 package com.chainmaker.jobservice.api.model.po.contract;
 
 import com.alibaba.fastjson.JSON;
-import com.chainmaker.jobservice.api.model.bo.job.service.Service;
-import com.chainmaker.jobservice.api.model.vo.ServiceVo;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 

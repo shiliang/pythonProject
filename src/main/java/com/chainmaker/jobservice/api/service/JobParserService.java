@@ -1,12 +1,12 @@
 package com.chainmaker.jobservice.api.service;
 
 import com.alibaba.fastjson.JSONObject;
+import com.chainmaker.jobservice.api.model.Service;
 import com.chainmaker.jobservice.api.model.bo.*;
 import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
 import com.chainmaker.jobservice.api.model.bo.graph.Dag;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.graph.Topology;
-import com.chainmaker.jobservice.api.model.bo.job.service.Service;
 import com.chainmaker.jobservice.api.model.bo.job.task.Task;
 import com.chainmaker.jobservice.api.model.po.contract.JobInfoPo;
 import com.chainmaker.jobservice.api.model.po.contract.ServiceUpdatePo;

@@ -1,4 +1,4 @@
-package com.chainmaker.jobservice.api.model.bo.job.service;
+package com.chainmaker.jobservice.api.model;
 
 import com.alibaba.fastjson.JSONObject;
 import lombok.Data;
@@ -25,7 +25,7 @@ public class ExposeEndpoint {
     /**
      * 是否使用加密通信
      */
-    private String tlsEnabled;
+    private Boolean tlsEnabled;
     /**
      * 暴露服务方法描述
      */

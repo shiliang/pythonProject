@@ -1,4 +1,4 @@
-package com.chainmaker.jobservice.api.model.bo.job.service;
+package com.chainmaker.jobservice.api.model;
 
 import lombok.Data;
 

@@ -2,11 +2,16 @@ package com.chainmaker.jobservice.api.builder;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.chainmaker.jobservice.api.model.ExposeEndpoint;
+import com.chainmaker.jobservice.api.model.ReferExposeEndpoint;
+import com.chainmaker.jobservice.api.model.Service;
 import com.chainmaker.jobservice.api.model.bo.job.Job;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
 import com.chainmaker.jobservice.api.model.bo.job.service.ReferEndpoint;
 import com.chainmaker.jobservice.api.model.bo.job.task.*;
 import com.chainmaker.jobservice.api.model.bo.job.task.Module;
+import com.chainmaker.jobservice.api.model.vo.ExposeEndpointVo;
+import com.chainmaker.jobservice.api.model.vo.ExposeFormVo;
 import com.chainmaker.jobservice.api.model.vo.ServiceVo;
 import com.chainmaker.jobservice.api.model.vo.ValueVo;
 import com.chainmaker.jobservice.api.response.ParserException;
@@ -16,6 +21,7 @@ import com.chainmaker.jobservice.core.optimizer.model.OutputData;
 import com.chainmaker.jobservice.core.optimizer.nodes.DAG;
 import com.chainmaker.jobservice.core.optimizer.nodes.Node;
 import com.chainmaker.jobservice.core.optimizer.plans.*;
+import org.springframework.beans.BeanUtils;
 
 import java.util.*;
 
@@ -42,7 +48,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
     private final String createTime, jobID;
     private Job job = new Job();
     private HashMap<String, String> kvMap = new HashMap<>();
-    private List<ServiceVo> services = new ArrayList<>();
+    private List<Service> services = new ArrayList<>();
     private List<Task> tasks = new ArrayList<>();
 
     private HashSet<String> jobParties = new HashSet<>();
@@ -149,19 +155,59 @@ public class JobBuilder extends PhysicalPlanVisitor {
                 valueTable.setKey("pirParams");
                 valueTable.setValue(pirParams.toString().replace("[", "").replace("]", ""));
                 serviceVo.getValues().set(0, valueTable);
-                map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getId());
+                map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getServiceId());
                 serviceVos.add(serviceVo);
             }
             for (ServiceVo serviceVo : serviceVos) {
+                Service service = new Service();
+                BeanUtils.copyProperties(serviceVo, service);
+                if (serviceVo.getServiceClass().equals("PirClient4Query")) {
+                    service.setOrgId(orgID);
+                    service.setOrgName(orgID);
+                } else {
+                    service.setOrgId(defaultOdgDID);
+                    service.setOrgName(defaultOdgDID);
+                }
+                List<ReferExposeEndpoint> referExposeEndpointList = new ArrayList<>();
                 for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
                     referEndpoint.setReferServiceID(map.get(referEndpoint.getName()));
+                    ReferExposeEndpoint referExposeEndpoint = new ReferExposeEndpoint();
+                    referExposeEndpoint.setReferServiceId(map.get(referEndpoint.getName()));
+                    referExposeEndpoint.setReferEndpointName(referEndpoint.getReferEndpointName());
+                    referExposeEndpoint.setProtocol(referEndpoint.getProtocol());
+                    referExposeEndpoint.setId(referEndpoint.getName());
+                    referExposeEndpoint.setName(referEndpoint.getName());
+                    referExposeEndpointList.add(referExposeEndpoint);
                 }
-                if (serviceVo.getServiceClass().equals("PirClient4Query")) {
-                    serviceVo.setOrgDID(orgID);
-                } else {
-                    serviceVo.setOrgDID(defaultOdgDID);
+                List<ExposeEndpoint> exposeEndpointList = new ArrayList<>();
+                for (ExposeEndpointVo exposeEndpointVo : serviceVo.getExposeEndpoints()) {
+                    ExposeEndpoint exposeEndpoint = new ExposeEndpoint();
+                    HashMap<String, String> exposeEndpointFormMap = new HashMap<>();
+                    for (ExposeFormVo exposeFormVo : exposeEndpointVo.getForm()) {
+                        exposeEndpointFormMap.put(exposeFormVo.getKey(), exposeFormVo.getValues());
+                    }
+                    exposeEndpoint.setOrgId(service.getOrgId());
+                    exposeEndpoint.setOrgName(service.getOrgName());
+                    exposeEndpoint.setDescription(exposeEndpointFormMap.get("description"));
+                    exposeEndpoint.setTlsEnabled(Boolean.valueOf(exposeEndpointFormMap.get("tlsEnabled")));
+                    exposeEndpoint.setServiceCa(exposeEndpointFormMap.get("serviceCa"));
+                    exposeEndpoint.setServiceCert(exposeEndpointFormMap.get("serviceCert"));
+                    exposeEndpoint.setServiceKey(exposeEndpointFormMap.get("serviceKey"));
+                    exposeEndpoint.setProtocol(exposeEndpointFormMap.get("protocol"));
+                    exposeEndpoint.setMethod(exposeEndpointFormMap.get("method"));
+                    exposeEndpoint.setAddress(exposeEndpointFormMap.get("address"));
+                    exposeEndpoint.setPath(exposeEndpointFormMap.get("path"));
+//                    exposeEndpoint.setOrgId(exposeEndpointFormMap.get("groupID"));
+                    exposeEndpoint.setName(exposeEndpointVo.getName());
+                    exposeEndpoint.setServiceClass(serviceVo.getServiceClass());
+                    exposeEndpointList.add(exposeEndpoint);
+
                 }
-                services.add(serviceVo);
+
+
+                service.setReferExposeEndpointList(referExposeEndpointList);
+                service.setExposeEndpointList(exposeEndpointList);
+                services.add(service);
             }
             Map<String, String> model_method = new HashMap<>();
             model_method.put("method_name", "pir");
@@ -196,19 +242,58 @@ public class JobBuilder extends PhysicalPlanVisitor {
                 valueTable.setKey("pirParams");
                 valueTable.setValue(pirParams.toString().replace("[", "").replace("]", ""));
                 serviceVo.getValues().set(0, valueTable);
-                map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getId());
+                map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getServiceId());
                 serviceVos.add(serviceVo);
             }
             for (ServiceVo serviceVo : serviceVos) {
+                Service service = new Service();
+                BeanUtils.copyProperties(serviceVo, service);
+                if (serviceVo.getServiceClass().equals("TeePirClient4Query")) {
+                    service.setOrgId(orgID);
+                    service.setOrgName(orgID);
+                } else {
+                    service.setOrgId(defaultOdgDID);
+                    service.setOrgName(defaultOdgDID);
+                }
+                List<ReferExposeEndpoint> referExposeEndpointList = new ArrayList<>();
                 for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
                     referEndpoint.setReferServiceID(map.get(referEndpoint.getName()));
+                    ReferExposeEndpoint referExposeEndpoint = new ReferExposeEndpoint();
+                    referExposeEndpoint.setReferServiceId(map.get(referEndpoint.getName()));
+                    referExposeEndpoint.setReferEndpointName(referEndpoint.getReferEndpointName());
+                    referExposeEndpoint.setProtocol(referEndpoint.getProtocol());
+                    referExposeEndpoint.setId(referEndpoint.getName());
+                    referExposeEndpoint.setName(referEndpoint.getName());
+                    referExposeEndpointList.add(referExposeEndpoint);
                 }
-                if (serviceVo.getServiceClass().equals("TeePirClient4Query")) {
-                    serviceVo.setOrgDID(orgID);
-                } else {
-                    serviceVo.setOrgDID(defaultOdgDID);
+                List<ExposeEndpoint> exposeEndpointList = new ArrayList<>();
+                for (ExposeEndpointVo exposeEndpointVo : serviceVo.getExposeEndpoints()) {
+                    ExposeEndpoint exposeEndpoint = new ExposeEndpoint();
+//                    exposeEndpoint.setServiceClass(exposeEndpointVo);
+                    HashMap<String, String> exposeEndpointFormMap = new HashMap<>();
+                    for (ExposeFormVo exposeFormVo : exposeEndpointVo.getForm()) {
+                        exposeEndpointFormMap.put(exposeFormVo.getKey(), exposeFormVo.getValues());
+                    }
+                    exposeEndpoint.setOrgName(service.getOrgName());
+                    exposeEndpoint.setOrgId(service.getOrgId());
+                    exposeEndpoint.setDescription(exposeEndpointFormMap.get("description"));
+                    exposeEndpoint.setTlsEnabled(Boolean.valueOf(exposeEndpointFormMap.get("tlsEnabled")));
+                    exposeEndpoint.setServiceCa(exposeEndpointFormMap.get("serviceCa"));
+                    exposeEndpoint.setServiceCert(exposeEndpointFormMap.get("serviceCert"));
+                    exposeEndpoint.setServiceKey(exposeEndpointFormMap.get("serviceKey"));
+                    exposeEndpoint.setProtocol(exposeEndpointFormMap.get("protocol"));
+                    exposeEndpoint.setMethod(exposeEndpointFormMap.get("method"));
+                    exposeEndpoint.setAddress(exposeEndpointFormMap.get("address"));
+                    exposeEndpoint.setPath(exposeEndpointFormMap.get("path"));
+//                    exposeEndpoint.setOrgId(exposeEndpointFormMap.get("groupID"));
+                    exposeEndpoint.setName(exposeEndpointVo.getName());
+                    exposeEndpoint.setServiceClass(serviceVo.getServiceClass());
+                    exposeEndpointList.add(exposeEndpoint);
                 }
-                services.add(serviceVo);
+
+                service.setReferExposeEndpointList(referExposeEndpointList);
+                service.setExposeEndpointList(exposeEndpointList);
+                services.add(service);
             }
             Map<String, String> model_method = new HashMap<>();
             model_method.put("method_name", "teepir");
@@ -271,15 +356,55 @@ public class JobBuilder extends PhysicalPlanVisitor {
                         break;
                 }
                 ServiceVo serviceVo = teeTemplateToService(templateType, i);
-                map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getId());
+                map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getServiceId());
                 serviceVos.add(serviceVo);
             }
             for (ServiceVo serviceVo : serviceVos) {
+
+                Service service = new Service();
+                BeanUtils.copyProperties(serviceVo, service);
+                service.setOrgName(defaultOdgDID);
+                service.setOrgId(defaultOdgDID);
+
+                List<ReferExposeEndpoint> referExposeEndpointList = new ArrayList<>();
                 for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
                     referEndpoint.setReferServiceID(map.get(referEndpoint.getName()));
+                    ReferExposeEndpoint referExposeEndpoint = new ReferExposeEndpoint();
+                    referExposeEndpoint.setReferServiceId(map.get(referEndpoint.getName()));
+                    referExposeEndpoint.setReferEndpointName(referEndpoint.getReferEndpointName());
+                    referExposeEndpoint.setProtocol(referEndpoint.getProtocol());
+                    referExposeEndpoint.setId(referEndpoint.getName());
+                    referExposeEndpoint.setName(referEndpoint.getName());
+                    referExposeEndpointList.add(referExposeEndpoint);
                 }
-                serviceVo.setOrgDID(defaultOdgDID);
-                services.add(serviceVo);
+                List<ExposeEndpoint> exposeEndpointList = new ArrayList<>();
+                for (ExposeEndpointVo exposeEndpointVo : serviceVo.getExposeEndpoints()) {
+                    ExposeEndpoint exposeEndpoint = new ExposeEndpoint();
+                    HashMap<String, String> exposeEndpointFormMap = new HashMap<>();
+                    for (ExposeFormVo exposeFormVo : exposeEndpointVo.getForm()) {
+                        exposeEndpointFormMap.put(exposeFormVo.getKey(), exposeFormVo.getValues());
+                    }
+                    exposeEndpoint.setOrgId(service.getOrgId());
+                    exposeEndpoint.setOrgName(service.getOrgName());
+                    exposeEndpoint.setDescription(exposeEndpointFormMap.get("description"));
+                    exposeEndpoint.setTlsEnabled(Boolean.valueOf(exposeEndpointFormMap.get("tlsEnabled")));
+                    exposeEndpoint.setServiceCa(exposeEndpointFormMap.get("serviceCa"));
+                    exposeEndpoint.setServiceCert(exposeEndpointFormMap.get("serviceCert"));
+                    exposeEndpoint.setServiceKey(exposeEndpointFormMap.get("serviceKey"));
+                    exposeEndpoint.setProtocol(exposeEndpointFormMap.get("protocol"));
+                    exposeEndpoint.setMethod(exposeEndpointFormMap.get("method"));
+                    exposeEndpoint.setAddress(exposeEndpointFormMap.get("address"));
+                    exposeEndpoint.setPath(exposeEndpointFormMap.get("path"));
+//                    exposeEndpoint.setOrgId(exposeEndpointFormMap.get("groupID"));
+                    exposeEndpoint.setName(exposeEndpointVo.getName());
+                    exposeEndpoint.setServiceClass(serviceVo.getServiceClass());
+                    exposeEndpointList.add(exposeEndpoint);
+                }
+
+
+                service.setExposeEndpointList(exposeEndpointList);
+                service.setReferExposeEndpointList(referExposeEndpointList);
+                services.add(service);
             }
             Map<String, String> model_method = new HashMap<>();
             model_method.put("method_name", plan.getTeeModel().getMethodName());
@@ -396,7 +521,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
         ServiceVo serviceTee = ServiceVo.templateToServiceVo(String.valueOf(templateId), templateType);
         String serviceVersion = "1.0.0";
         String serviceStatus = "WAITING";
-        serviceTee.setId(String.valueOf(id));
+        serviceTee.setServiceId(String.valueOf(id));
         serviceTee.setVersion(serviceVersion);
         serviceTee.setStatus(serviceStatus);
         serviceTee.setCreateTime(createTime);
