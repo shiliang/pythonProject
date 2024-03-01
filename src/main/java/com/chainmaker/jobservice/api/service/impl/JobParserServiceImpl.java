@@ -312,6 +312,7 @@ public class JobParserServiceImpl implements JobParserService {
         jobRunner.setJob(jobInfo.getJob());
         jobRunner.setTasks(jobInfo.getTasks());
         jobRunner.setServices(serviceRunners);
+        log.info("jobRunner {}, serviceRunners length {}", JSONObject.toJSONString(jobRunner), serviceRunners.size());
         return jobRunner;
     }
 
