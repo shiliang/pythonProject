@@ -23,6 +23,7 @@ import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.api.service.JobParserService;
 import com.chainmaker.jobservice.core.SqlParser;
 import com.chainmaker.jobservice.core.parser.LogicalPlanBuilderV2;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -35,7 +36,7 @@ import java.util.*;
  * @description:Job解析
  * @version: 1.0.0
  */
-
+@Slf4j
 @org.springframework.stereotype.Service
 public class JobParserServiceImpl implements JobParserService {
     private CatalogConfig catalogConfig;
@@ -503,6 +504,7 @@ public class JobParserServiceImpl implements JobParserService {
                 }
             }
             for (Service service : services) {
+                log.info("serice id {}  orgid {} local orgDID {}", service.getServiceId(), service.getOrgId(), orgDID);
                 if (Objects.equals(service.getOrgId(), orgDID)) {
 
                     String serviceStr = JSONObject.toJSONString(service);

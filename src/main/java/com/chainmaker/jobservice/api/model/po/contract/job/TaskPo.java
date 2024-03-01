@@ -39,7 +39,7 @@ public class TaskPo {
 
         ModulePo modulePo = new ModulePo();
         modulePo.setModuleName(task.getModule().getModuleName());
-        modulePo.setParams(ParamsConverter.convertToString(task.getModule().getParams()));
+        modulePo.setParamList(ParamsConverter.convertToString(task.getModule().getParams()));
         taskPo.setModule(modulePo);
 
         InputPo inputPo = new InputPo();
