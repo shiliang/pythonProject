@@ -434,8 +434,8 @@ public class ParserController {
                     } else {
                         decUrl = urlResult.getString("url");
                     }
-                    temp.put("dataID", dataID);
-                    temp.put("orgDID", orgDID);
+                    temp.put("dataId", dataID);
+                    temp.put("orgId", orgDID);
                     temp.put("encUrl", encUrl);
                     temp.put("decUrl", decUrl);
 
@@ -443,8 +443,8 @@ public class ParserController {
                 }
             }
         }
-        result.put("jobID", jobID);
-        result.put("data", dataIdList);
+        result.put("jobId", jobID);
+        result.put("list", dataIdList);
         return new ResponseEntity<JSONObject>(result, HttpStatus.OK);
     }
     @WebLog
