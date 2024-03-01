@@ -297,7 +297,7 @@ public class JobParserServiceImpl implements JobParserService {
 
     @Override
     public JobRunner getJobRunner(JobInfoPo jobInfoPo) {
-        JobInfo jobInfo = JobInfo.converterToJobInfo(jobInfoPo);
+        JobRunnerInfo jobInfo = JobRunnerInfo.converterToJobInfo(jobInfoPo);
         String jobID = jobInfo.getJob().getJobID();
         String orgId = getOrgId();
         List<ServiceRunner> serviceRunners = converterToServiceRunner(jobInfo.getServices(), orgId);
