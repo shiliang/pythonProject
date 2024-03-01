@@ -26,13 +26,4 @@ public class JobRunner {
 //    public static List<ServiceRunner> converterToServiceRunners(List<Service> services) {
 //        return null;
 //    }
-
-
-    public List<ServiceRunner> getServices() {
-        return services;
-    }
-
-    public void setServices(List<ServiceRunner> services) {
-        this.services = services;
-    }
 }
