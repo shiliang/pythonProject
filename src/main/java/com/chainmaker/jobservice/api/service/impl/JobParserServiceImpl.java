@@ -512,7 +512,8 @@ public class JobParserServiceImpl implements JobParserService {
             }
             for (Service service : services) {
                 log.info("serice id {}  orgid {} local orgDID {}", service.getServiceId(), service.getOrgId(), orgDID);
-                if (Objects.equals(service.getOrgId(), orgDID)) {
+                if (StringUtils.equals(service.getOrgId(), orgDID)) {
+                    log.info("serice id {}  orgid {} local orgDID {} enter", service.getServiceId(), service.getOrgId(), orgDID);
 
                     String serviceStr = JSONObject.toJSONString(service);
                     ServiceRunner serviceRunner = JSONObject.parseObject(serviceStr, ServiceRunner.class, Feature.OrderedField);
