@@ -520,8 +520,12 @@ public class JobParserServiceImpl implements JobParserService {
                     serviceRunner.setExposeEndpoints(service.getExposeEndpointList());
                     serviceRunner.setReferEndpoints(service.getReferExposeEndpointList());
                     String path = service.getExposeEndpointList().get(0).getPath();
-                    Integer port = Integer.valueOf(path.split(":")[1]);
-                    serviceRunner.setNodePort((port));
+                    String[] split = path.split(":");
+                    if (split.length == 2){
+                        Integer port = Integer.valueOf(split[1]);
+                        serviceRunner.setNodePort((port));
+                    }
+
                     log.info("serviceRunner {}", JSONObject.toJSONString(serviceRunner));
                     serviceRunners.add(serviceRunner);
                 }
