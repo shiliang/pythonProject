@@ -40,6 +40,7 @@ public class JobRunnerInfo {
             for (ServicePo servicePo : jobInfoPo.getServices()) {
                 Service service = new Service();
                 BeanUtils.copyProperties(servicePo, service);
+                service.setServiceId(service.getServiceId());
                 services.add(service);
             }
             jobInfo.setServices(services);
