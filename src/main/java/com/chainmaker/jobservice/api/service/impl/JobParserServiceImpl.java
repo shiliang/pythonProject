@@ -511,34 +511,18 @@ public class JobParserServiceImpl implements JobParserService {
                 }
             }
             for (Service service : services) {
-                log.info("serice id {}  orgid {} local orgDID {}", service.getServiceId(), service.getOrgId(), orgDID);
                 if (StringUtils.equals(service.getOrgId(), orgDID)) {
                     String serviceStr = JSONObject.toJSONString(service);
-                    log.info("serice id {}  orgid {} local orgDID {} enter  service {}", service.getServiceId(), service.getOrgId(), orgDID, serviceStr);
-                    ServiceRunner serviceRunner = JSONObject.parseObject(serviceStr, ServiceRunner.class, Feature.OrderedField);
+                    ServiceRunner serviceRunner = new ServiceRunner();
+                    serviceRunner.setServiceName(service.getServiceName());
+                    serviceRunner.setServiceClass(service.getServiceClass());
+                    serviceRunner.setOrgDID(service.getOrgId());
+                    serviceRunner.setExposeEndpoints(service.getExposeEndpointList());
+                    serviceRunner.setReferEndpoints(service.getReferExposeEndpointList());
                     String path = service.getExposeEndpointList().get(0).getPath();
                     Integer port = Integer.valueOf(path.split(":")[1]);
                     serviceRunner.setNodePort((port));
-//                    for (ExposeEndpoint exposeEndpoint : serviceRunner.getExposeEndpoints()) {
-//                        if (!Objects.equals(clientIdMap.get(serviceRunner.getId()), "")) {
-//                            HashMap<String, String> clientExposeEndpoint = exposeEndpointMap.get(clientIdMap.get(serviceRunner.getId()));
-//                            exposeEndpoint.put("clientCa", clientExposeEndpoint.get("serviceCa"));
-//                            exposeEndpoint.put("clientCert", clientExposeEndpoint.get("serviceCert"));
-//                        }
-////                        exposeEndpoint.put("serviceKey", new String(serviceValueParam.getServiceKey()));
-//                    }
-//                    for (ReferExposeEndpoint referExposeEndpoint : serviceRunner.getReferEndpoints()) {
-//                        if (referExposeEndpoint != null) {
-//                            if (!Objects.equals(referExposeEndpoint.getName(), "")) {
-//                                HashMap<String, String> referExposeEndpoint = exposeEndpointMap.get(ReferExposeEndpoint.getReferServiceID());
-//                                referEndpointRunner.setAddress(referExposeEndpoint.get("address"));
-//                                referEndpointRunner.setPath(referExposeEndpoint.get("path"));
-//                                referEndpointRunner.setMethod(referExposeEndpoint.get("method"));
-//                                referEndpointRunner.setServiceCa(referExposeEndpoint.get("serviceCa"));
-//                                referEndpointRunner.setServiceCert(referExposeEndpoint.get("serviceCert"));
-//                            }
-//                        }
-//                    }
+                    log.info("serviceRunner {}", JSONObject.toJSONString(serviceRunner));
                     serviceRunners.add(serviceRunner);
                 }
             }
