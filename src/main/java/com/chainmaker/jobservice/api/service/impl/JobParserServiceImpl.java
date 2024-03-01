@@ -24,6 +24,7 @@ import com.chainmaker.jobservice.api.service.JobParserService;
 import com.chainmaker.jobservice.core.SqlParser;
 import com.chainmaker.jobservice.core.parser.LogicalPlanBuilderV2;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -43,12 +44,17 @@ public class JobParserServiceImpl implements JobParserService {
     private HashMap<String, JobGraph> jobGraphHashMap = new HashMap<>();
     private HashMap<String, CatalogCache> catalogCacheHashMap = new HashMap<>();
 
+    private String orgId;
+
     public void setCatalogConfig(CatalogConfig catalogConfig) {
         this.catalogConfig = catalogConfig;
     }
 
     @Override
     public String getOrgId() {
+        if (StringUtils.isNotBlank(this.orgId)) {
+            return orgId;
+        }
         String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/v1/mira/configuration/GetOrgInfo";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -68,7 +74,8 @@ public class JobParserServiceImpl implements JobParserService {
             throw new ParserException("获取组织信息失败");
         }
         OrgInfo orgInfo = JSONObject.parseObject(JSONObject.toJSONString(httpResponse.getData()), OrgInfo.class);
-        return orgInfo.getOrgId();
+        this.orgId = orgInfo.getOrgId();
+        return this.orgId;
     }
 
     @Override
