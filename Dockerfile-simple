@@ -1,0 +1,6 @@
+#FROM maven:3.8.6-openjdk-11 as builder
+FROM docker.oa.com:5000/job-service-base:v1 as builder
+
+WORKDIR /home/workspace
+COPY ./target/job-service-0.0.1-SNAPSHOT.jar /home/workspace/job-service-0.0.1-SNAPSHOT.jar
+CMD [ "java", "-jar", "job-service-0.0.1-SNAPSHOT.jar" ]
