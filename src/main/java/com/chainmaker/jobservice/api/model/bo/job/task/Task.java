@@ -41,7 +41,7 @@ public class Task {
 
         Module module = new Module();
         module.setModuleName(taskPo.getModule().getModuleName());
-        module.setParams(JSON.parseObject(taskPo.getModule().getParams(), Feature.OrderedField));
+        module.setParams(JSON.parseObject(taskPo.getModule().getParamList(), Feature.OrderedField));
         task.setModule(module);
 
         Input input = new Input();
