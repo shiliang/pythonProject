@@ -147,7 +147,7 @@ public class SqlParser {
             }
             // 后续需要添加rowCount的获取
             int rowCount = 100;
-            TableInfo tableInfo = new TableInfo(fields, rowCount, tableName, assetInfo.getHolderCompany());
+            TableInfo tableInfo = new TableInfo(fields, rowCount, tableName, assetInfo.getHolderCompany(), assetName);
             metadata.put(assetInfo.getAssetEnName(), tableInfo);
         }
 

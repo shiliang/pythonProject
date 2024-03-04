@@ -125,7 +125,7 @@ public class MPCMetadata {
                 }
                 double rowCount = 100*cnt;
 //                cnt++;
-                tableInfos.put(key, new TableInfo(fieldInfos, rowCount, key, "source1"));
+                tableInfos.put(key, new TableInfo(fieldInfos, rowCount, key, "source1", "assetName"));
             }
             setTables(tableInfos);
 

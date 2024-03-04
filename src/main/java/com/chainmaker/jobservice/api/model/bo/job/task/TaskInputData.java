@@ -23,4 +23,5 @@ public class TaskInputData {
     private String comments;
     private String role = "client";
     private JSONObject params;
+    private String assetName;
 }
