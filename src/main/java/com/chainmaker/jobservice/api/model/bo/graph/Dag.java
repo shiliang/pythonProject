@@ -3,22 +3,22 @@ package com.chainmaker.jobservice.api.model.bo.graph;
 import java.util.List;
 
 public class Dag {
-    private List<DagNode> nodes;
-    private List<DagEdge> edges;
+    private List<DagNode> nodeList;
+    private List<DagEdge> edgeList;
 
-    public List<DagNode> getNodes() {
-        return nodes;
+    public List<DagNode> getNodeList() {
+        return nodeList;
     }
 
-    public List<DagEdge> getEdges() {
-        return edges;
+    public List<DagEdge> getEdgeList() {
+        return edgeList;
     }
 
-    public void setNodes(List<DagNode> nodes) {
-        this.nodes = nodes;
+    public void setNodeList(List<DagNode> nodeList) {
+        this.nodeList = nodeList;
     }
 
-    public void setEdges(List<DagEdge> edges) {
-        this.edges = edges;
+    public void setEdgeList(List<DagEdge> edgeList) {
+        this.edgeList = edgeList;
     }
 }

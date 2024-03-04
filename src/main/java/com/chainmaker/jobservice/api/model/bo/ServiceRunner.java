@@ -27,7 +27,7 @@ public class ServiceRunner {
     /** service更新日期时间戳 */
     private String updateTime;
     /** 不可为空，服务方的DID */
-    private String orgDID;
+    private String orgId;
     /**
      * 不可为空，服务类型：
      * DataSourceAllInOne4RISC 输入服务
@@ -60,7 +60,7 @@ public class ServiceRunner {
                 ", status='" + status + '\'' +
                 ", createTime='" + createTime + '\'' +
                 ", updateTime='" + updateTime + '\'' +
-                ", orgDID='" + orgDID + '\'' +
+                ", orgDID='" + orgId + '\'' +
                 ", serviceClass='" + serviceClass + '\'' +
                 ", serviceName='" + serviceName + '\'' +
                 ", nodePort='" + nodePort + '\'' +

@@ -11,22 +11,22 @@ import java.util.List;
  */
 
 public class Topology {
-    private List<TopologyNode> nodes;
-    private List<TopologyEdge> edges;
+    private List<TopologyNode> nodeList;
+    private List<TopologyEdge> edgeList;
 
-    public List<TopologyNode> getNodes() {
-        return nodes;
+    public List<TopologyNode> getNodeList() {
+        return nodeList;
     }
 
-    public void setNodes(List<TopologyNode> nodes) {
-        this.nodes = nodes;
+    public void setNodeList(List<TopologyNode> nodeList) {
+        this.nodeList = nodeList;
     }
 
-    public List<TopologyEdge> getEdges() {
-        return edges;
+    public List<TopologyEdge> getEdgeList() {
+        return edgeList;
     }
 
-    public void setEdges(List<TopologyEdge> edges) {
-        this.edges = edges;
+    public void setEdgeList(List<TopologyEdge> edgeList) {
+        this.edgeList = edgeList;
     }
 }

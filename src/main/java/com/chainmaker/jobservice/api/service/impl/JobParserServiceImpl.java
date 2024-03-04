@@ -435,8 +435,8 @@ public class JobParserServiceImpl implements JobParserService {
                 }
             }
         }
-        dag.setNodes(nodes);
-        dag.setEdges(edges);
+        dag.setNodeList(nodes);
+        dag.setEdgeList(edges);
         return dag;
     }
 
@@ -478,8 +478,8 @@ public class JobParserServiceImpl implements JobParserService {
                     }
                 }
             }
-            topology.setNodes(nodes);
-            topology.setEdges(edges);
+            topology.setNodeList(nodes);
+            topology.setEdgeList(edges);
             return topology;
         } else {
             throw new ParserException("暂不支持的模板");
@@ -515,9 +515,10 @@ public class JobParserServiceImpl implements JobParserService {
                 if (StringUtils.equals(service.getOrgId(), orgDID)) {
                     String serviceStr = JSONObject.toJSONString(service);
                     ServiceRunner serviceRunner = new ServiceRunner();
+                    serviceRunner.setId(service.getServiceId());
                     serviceRunner.setServiceName(service.getServiceName());
                     serviceRunner.setServiceClass(service.getServiceClass());
-                    serviceRunner.setOrgDID(service.getOrgId());
+                    serviceRunner.setOrgId(service.getOrgId());
                     serviceRunner.setExposeEndpoints(service.getExposeEndpointList());
                     serviceRunner.setReferEndpoints(service.getReferExposeEndpointList());
                     String path = service.getExposeEndpointList().get(0).getPath();
