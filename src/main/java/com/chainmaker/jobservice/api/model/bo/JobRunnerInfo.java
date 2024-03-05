@@ -21,11 +21,11 @@ import java.util.List;
 public class JobRunnerInfo {
     private Job job;
     private List<TaskRunner> tasks;
-    private List<Service> services;
+    private List<ServiceRunner> services;
 
     private List<AssetDetail> assetDetailList;
 
-    public static JobRunnerInfo converterToJobInfo(JobInfoPo jobInfoPo) {
+    public static JobRunnerInfo converterToJobInfo(JobInfoPo jobInfoPo, String orgId) {
         JobRunnerInfo jobInfo = new JobRunnerInfo();
         jobInfo.setJob(Job.converterToJob(jobInfoPo.getJob()));
         if (jobInfoPo.getTasks() != null) {
@@ -36,12 +36,12 @@ public class JobRunnerInfo {
             jobInfo.setTasks(tasks);
         }
         if (jobInfoPo.getServices() != null) {
-            List<Service> services = new ArrayList<>();
+            List<ServiceRunner> services = new ArrayList<>();
             for (ServicePo servicePo : jobInfoPo.getServices()) {
-                Service service = new Service();
-                BeanUtils.copyProperties(servicePo, service);
-                service.setServiceId(service.getServiceId());
-                services.add(service);
+                ServiceRunner serviceRunner = ServiceRunner.converterToServiceRunner(servicePo, orgId);
+                if (null != serviceRunner) {
+                    services.add(serviceRunner);
+                }
             }
             jobInfo.setServices(services);
         }

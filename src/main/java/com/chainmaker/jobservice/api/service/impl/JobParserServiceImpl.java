@@ -304,15 +304,15 @@ public class JobParserServiceImpl implements JobParserService {
 
     @Override
     public JobRunner getJobRunner(JobInfoPo jobInfoPo) {
-        JobRunnerInfo jobInfo = JobRunnerInfo.converterToJobInfo(jobInfoPo);
-        String jobID = jobInfo.getJob().getJobID();
         String orgId = getOrgId();
-        List<ServiceRunner> serviceRunners = converterToServiceRunner(jobInfo.getServices(), orgId);
+        JobRunnerInfo jobInfo = JobRunnerInfo.converterToJobInfo(jobInfoPo, orgId);
+        String jobID = jobInfo.getJob().getJobID();
+
+//        List<ServiceRunner> serviceRunners = converterToServiceRunner(jobInfo.getServices(), orgId);
         JobRunner jobRunner = new JobRunner();
         jobRunner.setJob(jobInfo.getJob());
         jobRunner.setTasks(jobInfo.getTasks());
-        jobRunner.setServices(serviceRunners);
-        log.info("jobRunner {}, serviceRunners length {}", JSONObject.toJSONString(jobRunner), serviceRunners.size());
+        jobRunner.setServices(jobInfo.getServices());
         return jobRunner;
     }
 
@@ -513,7 +513,6 @@ public class JobParserServiceImpl implements JobParserService {
             }
             for (Service service : services) {
                 if (StringUtils.equals(service.getOrgId(), orgDID)) {
-                    String serviceStr = JSONObject.toJSONString(service);
                     ServiceRunner serviceRunner = new ServiceRunner();
                     serviceRunner.setId(service.getServiceId());
                     serviceRunner.setServiceName(service.getServiceName());

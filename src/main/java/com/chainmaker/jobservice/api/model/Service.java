@@ -22,6 +22,7 @@ public class Service {
 
     private String orgName;
     private String serviceClass;
+    private String status;
 
 //    @JSONField(deserializeUsing = ExposeEndpointDeserializer.class)
     private List<ExposeEndpoint> exposeEndpointList = new ArrayList<>();
