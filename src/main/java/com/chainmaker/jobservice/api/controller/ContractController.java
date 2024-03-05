@@ -356,4 +356,20 @@ public class ContractController {
 
         return platformInfo;
     }
+
+    @WebLog(description = "更新TASK输出")
+    @RequestMapping(value = "/jobs/UpdateFailedReason", method = RequestMethod.POST)
+    public ResponseEntity<String> setTaskOutput(@RequestBody String req) {
+        JSONObject request = JSON.parseObject(req);
+        String jobID = request.getString("jobId");
+        String reason = request.getString("failedReason");
+        JobUpdateFailedReasonPo jobUpdateFailedReasonPo = new JobUpdateFailedReasonPo();
+        jobUpdateFailedReasonPo.setJobID(jobID);
+        jobUpdateFailedReasonPo.setFailedReason(reason);
+
+        ContractServiceResponse csr = blockchainContractService.invokeContract(CONTRACT_NAME, "UpdateJobFailedReason", jobUpdateFailedReasonPo.toContractParams());
+        String response = csr.toString();
+        HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+        return new ResponseEntity<String>(response, responseStatus);
+    }
 }
