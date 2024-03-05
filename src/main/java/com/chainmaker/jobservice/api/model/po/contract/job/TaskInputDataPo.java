@@ -21,6 +21,6 @@ public class TaskInputDataPo {
     private String tableName;
     private String columnName;
     private String type;
-    private String length;
+    private Integer length;
     private String comments;
 }

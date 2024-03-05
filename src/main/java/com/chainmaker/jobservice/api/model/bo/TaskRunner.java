@@ -56,6 +56,13 @@ public class TaskRunner {
             taskInputData.setDomainID(taskInputDataPo.getDomainID());
             taskInputData.setRole(taskInputDataPo.getRole());
             taskInputData.setParams(JSON.parseObject(taskInputDataPo.getParams(), Feature.OrderedField));
+            taskInputData.setAssetName(taskInputDataPo.getAssetName());
+            taskInputData.setType(taskInputDataPo.getType());
+            taskInputData.setLength(taskInputDataPo.getLength());
+            taskInputData.setComments(taskInputDataPo.getComments());
+            taskInputData.setDatabaseName(taskInputDataPo.getDatabaseName());
+            taskInputData.setTableName(taskInputDataPo.getTableName());
+            taskInputData.setColumnName(taskInputDataPo.getColumnName());
             data.add(taskInputData);
         }
         input.setData(data);
