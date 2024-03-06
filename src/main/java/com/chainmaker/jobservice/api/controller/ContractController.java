@@ -79,7 +79,7 @@ public class ContractController {
 
     @WebLog(description = "撤销JOB")
     @RequestMapping(value = "/jobs/{jobID}/actions/cancel", method = RequestMethod.POST)
-    public ResponseEntity<String> cancelJob(@PathVariable String jobID, @RequestBody String req) {
+    public ResponseEntity<JSONObject> cancelJob(@PathVariable String jobID, @RequestBody String req) {
         String timestamp = String.valueOf(System.currentTimeMillis());
         String partyID = JSON.parseObject(req).getString("partyID");
         log.info("partyID "+ partyID);
@@ -88,9 +88,9 @@ public class ContractController {
         jobUpdatePo.setPartyID(partyID);
         jobUpdatePo.setTimestamp(timestamp);
         ContractServiceResponse csr = blockchainContractService.invokeContract(CONTRACT_NAME, "CancelJob", jobUpdatePo.toContractParams());
-        String response = csr.toString();
+        JSONObject response = csr.toJSON(false);
         HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
-        return new ResponseEntity<String>(response, responseStatus);
+        return new ResponseEntity<JSONObject>(response, responseStatus);
     }
 
     @WebLog
