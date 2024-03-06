@@ -2,9 +2,7 @@ package com.chainmaker.jobservice.api.builder;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.chainmaker.jobservice.api.model.ExposeEndpoint;
-import com.chainmaker.jobservice.api.model.ReferExposeEndpoint;
-import com.chainmaker.jobservice.api.model.Service;
+import com.chainmaker.jobservice.api.model.*;
 import com.chainmaker.jobservice.api.model.bo.job.Job;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
 import com.chainmaker.jobservice.api.model.bo.job.service.ReferEndpoint;
@@ -21,6 +19,7 @@ import com.chainmaker.jobservice.core.optimizer.model.OutputData;
 import com.chainmaker.jobservice.core.optimizer.nodes.DAG;
 import com.chainmaker.jobservice.core.optimizer.nodes.Node;
 import com.chainmaker.jobservice.core.optimizer.plans.*;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 
 import java.util.*;
@@ -200,6 +199,15 @@ public class JobBuilder extends PhysicalPlanVisitor {
 //                    exposeEndpoint.setOrgId(exposeEndpointFormMap.get("groupID"));
                     exposeEndpoint.setName(exposeEndpointVo.getName());
                     exposeEndpoint.setServiceClass(serviceVo.getServiceClass());
+                    ValueVo valueVo = serviceVo.getValues().get(0);
+                    List<Value> valueList = new ArrayList<>();
+                    if (!StringUtils.isEmpty(valueVo.getKey())){
+                        Value value = new Value();
+                        value.setKey(valueVo.getKey());
+                        value.setValue(valueVo.getValue());
+                        valueList.add(value);
+                    }
+                    exposeEndpoint.setValueList(valueList);
                     exposeEndpointList.add(exposeEndpoint);
 
                 }
