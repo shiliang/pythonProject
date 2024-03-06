@@ -1,24 +1,13 @@
 package com.chainmaker.jobservice.api.model.bo;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.model.ExposeEndpoint;
 import com.chainmaker.jobservice.api.model.ReferExposeEndpoint;
-import com.chainmaker.jobservice.api.model.Service;
-import com.chainmaker.jobservice.api.model.bo.job.task.Input;
-import com.chainmaker.jobservice.api.model.bo.job.task.TaskInputData;
 import com.chainmaker.jobservice.api.model.po.contract.job.ServicePo;
-import com.chainmaker.jobservice.api.model.po.contract.job.TaskInputDataPo;
-import com.chainmaker.jobservice.api.model.po.contract.job.TaskPo;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 
 @Data
 public class ServiceRunner {
@@ -54,9 +43,9 @@ public class ServiceRunner {
     @JsonProperty(value = "NodePort")
     private Integer nodePort;
     /** 配置参数 */
-    private List<ExposeEndpoint> exposeEndpoints;
+    private List<ExposeEndpoint> exposeEndpointList;
     /** 引用的服务 */
-    private List<ReferExposeEndpoint> referEndpoints;
+    private List<ReferExposeEndpoint> referExposeEndpointList;
     /** 自定义配置参数 */
 //    private HashMap<String, String> values;
 //    private HashMap<String, ReferValue> referValues;
@@ -72,8 +61,8 @@ public class ServiceRunner {
                 serviceRunner.setServiceClass(servicePo.getServiceClass());
                 serviceRunner.setOrgId(servicePo.getOrgId());
                 serviceRunner.setStatus(servicePo.getStatus());
-                serviceRunner.setExposeEndpoints(servicePo.getExposeEndpointList());
-                serviceRunner.setReferEndpoints(servicePo.getReferEndpointList());
+                serviceRunner.setExposeEndpointList(servicePo.getExposeEndpointList());
+                serviceRunner.setReferExposeEndpointList(servicePo.getReferEndpointList());
                 String path = servicePo.getExposeEndpointList().get(0).getPath();
                 String[] split = path.split(":");
                 if (split.length == 2){
@@ -102,8 +91,8 @@ public class ServiceRunner {
                 ", serviceClass='" + serviceClass + '\'' +
                 ", serviceName='" + serviceName + '\'' +
                 ", nodePort='" + nodePort + '\'' +
-                ", exposeEndpoints=" + exposeEndpoints +
-                ", referEndpoints=" + referEndpoints +
+                ", exposeEndpoints=" + exposeEndpointList +
+                ", referEndpoints=" + referExposeEndpointList +
                 '}';
     }
 }

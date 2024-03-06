@@ -518,8 +518,8 @@ public class JobParserServiceImpl implements JobParserService {
                     serviceRunner.setServiceName(service.getServiceName());
                     serviceRunner.setServiceClass(service.getServiceClass());
                     serviceRunner.setOrgId(service.getOrgId());
-                    serviceRunner.setExposeEndpoints(service.getExposeEndpointList());
-                    serviceRunner.setReferEndpoints(service.getReferExposeEndpointList());
+                    serviceRunner.setExposeEndpointList(service.getExposeEndpointList());
+                    serviceRunner.setReferExposeEndpointList(service.getReferExposeEndpointList());
                     String path = service.getExposeEndpointList().get(0).getPath();
                     String[] split = path.split(":");
                     if (split.length == 2){
