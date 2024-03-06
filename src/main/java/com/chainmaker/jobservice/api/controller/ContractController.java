@@ -82,6 +82,7 @@ public class ContractController {
     public ResponseEntity<String> cancelJob(@PathVariable String jobID, @RequestBody String req) {
         String timestamp = String.valueOf(System.currentTimeMillis());
         String partyID = JSON.parseObject(req).getString("partyID");
+        log.info("partyID "+ partyID);
         JobUpdatePo jobUpdatePo = new JobUpdatePo();
         jobUpdatePo.setJobID(jobID);
         jobUpdatePo.setPartyID(partyID);
