@@ -1,1 +1,1 @@
-git pull && mvn clean package &&docker build -f ./Dockerfile-simple -t docker.oa.com:5000/mpc/job-service:v2.0.0 .
+git pull && mvn clean package &&docker build -f ./Dockerfile-simple -t docker.oa.com:5000/mpc/job-service:v2.0.0 . && docker push docker.oa.com:5000/mpc/job-service:v2.0.0
