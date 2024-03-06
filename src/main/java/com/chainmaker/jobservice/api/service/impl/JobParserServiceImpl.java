@@ -311,8 +311,8 @@ public class JobParserServiceImpl implements JobParserService {
 //        List<ServiceRunner> serviceRunners = converterToServiceRunner(jobInfo.getServices(), orgId);
         JobRunner jobRunner = new JobRunner();
         jobRunner.setJob(jobInfo.getJob());
-        jobRunner.setTasks(jobInfo.getTasks());
-        jobRunner.setServices(jobInfo.getServices());
+        jobRunner.setTaskList(jobInfo.getTasks());
+        jobRunner.setServiceList(jobInfo.getServices());
         return jobRunner;
     }
 
