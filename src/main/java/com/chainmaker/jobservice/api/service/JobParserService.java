@@ -68,7 +68,7 @@ public interface JobParserService {
      */
     List<Service> topologyToService(Topology topology, List<Service> services);
 
-    List<ServiceRunner> converterToServiceRunner(List<Service> services, String orgDID);
+    List<ServiceRunner> converterToServiceRunner(List<ServiceRunner> services, String orgDID);
 
     void put(String key, JobGraph value);
     JobGraph getJobGraph(String key);

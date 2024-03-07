@@ -10,6 +10,7 @@ import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
 import com.chainmaker.jobservice.api.model.bo.graph.*;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
+import com.chainmaker.jobservice.api.model.bo.job.service.ReferEndpoint;
 import com.chainmaker.jobservice.api.model.bo.job.task.Task;
 import com.chainmaker.jobservice.api.model.bo.job.task.TaskInputData;
 import com.chainmaker.jobservice.api.model.po.contract.JobInfoPo;
@@ -306,13 +307,11 @@ public class JobParserServiceImpl implements JobParserService {
     public JobRunner getJobRunner(JobInfoPo jobInfoPo) {
         String orgId = getOrgId();
         JobRunnerInfo jobInfo = JobRunnerInfo.converterToJobInfo(jobInfoPo, orgId);
-        String jobID = jobInfo.getJob().getJobID();
-
-//        List<ServiceRunner> serviceRunners = converterToServiceRunner(jobInfo.getServices(), orgId);
         JobRunner jobRunner = new JobRunner();
         jobRunner.setJob(jobInfo.getJob());
         jobRunner.setTaskList(jobInfo.getTasks());
-        jobRunner.setServiceList(jobInfo.getServices());
+        List<ServiceRunner> serviceRunners = converterToServiceRunner(jobInfo.getServices(), orgId);
+        jobRunner.setServiceList(serviceRunners);
         return jobRunner;
     }
 
@@ -492,29 +491,29 @@ public class JobParserServiceImpl implements JobParserService {
     }
 
     @Override
-    public List<ServiceRunner> converterToServiceRunner(List<Service> services, String orgDID) {
+    public List<ServiceRunner> converterToServiceRunner(List<ServiceRunner> services, String orgDID) {
         List<ServiceRunner> serviceRunners = new ArrayList<>();
 
         HashMap<String, ExposeEndpoint> exposeEndpointMap = new HashMap<>();
         HashMap<String, String> clientIdMap = new HashMap<>();
         if (services != null) {
-            for (Service service : services) {
-                clientIdMap.put(service.getServiceId(), "");
+            for (ServiceRunner service : services) {
+                clientIdMap.put(service.getId(), "");
             }
-            for (Service service : services) {
+            for (ServiceRunner service : services) {
                 for (ExposeEndpoint exposeEndpoint : service.getExposeEndpointList()) {
-                    exposeEndpointMap.put(service.getServiceId(), exposeEndpoint);
+                    exposeEndpointMap.put(service.getId(), exposeEndpoint);
                 }
                 for (ReferExposeEndpoint referEndpoint : service.getReferExposeEndpointList()) {
                     if (!Objects.equals(referEndpoint.getReferServiceId(), "") && referEndpoint.getReferServiceId() != null) {
-                        clientIdMap.put(referEndpoint.getReferServiceId(), service.getServiceId());
+                        clientIdMap.put(referEndpoint.getReferServiceId(), service.getId());
                     }
                 }
             }
-            for (Service service : services) {
+            for (ServiceRunner service : services) {
                 if (StringUtils.equals(service.getOrgId(), orgDID)) {
                     ServiceRunner serviceRunner = new ServiceRunner();
-                    serviceRunner.setId(service.getServiceId());
+                    serviceRunner.setId(service.getId());
                     serviceRunner.setServiceName(service.getServiceName());
                     serviceRunner.setServiceClass(service.getServiceClass());
                     serviceRunner.setOrgId(service.getOrgId());
@@ -525,6 +524,19 @@ public class JobParserServiceImpl implements JobParserService {
                     if (split.length == 2){
                         Integer port = Integer.valueOf(split[1]);
                         serviceRunner.setNodePort((port));
+                    }
+
+                    for (ReferExposeEndpoint referExposeEndpoint : serviceRunner.getReferExposeEndpointList()) {
+                        if (referExposeEndpoint != null) {
+                            if (!Objects.equals(referExposeEndpoint.getName(), "")) {
+                                ExposeEndpoint referExposeEndpointRunner = exposeEndpointMap.get(referExposeEndpoint.getReferServiceId());
+                                referExposeEndpoint.setAddress(referExposeEndpointRunner.getAddress());
+//                                referExposeEndpoint.setPath(referExposeEndpoint.get("path"));
+//                                referExposeEndpoint.setMethod(referExposeEndpoint.get("method"));
+                                referExposeEndpoint.setServiceCa(referExposeEndpointRunner.getServiceCa());
+                                referExposeEndpoint.setServiceCert(referExposeEndpointRunner.getServiceCert());
+                            }
+                        }
                     }
 
                     log.info("serviceRunner {}", JSONObject.toJSONString(serviceRunner));
