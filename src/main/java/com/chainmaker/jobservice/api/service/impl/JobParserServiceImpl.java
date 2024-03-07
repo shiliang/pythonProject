@@ -512,21 +512,14 @@ public class JobParserServiceImpl implements JobParserService {
             }
             for (ServiceRunner service : services) {
                 if (StringUtils.equals(service.getOrgId(), orgDID)) {
-                    ServiceRunner serviceRunner = new ServiceRunner();
-                    serviceRunner.setId(service.getId());
-                    serviceRunner.setServiceName(service.getServiceName());
-                    serviceRunner.setServiceClass(service.getServiceClass());
-                    serviceRunner.setOrgId(service.getOrgId());
-                    serviceRunner.setExposeEndpointList(service.getExposeEndpointList());
-                    serviceRunner.setReferExposeEndpointList(service.getReferExposeEndpointList());
                     String path = service.getExposeEndpointList().get(0).getPath();
                     String[] split = path.split(":");
                     if (split.length == 2){
                         Integer port = Integer.valueOf(split[1]);
-                        serviceRunner.setNodePort((port));
+                        service.setNodePort((port));
                     }
 
-                    for (ReferExposeEndpoint referExposeEndpoint : serviceRunner.getReferExposeEndpointList()) {
+                    for (ReferExposeEndpoint referExposeEndpoint : service.getReferExposeEndpointList()) {
                         if (referExposeEndpoint != null) {
                             if (!Objects.equals(referExposeEndpoint.getName(), "")) {
                                 ExposeEndpoint referExposeEndpointRunner = exposeEndpointMap.get(referExposeEndpoint.getReferServiceId());
@@ -541,8 +534,8 @@ public class JobParserServiceImpl implements JobParserService {
                         }
                     }
 
-                    log.info("serviceRunner {}", JSONObject.toJSONString(serviceRunner));
-                    serviceRunners.add(serviceRunner);
+                    log.info("serviceRunner {}", JSONObject.toJSONString(service));
+                    serviceRunners.add(service);
                 }
             }
         }
