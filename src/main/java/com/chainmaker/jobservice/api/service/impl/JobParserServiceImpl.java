@@ -530,6 +530,8 @@ public class JobParserServiceImpl implements JobParserService {
                         if (referExposeEndpoint != null) {
                             if (!Objects.equals(referExposeEndpoint.getName(), "")) {
                                 ExposeEndpoint referExposeEndpointRunner = exposeEndpointMap.get(referExposeEndpoint.getReferServiceId());
+                                if (referExposeEndpointRunner == null)
+                                    continue;
                                 referExposeEndpoint.setAddress(referExposeEndpointRunner.getAddress());
 //                                referExposeEndpoint.setPath(referExposeEndpoint.get("path"));
 //                                referExposeEndpoint.setMethod(referExposeEndpoint.get("method"));
