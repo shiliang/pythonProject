@@ -48,7 +48,7 @@ public class ServicePo {
     /** 配置参数 */
     private List<ExposeEndpoint> exposeEndpointList;
     /** 引用的服务 */
-    private List<ReferExposeEndpoint> referEndpointList;
+    private List<ReferExposeEndpoint> referExposeEndpointList;
     /** 自定义配置参数 */
 
 
