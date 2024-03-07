@@ -62,7 +62,7 @@ public class ServiceRunner {
                 serviceRunner.setOrgId(servicePo.getOrgId());
                 serviceRunner.setStatus(servicePo.getStatus());
                 serviceRunner.setExposeEndpointList(servicePo.getExposeEndpointList());
-                serviceRunner.setReferExposeEndpointList(servicePo.getReferEndpointList());
+                serviceRunner.setReferExposeEndpointList(servicePo.getReferExposeEndpointList());
                 String path = servicePo.getExposeEndpointList().get(0).getPath();
                 String[] split = path.split(":");
                 if (split.length == 2){
