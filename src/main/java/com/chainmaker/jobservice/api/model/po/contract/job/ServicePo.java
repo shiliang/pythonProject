@@ -67,7 +67,7 @@ public class ServicePo {
                 ", serviceClass='" + serviceClass + '\'' +
                 ", serviceName='" + serviceName + '\'' +
                 ", exposeEndpoints='" + exposeEndpointList + '\'' +
-                ", referEndpoints='" + referEndpointList + '\'' +
+                ", referEndpoints='" + referExposeEndpointList + '\'' +
                 '}';
     }
 }
