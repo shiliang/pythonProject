@@ -45,7 +45,7 @@ public class JobParserServiceImpl implements JobParserService {
     private HashMap<String, JobGraph> jobGraphHashMap = new HashMap<>();
     private HashMap<String, CatalogCache> catalogCacheHashMap = new HashMap<>();
 
-    private String orgId;
+    private String orgId = "1";
 
     public void setCatalogConfig(CatalogConfig catalogConfig) {
         this.catalogConfig = catalogConfig;
@@ -518,21 +518,23 @@ public class JobParserServiceImpl implements JobParserService {
                         Integer port = Integer.valueOf(split[1]);
                         service.setNodePort((port));
                     }
-
-                    for (ReferExposeEndpoint referExposeEndpoint : service.getReferExposeEndpointList()) {
-                        if (referExposeEndpoint != null) {
-                            if (!Objects.equals(referExposeEndpoint.getName(), "")) {
-                                ExposeEndpoint referExposeEndpointRunner = exposeEndpointMap.get(referExposeEndpoint.getReferServiceId());
-                                if (referExposeEndpointRunner == null)
-                                    continue;
-                                referExposeEndpoint.setAddress(referExposeEndpointRunner.getAddress());
+                    if (null != service.getReferExposeEndpointList() && service.getReferExposeEndpointList().size() > 0){
+                        for (ReferExposeEndpoint referExposeEndpoint : service.getReferExposeEndpointList()) {
+                            if (referExposeEndpoint != null) {
+                                if (!Objects.equals(referExposeEndpoint.getName(), "")) {
+                                    ExposeEndpoint referExposeEndpointRunner = exposeEndpointMap.get(referExposeEndpoint.getReferServiceId());
+                                    if (referExposeEndpointRunner == null)
+                                        continue;
+                                    referExposeEndpoint.setAddress(referExposeEndpointRunner.getAddress());
 //                                referExposeEndpoint.setPath(referExposeEndpoint.get("path"));
 //                                referExposeEndpoint.setMethod(referExposeEndpoint.get("method"));
-                                referExposeEndpoint.setServiceCa(referExposeEndpointRunner.getServiceCa());
-                                referExposeEndpoint.setServiceCert(referExposeEndpointRunner.getServiceCert());
+                                    referExposeEndpoint.setServiceCa(referExposeEndpointRunner.getServiceCa());
+                                    referExposeEndpoint.setServiceCert(referExposeEndpointRunner.getServiceCert());
+                                }
                             }
                         }
                     }
+
 
                     log.info("serviceRunner {}", JSONObject.toJSONString(service));
                     serviceRunners.add(service);
