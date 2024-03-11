@@ -45,7 +45,7 @@ public class JobParserServiceImpl implements JobParserService {
     private HashMap<String, JobGraph> jobGraphHashMap = new HashMap<>();
     private HashMap<String, CatalogCache> catalogCacheHashMap = new HashMap<>();
 
-    private String orgId = "1";
+    private String orgId;
 
     public void setCatalogConfig(CatalogConfig catalogConfig) {
         this.catalogConfig = catalogConfig;
