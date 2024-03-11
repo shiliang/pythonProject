@@ -144,6 +144,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
                 for (InputData inputData : plan.getInputDataList()) {
                     JSONObject dataSourse = new JSONObject();
                     dataSourse.put("table", inputData.getTableName());
+                    dataSourse.put("asset_en_name", inputData.getAssetName());
                     dataSourse.put("key", inputData.getColumn());
                     if (plan.getProject() != null ) {
                         dataSourse.put("column", plan.getProject().get(inputData.getTableName()).toString());
@@ -240,6 +241,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
                 for (InputData inputData : plan.getInputDataList()) {
                     JSONObject dataSourse = new JSONObject();
                     dataSourse.put("table", inputData.getTableName());
+                    dataSourse.put("asset_en_name", inputData.getAssetName());
                     dataSourse.put("key", inputData.getColumn());
                     if (plan.getProject() != null ) {
                         dataSourse.put("column", plan.getProject().get(inputData.getTableName()).toString());
@@ -487,6 +489,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
             JSONObject inputParam = new JSONObject();
             inputParam.put("table", inputData.getTableName().toLowerCase());
+            inputParam.put("asset_en_name", inputData.getAssetName());
             if (inputData.getColumn() != null) {
                 inputParam.put("field", inputData.getColumn().toLowerCase());
             }

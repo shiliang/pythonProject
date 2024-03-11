@@ -196,6 +196,7 @@ public class PlanOptimizer extends LogicalPlanVisitor {
             OutputData outputData = new OutputData();
             inputData.setNodeSrc(parent.getId());
             inputData.setTableName(expression.getBase().toString());
+            inputData.setAssetName(expression.getBase().toString());
             inputData.setColumn(expression.getFieldName());
             inputData.setDomainID(tableOwnerMap.get(expression.getBase().toString()));
             parties.add(inputData.getDomainID());
