@@ -513,7 +513,7 @@ public class JobParserServiceImpl implements JobParserService {
             log.info("exposeEndpointMap {}", JSONObject.toJSONString(exposeEndpointMap));
             for (ServiceRunner service : services) {
                 if (StringUtils.equals(service.getOrgId(), orgDID)) {
-                    String path = service.getExposeEndpointList().get(0).getPath();
+                    String path = service.getExposeEndpointList().get(0).getAddress();
                     String[] split = path.split(":");
                     if (split.length == 2){
                         Integer port = Integer.valueOf(split[1]);
