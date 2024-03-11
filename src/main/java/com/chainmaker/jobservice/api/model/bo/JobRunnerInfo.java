@@ -38,7 +38,7 @@ public class JobRunnerInfo {
         if (jobInfoPo.getServices() != null) {
             List<ServiceRunner> services = new ArrayList<>();
             for (ServicePo servicePo : jobInfoPo.getServices()) {
-                ServiceRunner serviceRunner = ServiceRunner.converterToServiceRunner(servicePo, orgId);
+                ServiceRunner serviceRunner = ServiceRunner.converterToServiceRunner(servicePo);
                 if (null != serviceRunner) {
                     services.add(serviceRunner);
                 }

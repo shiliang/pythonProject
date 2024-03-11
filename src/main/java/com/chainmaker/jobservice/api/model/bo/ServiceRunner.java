@@ -51,25 +51,22 @@ public class ServiceRunner {
 //    private HashMap<String, ReferValue> referValues;
 
 
-    public static ServiceRunner converterToServiceRunner(ServicePo servicePo, String orgDID) {
+    public static ServiceRunner converterToServiceRunner(ServicePo servicePo) {
         ServiceRunner serviceRunner = null;
         if (servicePo != null) {
-            if (StringUtils.equals(servicePo.getOrgId(), orgDID)) {
-                serviceRunner = new ServiceRunner();
-                serviceRunner.setId(servicePo.getId());
-                serviceRunner.setServiceName(servicePo.getServiceName());
-                serviceRunner.setServiceClass(servicePo.getServiceClass());
-                serviceRunner.setOrgId(servicePo.getOrgId());
-                serviceRunner.setStatus(servicePo.getStatus());
-                serviceRunner.setExposeEndpointList(servicePo.getExposeEndpointList());
-                serviceRunner.setReferExposeEndpointList(servicePo.getReferExposeEndpointList());
-                String path = servicePo.getExposeEndpointList().get(0).getPath();
-                String[] split = path.split(":");
-                if (split.length == 2){
-                    Integer port = Integer.valueOf(split[1]);
-                    serviceRunner.setNodePort((port));
-                }
-
+            serviceRunner = new ServiceRunner();
+            serviceRunner.setId(servicePo.getId());
+            serviceRunner.setServiceName(servicePo.getServiceName());
+            serviceRunner.setServiceClass(servicePo.getServiceClass());
+            serviceRunner.setOrgId(servicePo.getOrgId());
+            serviceRunner.setStatus(servicePo.getStatus());
+            serviceRunner.setExposeEndpointList(servicePo.getExposeEndpointList());
+            serviceRunner.setReferExposeEndpointList(servicePo.getReferExposeEndpointList());
+            String path = servicePo.getExposeEndpointList().get(0).getPath();
+            String[] split = path.split(":");
+            if (split.length == 2){
+                Integer port = Integer.valueOf(split[1]);
+                serviceRunner.setNodePort((port));
             }
         }
         return serviceRunner;
