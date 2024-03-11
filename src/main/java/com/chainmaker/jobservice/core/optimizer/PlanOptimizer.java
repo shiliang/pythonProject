@@ -3,6 +3,7 @@ package com.chainmaker.jobservice.core.optimizer;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.response.ParserException;
+import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
 import com.chainmaker.jobservice.core.optimizer.model.FL.FateModel;
 import com.chainmaker.jobservice.core.optimizer.model.FL.FlInputData;
 import com.chainmaker.jobservice.core.optimizer.model.InputData;
@@ -30,13 +31,15 @@ public class PlanOptimizer extends LogicalPlanVisitor {
     private HashMap<String, String> tableOwnerMap;
     private HashMap<String, PhysicalPlan> tableLastMap = new HashMap<>();
     private Integer count = 0;
+    private HashMap<String, TableInfo> metaData;
 
     private HashMap<String, List<String>> kvMap = new HashMap<>();
 
-    public PlanOptimizer(Integer modelType, Integer isStream, HashMap<String, String> tableOwnerMap) {
+    public PlanOptimizer(Integer modelType, Integer isStream, HashMap<String, String> tableOwnerMap, HashMap<String, TableInfo> metaData) {
         this.modelType = modelType;
         this.isStream = isStream;
         this.tableOwnerMap = tableOwnerMap;
+        this.metaData = metaData;
     }
 
     public DAG<PhysicalPlan> getDag() {
@@ -180,7 +183,7 @@ public class PlanOptimizer extends LogicalPlanVisitor {
 
         }
         for (InputData inputData : pirFilter.getInputDataList()) {
-            PhysicalPlan parent = tableLastMap.get(inputData.getTableName());
+            PhysicalPlan parent = tableLastMap.get(inputData.getAssetName());
             dag.addEdge(parent, pirFilter);
         }
 
@@ -195,8 +198,10 @@ public class PlanOptimizer extends LogicalPlanVisitor {
             InputData inputData = new InputData();
             OutputData outputData = new OutputData();
             inputData.setNodeSrc(parent.getId());
-            inputData.setTableName(expression.getBase().toString());
-            inputData.setAssetName(expression.getBase().toString());
+            String assetName = expression.getBase().toString();
+            TableInfo tableInfo = this.metaData.get(assetName);
+            inputData.setTableName(tableInfo.getName());
+            inputData.setAssetName(assetName);
             inputData.setColumn(expression.getFieldName());
             inputData.setDomainID(tableOwnerMap.get(expression.getBase().toString()));
             parties.add(inputData.getDomainID());
@@ -283,7 +288,10 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         InputData inputData = new InputData();
         OutputData outputData = new OutputData();
         inputData.setNodeSrc(parent.getId());
-        inputData.setTableName(expression.getBase().toString());
+        String assetName = expression.getBase().toString();
+        TableInfo tableInfo = metaData.get(assetName);
+        inputData.setTableName(tableInfo.getName());
+        inputData.setAssetName(assetName);
         inputData.setColumn(expression.getFieldName());
         inputData.setDomainID(tableOwnerMap.get(expression.getBase().toString()));
         parties.add(inputData.getDomainID());
@@ -324,7 +332,10 @@ public class PlanOptimizer extends LogicalPlanVisitor {
                 PhysicalPlan parent = tableLastMap.get(((DereferenceExpression) value).getBase().toString());
                 parents.add(parent);
                 InputData inputData = new InputData();
-                inputData.setTableName(((DereferenceExpression) value).getBase().toString());
+                String assetName = ((DereferenceExpression) value).getBase().toString();
+                TableInfo tableInfo = metaData.get(assetName);
+                inputData.setTableName(tableInfo.getName());
+                inputData.setAssetName(assetName);
                 inputData.setColumn(((DereferenceExpression) value).getFieldName());
                 inputData.setDomainID(tableOwnerMap.get(((DereferenceExpression) value).getBase().toString()));
                 inputData.setNodeSrc(parent.getId());

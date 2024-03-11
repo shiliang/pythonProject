@@ -147,7 +147,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
                     dataSourse.put("asset_en_name", inputData.getAssetName());
                     dataSourse.put("key", inputData.getColumn());
                     if (plan.getProject() != null ) {
-                        dataSourse.put("column", plan.getProject().get(inputData.getTableName()).toString());
+                        dataSourse.put("column", plan.getProject().get(inputData.getAssetName()).toString());
                     }
                     pirParams.add(dataSourse);
                 }

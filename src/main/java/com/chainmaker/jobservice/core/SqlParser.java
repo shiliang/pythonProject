@@ -111,7 +111,26 @@ public class SqlParser {
         System.out.println(printer.logicalPlanString);
         HashMap<String, String> tableOwnerMap = buildMetaData(assetInfoList);
 
-        PlanOptimizer optimizer = new PlanOptimizer(this.modelType, this.isStream, tableOwnerMap);
+        // 获取所需的元数据，即HashMap<String, TableInfo>
+        HashMap<String, TableInfo> metadata = new HashMap<>();
+        for (AssetInfo assetInfo : assetInfoList) {
+            HashMap<String, FieldInfo> fields = new HashMap<>();
+            DataInfo dataInfo = assetInfo.getDataInfo();
+            String tableName = dataInfo.getTableName();
+            String databaseName = dataInfo.getDbName();
+            String assetName = assetInfo.getAssetEnName();
+            for (SaveTableColumnItem detailInfo : dataInfo.getItemList()) {
+                FieldInfo field = new FieldInfo(detailInfo.getName(), detailInfo.getDataType(), null, null, FieldInfo.DistributionType.Uniform,
+                        assetName, detailInfo.getDataLength(), assetInfo.getHolderCompany(), detailInfo.getDescription(), databaseName, assetName);
+                fields.put(field.getUniqueName(), field);
+            }
+            // 后续需要添加rowCount的获取
+            int rowCount = 100;
+            TableInfo tableInfo = new TableInfo(fields, rowCount, tableName, assetInfo.getHolderCompany(), assetName);
+            metadata.put(assetInfo.getAssetEnName(), tableInfo);
+        }
+
+        PlanOptimizer optimizer = new PlanOptimizer(this.modelType, this.isStream, tableOwnerMap, metadata);
         optimizer.visit(logicalPlan);
         DAG<PhysicalPlan> planDag = optimizer.getDag();
         return planDag;
