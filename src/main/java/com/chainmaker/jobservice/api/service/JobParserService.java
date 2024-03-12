@@ -19,6 +19,7 @@ import java.util.List;
 public interface JobParserService {
     void setCatalogConfig(CatalogConfig catalogConfig);
     String getOrgId();
+    String getOrgName();
 
     /***
      * @description 根据类型解析SQL

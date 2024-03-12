@@ -46,6 +46,7 @@ public class JobParserServiceImpl implements JobParserService {
     private HashMap<String, CatalogCache> catalogCacheHashMap = new HashMap<>();
 
     private String orgId;
+    private String orgName;
 
     public void setCatalogConfig(CatalogConfig catalogConfig) {
         this.catalogConfig = catalogConfig;
@@ -56,27 +57,15 @@ public class JobParserServiceImpl implements JobParserService {
         if (StringUtils.isNotBlank(this.orgId)) {
             return orgId;
         }
-        String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/v1/mira/configuration/GetOrgInfo";
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+        return getOrgInfo().getOrgId();
+    }
 
-        HttpEntity<String> request = new HttpEntity<>(headers);
-
-        // 发送POST请求
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
-        if (response == null && HttpStatus.OK.value() != response.getStatusCodeValue()) {
-            throw new ParserException("获取组织信息失败");
+    @Override
+    public String getOrgName() {
+        if (StringUtils.isNotBlank(this.orgName)) {
+            return orgName;
         }
-        HttpResponse<OrgInfo> httpResponse = JSONObject.parseObject(response.getBody(), HttpResponse.class);
-        if (httpResponse == null
-                && HttpStatus.OK.value() != httpResponse.getCode()
-                && httpResponse.getData() == null) {
-            throw new ParserException("获取组织信息失败");
-        }
-        OrgInfo orgInfo = JSONObject.parseObject(JSONObject.toJSONString(httpResponse.getData()), OrgInfo.class);
-        this.orgId = orgInfo.getOrgId();
-        return this.orgId;
+        return getOrgInfo().getOrgName();
     }
 
     @Override
@@ -148,8 +137,6 @@ public class JobParserServiceImpl implements JobParserService {
         List<AssetDetail> assetDetailList = jobMissionDetail.getAssetDetailList();
         JobInfoVo jobInfoVo = JobInfoVo.converterToJobInfoVo(jobTemplate);
         JobInfo jobInfo = JobInfo.jobTemplateToJobInfo(jobTemplate);
-        String orgId = getOrgId();
-        assetDetailList.forEach(assetDetail -> assetDetail.setOrgId(orgId));
         jobInfo.setAssetDetailList(assetDetailList);
         jobInfoVo.setAssetDetailList(assetDetailList);
 
@@ -515,11 +502,11 @@ public class JobParserServiceImpl implements JobParserService {
                 if (StringUtils.equals(service.getOrgId(), orgDID)) {
                     String path = service.getExposeEndpointList().get(0).getAddress();
                     String[] split = path.split(":");
-                    if (split.length == 2){
+                    if (split.length == 2) {
                         Integer port = Integer.valueOf(split[1]);
                         service.setNodePort((port));
                     }
-                    if (null != service.getReferExposeEndpointList() && service.getReferExposeEndpointList().size() > 0){
+                    if (null != service.getReferExposeEndpointList() && service.getReferExposeEndpointList().size() > 0) {
                         for (ReferExposeEndpoint referExposeEndpoint : service.getReferExposeEndpointList()) {
                             if (referExposeEndpoint != null) {
                                 if (!Objects.equals(referExposeEndpoint.getName(), "")) {
@@ -545,5 +532,25 @@ public class JobParserServiceImpl implements JobParserService {
         return serviceRunners;
     }
 
+    private OrgInfo getOrgInfo() {
+        String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/v1/mira/configuration/GetOrgInfo";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
 
+        HttpEntity<String> request = new HttpEntity<>(headers);
+
+        // 发送POST请求
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+        if (response == null && HttpStatus.OK.value() != response.getStatusCodeValue()) {
+            throw new ParserException("获取组织信息失败");
+        }
+        HttpResponse<OrgInfo> httpResponse = JSONObject.parseObject(response.getBody(), HttpResponse.class);
+        if (httpResponse == null
+                && HttpStatus.OK.value() != httpResponse.getCode()
+                && httpResponse.getData() == null) {
+            throw new ParserException("获取组织信息失败");
+        }
+        return JSONObject.parseObject(JSONObject.toJSONString(httpResponse.getData()), OrgInfo.class);
+    }
 }
