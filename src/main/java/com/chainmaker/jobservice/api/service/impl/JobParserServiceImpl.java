@@ -57,15 +57,18 @@ public class JobParserServiceImpl implements JobParserService {
         if (StringUtils.isNotBlank(this.orgId)) {
             return orgId;
         }
-        return getOrgInfo().getOrgId();
+
+        this.orgId = getOrgInfo().getOrgId();
+        return this.orgId;
     }
 
     @Override
     public String getOrgName() {
         if (StringUtils.isNotBlank(this.orgName)) {
-            return orgName;
+            return this.orgName;
         }
-        return getOrgInfo().getOrgName();
+        this.orgName = getOrgInfo().getOrgName();
+        return this.orgName;
     }
 
     @Override
