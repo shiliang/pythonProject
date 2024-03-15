@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.api.service;
 
 import com.alibaba.fastjson.JSONObject;
+import com.chainmaker.jobservice.api.model.OrgInfo;
 import com.chainmaker.jobservice.api.model.Service;
 import com.chainmaker.jobservice.api.model.bo.*;
 import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
@@ -19,6 +20,8 @@ import java.util.List;
 public interface JobParserService {
     void setCatalogConfig(CatalogConfig catalogConfig);
     String getOrgId();
+
+    OrgInfo getOrgInfo();
 
     /***
      * @description 根据类型解析SQL

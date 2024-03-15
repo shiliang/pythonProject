@@ -349,7 +349,7 @@ public class SqlBaseLexer extends Lexer {
 	}
 
 	@Override
-	public String getGrammarFileName() { return "SqlBaseLexer.g4"; }
+	public String getGrammarFileName() { return "com.chainmaker.jobservice.core.antlr4.gen.SqlBaseLexer.SqlBaseLexer.g4"; }
 
 	@Override
 	public String[] getRuleNames() { return ruleNames; }

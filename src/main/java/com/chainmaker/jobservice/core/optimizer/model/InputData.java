@@ -16,5 +16,6 @@ public class InputData {
     private String tableName;
     private String column;
     private String domainID;
+    private String domainName;
     private String assetName;
 }

@@ -11,7 +11,10 @@ public enum ResultCode {
     PARAM_IS_BLANK(1003, "参数错误"),
     PARAM_TYPE_BING_ERROR(1004, "参数类型错误"),
     OTHER_ERRORS(1005,"其他错误"),
-    CUSTOM_EXCEPTION(1006,"自定义错误");
+    CUSTOM_EXCEPTION(1006,"自定义错误"),
+    STREAM_PARAM_EXCEPTION(1007,"流式服务语法异常"),
+    NOT_STREAM_WITH_STREAM_PARAM_EXCEPTION(1008, "非流式服务携带流式服务参数"),
+    SQL_GRAMMAR_EXCEPTION(1006,"sql语法错误");
 
     private Integer code;
 

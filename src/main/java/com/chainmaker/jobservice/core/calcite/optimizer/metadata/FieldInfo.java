@@ -16,11 +16,12 @@ public class FieldInfo {
     private DistributionType disType;       // 分布情况（均匀分布、正态分布）
     private String tableName;               // 所属表名
     private String domainID;                // domainID
+    private String domainName;
     private String databaseName;
     private String comments;
     private String uniqueName;
 
-    public FieldInfo(String name, String type, Object maxValue, Object minValue, DistributionType disType, String tableName, int dataLength, String domainID, String comments, String databaseName, String assetName) {
+    public FieldInfo(String name, String type, Object maxValue, Object minValue, DistributionType disType, String tableName, int dataLength, String domainID, String domainName, String comments, String databaseName, String assetName) {
         fieldName = name;
         uniqueName = assetName+"."+name;
         if (type.equalsIgnoreCase("INT")){
@@ -35,6 +36,7 @@ public class FieldInfo {
         this.domainID = domainID;
         this.comments = comments;
         this.databaseName = databaseName;
+        this.domainName = domainName;
     }
 
     public enum DistributionType {

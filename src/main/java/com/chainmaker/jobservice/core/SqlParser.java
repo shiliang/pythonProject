@@ -111,6 +111,8 @@ public class SqlParser {
         System.out.println(printer.logicalPlanString);
         HashMap<String, String> tableOwnerMap = buildMetaData(assetInfoList);
 
+        List<String> columnList = logicalPlanBuilder.getColumnList();
+
         // 获取所需的元数据，即HashMap<String, TableInfo>
         HashMap<String, TableInfo> metadata = new HashMap<>();
         for (AssetInfo assetInfo : assetInfoList) {
@@ -119,14 +121,19 @@ public class SqlParser {
             String tableName = dataInfo.getTableName();
             String databaseName = dataInfo.getDbName();
             String assetName = assetInfo.getAssetEnName();
+            String[] spits = assetName.split("_");
+            String domainId = spits[spits.length - 1];
             for (SaveTableColumnItem detailInfo : dataInfo.getItemList()) {
+                if (!columnList.contains(assetName + "." + detailInfo.getName())) {
+                    continue;
+                }
                 FieldInfo field = new FieldInfo(detailInfo.getName(), detailInfo.getDataType(), null, null, FieldInfo.DistributionType.Uniform,
-                        assetName, detailInfo.getDataLength(), assetInfo.getHolderCompany(), detailInfo.getDescription(), databaseName, assetName);
+                        assetName, detailInfo.getDataLength(), domainId, assetInfo.getHolderCompany(), detailInfo.getDescription(), databaseName, assetName);
                 fields.put(field.getUniqueName(), field);
             }
             // 后续需要添加rowCount的获取
             int rowCount = 100;
-            TableInfo tableInfo = new TableInfo(fields, rowCount, tableName, assetInfo.getHolderCompany(), assetName);
+            TableInfo tableInfo = new TableInfo(fields, rowCount, tableName, assetInfo.getHolderCompany(), domainId, assetName);
             metadata.put(assetInfo.getAssetEnName(), tableInfo);
         }
 
@@ -149,6 +156,7 @@ public class SqlParser {
         System.out.println(printer.logicalPlanString);
 
         HashMap<String, String> tableOwnerMap = buildMetaData(assetInfoList);
+        List<String> columnList = logicalPlanBuilder.getColumnList();
 
         HashMap<String, TableInfo> metadata = new HashMap<>();
 
@@ -159,14 +167,19 @@ public class SqlParser {
             String tableName = dataInfo.getTableName();
             String databaseName = dataInfo.getDbName();
             String assetName = assetInfo.getAssetEnName();
+            String[] splits = assetName.split("_");
+            String domainId = splits[splits.length -1];
             for (SaveTableColumnItem detailInfo : dataInfo.getItemList()) {
+                if  (!columnList.contains(assetName + "." + detailInfo.getName())) {
+                    continue;
+                }
                 FieldInfo field = new FieldInfo(detailInfo.getName(), detailInfo.getDataType(), null, null, FieldInfo.DistributionType.Uniform,
-                        assetName, detailInfo.getDataLength(), assetInfo.getHolderCompany(), detailInfo.getDescription(), databaseName, assetName);
+                        assetName, detailInfo.getDataLength(), domainId, assetInfo.getHolderCompany(), detailInfo.getDescription(), databaseName, assetName);
                 fields.put(field.getUniqueName(), field);
             }
             // 后续需要添加rowCount的获取
             int rowCount = 100;
-            TableInfo tableInfo = new TableInfo(fields, rowCount, tableName, assetInfo.getHolderCompany(), assetName);
+            TableInfo tableInfo = new TableInfo(fields, rowCount, tableName, assetInfo.getHolderCompany(), domainId, assetName);
             metadata.put(assetInfo.getAssetEnName(), tableInfo);
         }
 

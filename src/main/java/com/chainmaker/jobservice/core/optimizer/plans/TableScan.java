@@ -2,6 +2,7 @@ package com.chainmaker.jobservice.core.optimizer.plans;
 
 import com.chainmaker.jobservice.core.optimizer.model.InputData;
 import com.chainmaker.jobservice.core.optimizer.model.OutputData;
+import lombok.Data;
 
 import java.util.List;
 
@@ -11,7 +12,7 @@ import java.util.List;
  * @description:物理表数据源
  * @version: 1.0.0
  */
-
+@Data
 public class TableScan extends PhysicalPlan {
     private Integer id;
     private String nodeName = "reader";
@@ -19,6 +20,7 @@ public class TableScan extends PhysicalPlan {
     private List<OutputData> outputDataList;
     private String tableName;
     private String domainID;
+    private String domainName;
     private boolean finalResult;
     public boolean isFinalResult() {
         return finalResult;

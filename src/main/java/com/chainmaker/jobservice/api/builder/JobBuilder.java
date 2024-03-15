@@ -40,6 +40,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
         QUERY, PSI, MPC, TEE, FL
     }
     private final String orgID;
+    private final String orgName;
 
     private final Integer modelType;
     private final Integer isStream;
@@ -55,13 +56,14 @@ public class JobBuilder extends PhysicalPlanVisitor {
     private Integer templateId = 1;
     private String sql;
 
-    public JobBuilder(Integer modelType, Integer isStream, DAG<PhysicalPlan> dag, String orgID, String sql) {
+    public JobBuilder(Integer modelType, Integer isStream, DAG<PhysicalPlan> dag, OrgInfo orgInfo, String sql) {
         this.modelType = modelType;
         this.isStream = isStream;
         this.dag = dag;
         this.createTime = String.valueOf(System.currentTimeMillis());
         this.jobID = UUID.randomUUID().toString().replace("-", "").toLowerCase();
-        this.orgID = orgID;
+        this.orgID = orgInfo.getOrgId();
+        this.orgName = orgInfo.getOrgName();
         this.sql = sql;
     }
 
@@ -127,6 +129,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
         if (modelType == 0) {
             templateId = 2;
             String defaultOdgDID = plan.getInputDataList().get(0).getDomainID();
+            String defaultOrgName = plan.getInputDataList().get(0).getDomainName();
             HashMap<String, String> map = new HashMap<>();
             List<ServiceVo> serviceVos = new ArrayList<>();
             for (int i = 0; i < 2; i++) {
@@ -163,10 +166,10 @@ public class JobBuilder extends PhysicalPlanVisitor {
                 BeanUtils.copyProperties(serviceVo, service);
                 if (serviceVo.getServiceClass().equals("PirClient4Query")) {
                     service.setOrgId(orgID);
-                    service.setOrgName(orgID);
+                    service.setOrgName(orgName);
                 } else {
                     service.setOrgId(defaultOdgDID);
-                    service.setOrgName(defaultOdgDID);
+                    service.setOrgName(defaultOrgName);
                 }
                 List<ReferExposeEndpoint> referExposeEndpointList = new ArrayList<>();
                 for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
@@ -224,6 +227,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
         } else {
             templateId = 3;
             String defaultOdgDID = plan.getInputDataList().get(0).getDomainID();
+            String defaultOrgName = plan.getInputDataList().get(0).getDomainName();
             HashMap<String, String> map = new HashMap<>();
             List<ServiceVo> serviceVos = new ArrayList<>();
             for (int i = 0; i < 2; i++) {
@@ -260,10 +264,10 @@ public class JobBuilder extends PhysicalPlanVisitor {
                 BeanUtils.copyProperties(serviceVo, service);
                 if (serviceVo.getServiceClass().equals("TeePirClient4Query")) {
                     service.setOrgId(orgID);
-                    service.setOrgName(orgID);
+                    service.setOrgName(orgName);
                 } else {
                     service.setOrgId(defaultOdgDID);
-                    service.setOrgName(defaultOdgDID);
+                    service.setOrgName(defaultOrgName);
                 }
                 List<ReferExposeEndpoint> referExposeEndpointList = new ArrayList<>();
                 for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
@@ -347,6 +351,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
         } else {
             templateId = 1;
             String defaultOdgDID = plan.getInputDataList().get(0).getDomainID();
+            String defaultOrgName = plan.getInputDataList().get(0).getDomainName();
             HashMap<String, String> map = new HashMap<>();
             List<ServiceVo> serviceVos = new ArrayList<>();
             for (int i=0; i<4; i++) {
@@ -373,7 +378,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
                 Service service = new Service();
                 BeanUtils.copyProperties(serviceVo, service);
-                service.setOrgName(defaultOdgDID);
+                service.setOrgName(defaultOrgName);
                 service.setOrgId(defaultOdgDID);
 
                 List<ReferExposeEndpoint> referExposeEndpointList = new ArrayList<>();

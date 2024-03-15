@@ -27,6 +27,7 @@ import com.chainmaker.jobservice.core.parser.LogicalPlanBuilderV2;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.*;
+import org.springframework.ui.context.ThemeSource;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -45,7 +46,11 @@ public class JobParserServiceImpl implements JobParserService {
     private HashMap<String, JobGraph> jobGraphHashMap = new HashMap<>();
     private HashMap<String, CatalogCache> catalogCacheHashMap = new HashMap<>();
 
-    private String orgId;
+    private String orgId = "1";
+
+    private String orgName = "1-c";
+
+    private OrgInfo orgInfo = new OrgInfo("1", "1-c");
 
     public void setCatalogConfig(CatalogConfig catalogConfig) {
         this.catalogConfig = catalogConfig;
@@ -76,7 +81,38 @@ public class JobParserServiceImpl implements JobParserService {
         }
         OrgInfo orgInfo = JSONObject.parseObject(JSONObject.toJSONString(httpResponse.getData()), OrgInfo.class);
         this.orgId = orgInfo.getOrgId();
+        this.orgName = orgInfo.getOrgName();
         return this.orgId;
+    }
+
+    @Override
+    public OrgInfo getOrgInfo() {
+        if (this.orgInfo != null) {
+            return this.orgInfo;
+        }
+        String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/v1/mira/configuration/GetOrgInfo";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<String> request = new HttpEntity<>(headers);
+
+        // 发送POST请求
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+        if (response == null && HttpStatus.OK.value() != response.getStatusCodeValue()) {
+            throw new ParserException("获取组织信息失败");
+        }
+        HttpResponse<OrgInfo> httpResponse = JSONObject.parseObject(response.getBody(), HttpResponse.class);
+        if (httpResponse == null
+                && HttpStatus.OK.value() != httpResponse.getCode()
+                && httpResponse.getData() == null) {
+            throw new ParserException("获取组织信息失败");
+        }
+        OrgInfo orgInfo = JSONObject.parseObject(JSONObject.toJSONString(httpResponse.getData()), OrgInfo.class);
+        this.orgId = orgInfo.getOrgId();
+        this.orgName = orgInfo.getOrgName();
+        this.orgInfo = orgInfo;
+        return orgInfo;
     }
 
     @Override
@@ -305,12 +341,12 @@ public class JobParserServiceImpl implements JobParserService {
 
     @Override
     public JobRunner getJobRunner(JobInfoPo jobInfoPo) {
-        String orgId = getOrgId();
-        JobRunnerInfo jobInfo = JobRunnerInfo.converterToJobInfo(jobInfoPo, orgId);
+        OrgInfo orgInfo = getOrgInfo();
+        JobRunnerInfo jobInfo = JobRunnerInfo.converterToJobInfo(jobInfoPo, orgInfo.getOrgId());
         JobRunner jobRunner = new JobRunner();
         jobRunner.setJob(jobInfo.getJob());
         jobRunner.setTaskList(jobInfo.getTasks());
-        List<ServiceRunner> serviceRunners = converterToServiceRunner(jobInfo.getServices(), orgId);
+        List<ServiceRunner> serviceRunners = converterToServiceRunner(jobInfo.getServices(), orgInfo.getOrgId());
         jobRunner.setServiceList(serviceRunners);
         return jobRunner;
     }
@@ -365,7 +401,7 @@ public class JobParserServiceImpl implements JobParserService {
         SqlParser sqlParser = new SqlParser(sqltext, sqlVo.getIsStream(), sqlVo.getModelType(), sqlVo.getAssetInfoList(), sqlVo.getModelParams());
         sqlParser.setCatalogConfig(catalogConfig);
         if (sqlVo.getIsStream() == 1) {
-            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser(), getOrgId(), sqlParser.getSql());
+            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser(), getOrgInfo(), sqlParser.getSql());
             jobBuilder.build();
             JobMissionDetail jobMissionDetail = new JobMissionDetail();
             jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());

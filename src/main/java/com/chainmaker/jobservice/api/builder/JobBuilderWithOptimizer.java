@@ -306,6 +306,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         TaskInputData inputData1 = new TaskInputData();
         inputData1.setRole("server");
         inputData1.setDomainID(tasks.get(firstIdx).getInput().getData().get(0).getDomainID());
+        inputData1.setDomainName(tasks.get(firstIdx).getInput().getData().get(0).getDomainName());
         inputData1.setDataName(inputData1.getDomainID() + "-" + affectedOutputNames.get(inputData1.getDomainID()));
         inputData1.setTaskSrc(String.valueOf(Integer.parseInt(affectedOutputNames.get(inputData1.getDomainID()))-1));
 //        inputData1.setComments();
@@ -318,6 +319,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         TaskInputData inputData2 = new TaskInputData();
         inputData2.setRole("client");
         inputData2.setDomainID(tasks.get(firstIdx).getInput().getData().get(1).getDomainID());
+        inputData2.setDomainName(tasks.get(firstIdx).getInput().getData().get(1).getDomainName());
         inputData2.setDataName(inputData2.getDomainID() + "-" + affectedOutputNames.get(inputData2.getDomainID()));
         inputData2.setTaskSrc(String.valueOf(Integer.parseInt(affectedOutputNames.get(inputData2.getDomainID()))-1));
         JSONObject inputData2Params = new JSONObject(true);
@@ -367,6 +369,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             TaskOutputData outputData = new TaskOutputData();
             outputData.setDataName(metadata.getTableOrgId((String) inputData.getParams().get("table")) + "-" + task.getTaskName());
             outputData.setDomainID(inputData.getDomainID());
+            outputData.setDomainName(inputData.getDomainName());
             outputData.setColumnName(inputData.getColumnName());
             outputData.setLength(inputData.getLength());
             outputData.setType(inputData.getType());
@@ -378,16 +381,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // parties信息
         List<Party> parties = new ArrayList<>();
-        LinkedHashSet<String> partySet = new LinkedHashSet<>();
         for (TaskInputData inputData : inputDatas) {
-            partySet.add(inputData.getDomainID());
-        }
-        for (String value : partySet) {
             Party party = new Party();
             party.setServerInfo(null);
             party.setStatus(null);
             party.setTimestamp(null);
-            party.setPartyID(value);
+            party.setPartyID(inputData.getDomainID());
+            party.setPartyName(inputData.getDomainName());
             parties.add(party);
         }
         task.setParties(parties);
@@ -908,6 +908,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         outputData.setDataID("");
         outputData.setDataName("fl-" + cnt);
         outputData.setDomainID(inputDataList.get(0).getDomainID());
+        outputData.setDomainName(inputDataList.get(0).getDomainName());
         outputData.setType(inputDataList.get(0).getType());
         outputData.setColumnName(inputDataList.get(0).getColumnName());
         outputData.setLength(inputDataList.get(0).getLength());
@@ -918,16 +919,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // party
         List<Party> parties = new ArrayList<>();
-        LinkedHashSet<String> partySet = new LinkedHashSet<>();
         for (TaskInputData inputData : inputDataList) {
-            partySet.add(inputData.getDomainID());
-        }
-        for (String value : partySet) {
             Party party = new Party();
             party.setServerInfo(null);
             party.setStatus(null);
             party.setTimestamp(null);
-            party.setPartyID(value);
+            party.setPartyID(inputData.getDomainID());
+            party.setPartyName(inputData.getDomainName());
             parties.add(party);
         }
         task.setParties(parties);
@@ -954,6 +952,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         inputData.setDataName(dataName);
         inputData.setDataID(dataName);
         inputData.setDomainID(metadata.getTableOrgId(dataName));
+        inputData.setDomainName(metadata.getTable(dataName).getOrgName());
         JSONObject params = parseFLParams(label);
         for (String l : constLabels) {
             if (!params.containsKey(l)) {
@@ -1073,6 +1072,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 task.setOutput(output);
                 Party party = new Party();
                 party.setPartyID(metadata.getTableOrgId(tableName));
+                party.setPartyName(metadata.getTable(tableName).getOrgName());
                 task.setParties(List.of(party));
                 phyTaskMap.put(phyPlan, task);
                 break;
@@ -1169,6 +1169,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             inputdata.setDatabaseName(fieldInfo.getDatabaseName());
             inputdata.setComments(fieldInfo.getComments());
             inputdata.setLength(fieldInfo.getDataLength());
+            inputdata.setDomainName(fieldInfo.getDomainName());
             inputDatas.add(inputdata);
         }
 
@@ -1184,6 +1185,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         outputdata.setType(inputDatas.get(0).getType());
         outputdata.setFinalResult("Y");
         outputdata.setDomainID(inputDatas.get(0).getDomainID());
+        outputdata.setDomainName(inputDatas.get(0).getDomainName());
+        outputdata.setDataName(inputDatas.get(0).getDomainName());
         outputdata.setDataID("");
 
         output.setData(List.of(outputdata));
@@ -1191,16 +1194,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // parties信息
         List<Party> parties = new ArrayList<>();
-        LinkedHashSet<String> partySet = new LinkedHashSet<>();
         for (TaskInputData inputData : input.getData()) {
-            partySet.add(inputData.getDomainID());
-        }
-        for (String value : partySet) {
             Party party = new Party();
             party.setServerInfo(null);
             party.setStatus(null);
             party.setTimestamp(null);
-            party.setPartyID(value);
+            party.setPartyID(inputData.getDomainID());
+            party.setPartyName(inputData.getDomainName());
             parties.add(party);
         }
         task.setParties(parties);
@@ -1287,6 +1287,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         inputdata1.setTaskSrc(leftChild.getTaskName());
         inputdata1.setRole("client");
         inputdata1.setDomainID(getFieldDomainID(leftField));
+        inputdata1.setDomainName(getFieldInfo(leftField).getDomainName());
         if (leftChild.getTaskName().equals("")) {
             inputdata1.setDataName(leftField.split("\\.")[0]);
             inputdata1.setDataID(leftField.split("\\.")[0]);
@@ -1318,6 +1319,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         inputdata2.setTaskSrc(rightChild.getTaskName());
         inputdata2.setRole("server");
         inputdata2.setDomainID(getFieldDomainID(rightField));
+        inputdata2.setDomainName(getFieldInfo(rightField).getDomainName());
         if (rightChild.getTaskName().equals("")) {
             inputdata2.setDataName(rightField.split("\\.")[0]);
             inputdata2.setDataID(rightField.split("\\.")[0]);
@@ -1350,16 +1352,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // parties信息
         List<Party> parties = new ArrayList<>();
-        LinkedHashSet<String> partySet = new LinkedHashSet<>();
         for (TaskInputData inputData : input.getData()) {
-            partySet.add(inputData.getDomainID());
-        }
-        for (String value : partySet) {
             Party party = new Party();
             party.setServerInfo(null);
             party.setStatus(null);
             party.setTimestamp(null);
-            party.setPartyID(value);
+            party.setPartyID(inputData.getDomainID());
+            party.setPartyName(inputData.getDomainName());
             parties.add(party);
         }
         task.setParties(parties);
@@ -1380,6 +1379,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         outputdata1.setColumnName(inputdata1.getColumnName());
         outputdata1.setFinalResult("N");
         outputdata1.setDomainID(inputdata1.getDomainID());
+        outputdata1.setDomainName(inputdata1.getDomainName());
         outputdata1.setDataID("");
 
         outputdata2.setDataName(inputdata2.getDomainID() + "-" + cnt);
@@ -1388,6 +1388,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         outputdata2.setColumnName(inputdata2.getColumnName());
         outputdata2.setFinalResult("N");
         outputdata2.setDomainID(inputdata2.getDomainID());
+        outputdata2.setDomainName(inputdata2.getDomainName());
         outputdata2.setDataID("");
 
         if (parties.size() == 1) {
@@ -1452,6 +1453,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         inputdata.setComments(fieldInfo.getComments());
         inputdata.setLength(fieldInfo.getDataLength());
         inputdata.setDataID(childTask.getOutput().getData().get(0).getDataID());
+        inputdata.setDomainName(tableInfo.getOrgName());
         inputdata.setRole("server");
         JSONObject inputParam = new JSONObject(true);
         inputParam.put("table", tableField.split("\\.")[0]);
@@ -1469,6 +1471,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         outputdata.setType(inputdata.getType());
         outputdata.setFinalResult("N");
         outputdata.setDomainID(inputdata.getDomainID());
+        outputdata.setDomainName(inputdata.getDomainName());
         outputdata.setDataID("");
 
         output.setData(List.of(outputdata));
@@ -1476,16 +1479,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // parties信息
         List<Party> parties = new ArrayList<>();
-        LinkedHashSet<String> partySet = new LinkedHashSet<>();
         for (TaskInputData inputData : input.getData()) {
-            partySet.add(inputData.getDomainID());
-        }
-        for (String value : partySet) {
             Party party = new Party();
             party.setServerInfo(null);
             party.setStatus(null);
             party.setTimestamp(null);
-            party.setPartyID(value);
+            party.setPartyID(inputData.getDomainID());
+            party.setPartyName(inputData.getDomainName());
             parties.add(party);
         }
         task.setParties(parties);
@@ -1654,24 +1654,32 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                         String table = leftDataName.split("-")[0];
                         inputdata1.setDataName(leftDataName);
                         inputdata1.setTaskSrc(leftDataName.split("-")[1]);
-                        inputdata1.setDomainID(metadata.getTableOrgId(table));
+                        TableInfo  tableInfo = metadata.getTable(table);
+                        inputdata1.setDomainID(tableInfo.getOrgDId());
+                        inputdata1.setDomainName(tableInfo.getOrgName());
                         inputData1Params.put("table", table);
                     } else {
                         inputdata1.setDataName(leftDataName);
                         inputdata1.setTaskSrc("0");
-                        inputdata1.setDomainID(metadata.getTableOrgId(leftDataName));
+                        TableInfo  tableInfo = metadata.getTable(leftDataName);
+                        inputdata1.setDomainID(tableInfo.getOrgDId());
+                        inputdata1.setDomainName(tableInfo.getOrgName());
                         inputData1Params.put("table", leftDataName);
                     }
                     if (rightDataName.contains("-")) {
                         String table = leftDataName.split("-")[0];
                         inputdata2.setDataName(rightDataName);
                         inputdata2.setTaskSrc(rightDataName.split("-")[1]);
-                        inputdata2.setDomainID(metadata.getTableOrgId(table));
+                        TableInfo  tableInfo = metadata.getTable(table);
+                        inputdata1.setDomainID(tableInfo.getOrgDId());
+                        inputdata1.setDomainName(tableInfo.getOrgName());
                         inputData2Params.put("table", table);
                     } else {
                         inputdata2.setDataName(rightDataName);
                         inputdata2.setTaskSrc("0");
-                        inputdata2.setDomainID(metadata.getTableOrgId(rightDataName));
+                        TableInfo  tableInfo = metadata.getTable(rightDataName);
+                        inputdata1.setDomainID(tableInfo.getOrgDId());
+                        inputdata1.setDomainName(tableInfo.getOrgName());
                         inputData2Params.put("table", rightDataName);
                     }
 
@@ -1746,8 +1754,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     inputData2Params.put("table", rightTable);
                     inputData2Params.put("field", rightField);
 
-                    inputdata1.setDomainID(getFieldDomainID(inputData1Params.get("table") + "." + inputData1Params.get("field")));
-                    inputdata2.setDomainID(getFieldDomainID(inputData2Params.get("table") + "." + inputData2Params.get("field")));
+                    String field1 = inputData1Params.get("table") + "." + inputData1Params.get("field");
+                    inputdata1.setDomainID(getFieldDomainID(field1));
+                    String field2 = inputData2Params.get("table") + "." + inputData2Params.get("field");
+                    inputdata2.setDomainID(getFieldDomainID(field2));
                     inputdata1.setRole("client");
                     inputdata2.setRole("server");
                     inputdata1.setParams(inputData1Params);
@@ -1918,14 +1928,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         List<Party> parties = new ArrayList<>();
         LinkedHashSet<String> partySet = new LinkedHashSet<>();
         for (TaskInputData inputData : inputDatas) {
-            partySet.add(inputData.getDomainID());
-        }
-        for (String value : partySet) {
             Party party = new Party();
             party.setServerInfo(null);
             party.setStatus(null);
             party.setTimestamp(null);
-            party.setPartyID(value);
+            party.setPartyID(inputData.getDomainID());
+            party.setPartyName(inputData.getDomainName());
             parties.add(party);
         }
         task.setParties(parties);
@@ -2112,9 +2120,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         return task;
     }
 
-    public String getFieldDomainID(String fieldName) {
-        return metadata.getFieldInfo(fieldName).getDomainID();
+    public FieldInfo getFieldInfo(String fieldName) {
+        return metadata.getFieldInfo(fieldName);
     }
+
+    public String getFieldDomainID(String fieldName) {return getFieldInfo(fieldName).getDomainID();}
+
     private void multipartyPsi() {
         HashMap<String, TaskInputData> inputMap = new HashMap<>();
         HashMap<String, TaskOutputData> outputMap = new HashMap<>();
@@ -2151,16 +2162,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             tasks.get(flag).setInput(input);
             tasks.get(flag).setOutput(output);
             List<Party> parties = new ArrayList<>();
-            LinkedHashSet<String> partySet = new LinkedHashSet<>();
             for (TaskInputData taskInputData : input.getData()) {
-                partySet.add(taskInputData.getDomainID());
-            }
-            for (String value : partySet) {
                 Party party = new Party();
                 party.setServerInfo(null);
                 party.setStatus(null);
                 party.setTimestamp(null);
-                party.setPartyID(value);
+                party.setPartyID(taskInputData.getDomainID());
+                party.setPartyName(taskInputData.getDomainName());
                 parties.add(party);
             }
             tasks.get(flag).setParties(parties);

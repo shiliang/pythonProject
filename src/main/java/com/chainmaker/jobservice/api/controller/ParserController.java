@@ -30,6 +30,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -106,8 +107,9 @@ public class ParserController {
     @RequestMapping(value = "/commit/dag", method = RequestMethod.POST)
     public Result jobCommit(@RequestBody String req) {
         SqlVo sqlVo = JSONObject.parseObject(req, SqlVo.class, Feature.OrderedField);
-        if (sqlVo.getSqltext().contains("?")) {
-            sqlVo.setIsStream(1);
+        log.info(sqlVo.getSqltext().toString());
+        if (sqlVo.getSqltext().contains("?") && sqlVo.getIsStream() != 1) {
+            return Result.failure(ResultCode.NOT_STREAM_WITH_STREAM_PARAM_EXCEPTION);
         }
         JobGraphVo jobGraphVo = jobParserService.jobPreview(sqlVo);
         MissionInfoVo missionInfoVo = jobParserService.jobCommit(jobGraphVo);

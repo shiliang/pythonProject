@@ -14,6 +14,7 @@ public class TaskInputData {
     private String dataName;
     private String taskSrc = "";
     private String dataID = "";
+    private String domainName;
     private String domainID;
     private String databaseName;
     private String tableName;

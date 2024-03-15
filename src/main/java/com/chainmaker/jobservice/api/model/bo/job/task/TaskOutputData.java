@@ -13,6 +13,7 @@ public class TaskOutputData {
     private String dataName;
     private String finalResult = "N";
     private String domainID;
+    private String domainName;
     private String dataID = "";
     private String columnName;
     private String type;

@@ -124,16 +124,19 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         TableScan tableScan = new TableScan();
 //        tableScan.setId(count);
 //        count += 1;
-        tableScan.setTableName(node.getTableName());
-
-        if (tableOwnerMap.containsKey(node.getTableName())) {
-            tableScan.setDomainID(tableOwnerMap.get(node.getTableName()));
+        String tableName = node.getTableName();
+        tableScan.setTableName(tableName);
+        TableInfo tableInfo = metaData.get(tableName);
+        if (tableOwnerMap.containsKey(tableName)) {
+            tableScan.setDomainID(tableOwnerMap.get(tableName));
+            tableScan.setDomainName(tableInfo.getOrgName());
         } else {
             throw new ParserException("验证失败");
         }
         OutputData outputData = new OutputData();
         outputData.setTableName(node.getTableName());
         outputData.setDomainID(tableOwnerMap.get(node.getTableName()));
+        outputData.setDomainName(tableInfo.getOrgName());
         outputData.setOutputSymbol(node.getAlias());
         List<OutputData> outputDataList = new ArrayList<>();
         outputDataList.add(outputData);
@@ -204,9 +207,11 @@ public class PlanOptimizer extends LogicalPlanVisitor {
             inputData.setAssetName(assetName);
             inputData.setColumn(expression.getFieldName());
             inputData.setDomainID(tableOwnerMap.get(expression.getBase().toString()));
+            inputData.setDomainName(tableInfo.getOrgName());
             parties.add(inputData.getDomainID());
             outputData.setTableName(expression.getBase().toString());
             outputData.setDomainID(tableOwnerMap.get(expression.getBase().toString()));
+            outputData.setDomainName(tableInfo.getOrgName());
             outputData.setOutputSymbol(expression.getBase().toString() + "." + expression.getFieldName());
             inputDataList.add(inputData);
             outputDataList.add(outputData);
@@ -246,7 +251,10 @@ public class PlanOptimizer extends LogicalPlanVisitor {
 
             PhysicalPlan parent = tableLastMap.get(flInputData.getTableName());
             parents.add(parent);
-            flInputData.setDomainID(tableOwnerMap.get(flInputData.getTableName()));
+            String tableName = flInputData.getTableName();
+            flInputData.setDomainID(tableOwnerMap.get(tableName));
+            TableInfo tableInfo = metaData.get(tableName);
+            flInputData.setDomainName(tableInfo.getOrgName());
             parties.add(flInputData.getDomainID());
             flInputData.setNodeSrc(parent.getId());
             if (flInputData.getWith_label().equals("FALSE")) {
@@ -293,10 +301,12 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         inputData.setTableName(tableInfo.getName());
         inputData.setAssetName(assetName);
         inputData.setColumn(expression.getFieldName());
-        inputData.setDomainID(tableOwnerMap.get(expression.getBase().toString()));
+        inputData.setDomainID(tableInfo.getOrgDId());
+        inputData.setDomainName(tableInfo.getOrgName());
         parties.add(inputData.getDomainID());
         outputData.setTableName(expression.getBase().toString());
         outputData.setDomainID(tableOwnerMap.get(expression.getBase().toString()));
+        outputData.setDomainName(tableInfo.getOrgName());
         if (Objects.equals(alias, "")) {
             outputData.setOutputSymbol(expression.getBase().toString() + "." + expression.getFieldName());
         } else {
@@ -394,6 +404,8 @@ public class PlanOptimizer extends LogicalPlanVisitor {
                 inputData.setColumn(column);
                 inputData.setIndex(arithmeticIndexMap.get(tableName).get(column));
                 inputData.setDomainID(tableOwnerMap.get(tableName));
+                TableInfo tableInfo = metaData.get(tableName);
+                inputData.setDomainName(tableInfo.getOrgName());
                 parties.add(inputData.getDomainID());
                 inputDataList.add(inputData);
             }
@@ -403,6 +415,7 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         outputData.setTableName(alias);
         outputData.setOutputSymbol(alias);
         outputData.setDomainID(inputDataList.get(0).getDomainID());
+        outputData.setDomainName(inputDataList.get(0).getDomainName());
         outputDataList.add(outputData);
         SpdzMpc spdzMpc = new SpdzMpc();
         spdzMpc.setId(count);

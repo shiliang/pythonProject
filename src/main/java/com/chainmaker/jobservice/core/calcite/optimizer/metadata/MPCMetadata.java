@@ -56,6 +56,8 @@ public class MPCMetadata {
         return getFieldInfo(markIDFieldNameMap.get(markID.toString()));
     }
 
+
+
     /**
      * 根据名属性获取相关属性信息
      * @param fieldName
@@ -64,6 +66,7 @@ public class MPCMetadata {
     public FieldInfo getFieldInfo(String fieldName) {
         return fieldNameInfoMap.get(fieldName);
     }
+
 
     /**
      * 根据表名获取行数
@@ -79,8 +82,9 @@ public class MPCMetadata {
      * @param tableName
      * @return
      */
-    public String getTableOrgId(String tableName) { return tables.get(tableName).getOrgDId(); }
+    public TableInfo getTable(String tableName) { return tables.get(tableName); }
 
+    public String getTableOrgId(String tableName) {return getTable(tableName).getOrgDId();}
     /**
      * 初始化整个查询优化过程所需的metadata
      * @param sql 表示从sql读取，非真实数据来源
@@ -119,13 +123,13 @@ public class MPCMetadata {
                 HashMap<String, FieldInfo> fieldInfos = new HashMap<>();
                 for (String fieldName : sqlTableFieldMap.get(key)) {
                     String totalName = key + "." + fieldName;
-                    FieldInfo field = new FieldInfo(totalName, "Integer", 100*cnt, 1, FieldInfo.DistributionType.Uniform, key, 8, "domain1", "", "t1", key);
+                    FieldInfo field = new FieldInfo(totalName, "Integer", 100*cnt, 1, FieldInfo.DistributionType.Uniform, key, 8, "domain1", "domainName", "", "t1", key);
                     fieldInfos.put(totalName, field);
                     fieldNameInfoMap.put(totalName, field);
                 }
                 double rowCount = 100*cnt;
 //                cnt++;
-                tableInfos.put(key, new TableInfo(fieldInfos, rowCount, key, "source1", "assetName"));
+                tableInfos.put(key, new TableInfo(fieldInfos, rowCount, key, "source1",  "1","assetName"));
             }
             setTables(tableInfos);
 

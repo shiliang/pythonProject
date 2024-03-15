@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.chainmaker.jobservice.api.builder.JobBuilder;
 import com.chainmaker.jobservice.api.builder.JobBuilderWithOptimizer;
+import com.chainmaker.jobservice.api.model.OrgInfo;
 import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
 import com.chainmaker.jobservice.api.model.vo.ServiceVo;
 import com.chainmaker.jobservice.core.SqlParser;
@@ -72,7 +73,8 @@ public class Driver {
         sqlParser.setCatalogConfig(catalogConfig);
         if (isStream == 1) {    // 2590ms
             long start = System.currentTimeMillis();
-            JobBuilder jobBuilder = new JobBuilder(modelType, isStream, sqlParser.parser(), "wx-org3.chainmaker.orgDID", sqlParser.getSql());
+            OrgInfo orgInfo = new OrgInfo("wx-org3.chainmaker.orgDID", "wx-org3.chainmaker.orgDID");
+            JobBuilder jobBuilder = new JobBuilder(modelType, isStream, sqlParser.parser(), orgInfo, sqlParser.getSql());
             jobBuilder.build();
             System.out.println(JSONObject.toJSONString(jobBuilder.getJobTemplate(), SerializerFeature.DisableCircularReferenceDetect, SerializerFeature.PrettyFormat, SerializerFeature.WriteMapNullValue, SerializerFeature.WriteDateUseDateFormat));
             long end = System.currentTimeMillis();

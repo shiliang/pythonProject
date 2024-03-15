@@ -16,7 +16,7 @@
 
 parser grammar SqlBaseParser;
 
-options { tokenVocab = SqlBaseLexer; }
+options { tokenVocab = com.chainmaker.jobservice.core.antlr4.gen.SqlBaseLexer.SqlBaseLexer; }
 
 @members {
   /**

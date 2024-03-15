@@ -7,16 +7,18 @@ import com.chainmaker.jobservice.core.antlr4.gen.SqlBaseParserBaseVisitor;
 import com.chainmaker.jobservice.core.parser.plans.*;
 import com.chainmaker.jobservice.core.parser.tree.*;
 import com.google.common.collect.ImmutableList;
+import lombok.Data;
 import lombok.extern.java.Log;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author gaokang
@@ -34,6 +36,8 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     private Expression rootFilterExpression;
     private LogicalExpression.Operator currentOp = LogicalExpression.Operator.AND;
 
+    private Set<String> assetAndColumnList = new HashSet<>();
+
     public HashMap<String, String> getTableNameMap() {
         return tableNameMap;
     }
@@ -46,6 +50,16 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         return logicalPlan;
     }
 
+    public  List<String> getColumnList() {
+        final String regexStr = "\\d+.\\d*";
+        return assetAndColumnList.stream().filter(e -> {
+         if (StringUtils.contains(e, ".") && !e.matches(regexStr)){
+             return true;
+         }
+         return false;
+        }).collect(Collectors.toList());
+    }
+
     public LogicalPlanBuilderV2(String sqlText) {
         SqlBaseLexer lexer = new SqlBaseLexer(new ANTLRInputStream(sqlText));
         CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -55,6 +69,8 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         parser.removeErrorListeners();
         parser.addErrorListener(customErrorListener);
         this.logicalPlan = this.visitSingleStatement(parser.singleStatement());
+        ParseTreeWalker parseTreeWalker = new ParseTreeWalker();
+//        parser.singleStatement()
 //        if (aggCallList != null) {
 //            backFillGroupBy(logicalPlan);
 //        }
@@ -354,8 +370,10 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
 
     public Expression visitPrimaryExpression(SqlBaseParser.PrimaryExpressionContext context) {
         if (context instanceof SqlBaseParser.ColumnReferenceContext) {
+            assetAndColumnList.add(context.getText());
             return visitColumnReference((SqlBaseParser.ColumnReferenceContext) context);
         } else if (context instanceof SqlBaseParser.DereferenceContext) {
+            assetAndColumnList.add(context.getText());
             return visitDereference((SqlBaseParser.DereferenceContext) context);
         } else if (context instanceof SqlBaseParser.ConstantDefaultContext) {
             return visitConstantDefault((SqlBaseParser.ConstantDefaultContext) context);
