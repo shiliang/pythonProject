@@ -73,7 +73,9 @@ public class SqlParser {
     public HashMap<String, String> buildMetaData(List<AssetInfo> dataCatalogInfoList){
         HashMap<String, String> tableOwnerMap = new HashMap<>();
         for (AssetInfo dataCatalogInfo : dataCatalogInfoList) {
-            tableOwnerMap.put(dataCatalogInfo.getAssetEnName(), dataCatalogInfo.getHolderCompany());
+            String assetEnName = dataCatalogInfo.getAssetEnName();
+            String[] splits = assetEnName.split("_");
+            tableOwnerMap.put(assetEnName, splits[splits.length - 1]);
             MissionDetailVO missionDetailVO = new MissionDetailVO();
             missionDetailVO.setName(dataCatalogInfo.getAssetEnName());
             missionDetailVO.setRemark(dataCatalogInfo.getIntro());
