@@ -340,21 +340,11 @@ public class ContractController {
     @WebLog
     @RequestMapping(value = "/config/queryPlatformInfo",method = RequestMethod.GET)
     public PlatformInfo queryPlatformInfo(){
-//        String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/configuration/GetOrgInfo";
-//        RestTemplate restTemplate = new RestTemplate();
-//        log.info("GetOrgInfo url = {}", url);
-//        JSONObject response = restTemplate.postForObject(url, PlatformInfo.class, JSONObject.class);
-//        if (response == null) {
-//            throw new ParserException("GetOrgInfo 获取平台信息/id失败");
-//        }
-//        PlatformInfo platformInfo = new PlatformInfo();
-//        platformInfo.setOrgId(response.getString("orgId"));
-//        platformInfo.setOrgName(response.getString("orgName"));
         String orgId = jobParserService.getOrgId();
+        String orgName = jobParserService.getOrgName();
         PlatformInfo platformInfo = new PlatformInfo();
         platformInfo.setOrgId(orgId);
-        platformInfo.setOrgName(orgId);
-
+        platformInfo.setOrgName(orgName);
         return platformInfo;
     }
 
