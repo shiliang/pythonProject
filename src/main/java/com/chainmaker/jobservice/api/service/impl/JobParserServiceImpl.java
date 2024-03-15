@@ -48,11 +48,6 @@ public class JobParserServiceImpl implements JobParserService {
 
     private String orgId;
     private String orgName;
-    private String orgId = "1";
-
-    private String orgName = "1-c";
-
-    private OrgInfo orgInfo = new OrgInfo("1", "1-c");
 
     public void setCatalogConfig(CatalogConfig catalogConfig) {
         this.catalogConfig = catalogConfig;

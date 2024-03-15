@@ -22,8 +22,6 @@ public interface JobParserService {
     String getOrgId();
     String getOrgName();
 
-    OrgInfo getOrgInfo();
-
     /***
      * @description 根据类型解析SQL
      * @param sqlVo
