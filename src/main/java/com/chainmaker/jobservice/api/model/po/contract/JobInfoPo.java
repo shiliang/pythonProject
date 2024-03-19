@@ -37,33 +37,6 @@ public class JobInfoPo {
     private List<TaskPo> tasks;
 
     private List<ServicePo> services;
-
-    public static JobInfoPo converterToJobInfoPo(JobInfo jobInfo) {
-        JobInfoPo jobInfoPo = new JobInfoPo();
-        jobInfo.update();
-        jobInfoPo.setApplicationID(jobInfo.getJob().getJobID());
-        jobInfoPo.setJob(JobPo.converterToJobPo(jobInfo.getJob()));
-
-        if (jobInfo.getTasks() != null) {
-            List<TaskPo> taskPoList = new ArrayList<>();
-            for (Task task : jobInfo.getTasks()) {
-                TaskPo taskPo = TaskPo.converterToTaskPo(task);
-                taskPoList.add(taskPo);
-            }
-            jobInfoPo.setTasks(taskPoList);
-        }
-
-        if (jobInfo.getServices() != null) {
-            List<ServicePo> servicePoList = new ArrayList<>();
-//            for (Service service : jobInfo.getServices()) {
-//                ServicePo servicePo = ServicePo.converterToServicePo(service);
-//                servicePoList.add(servicePo);
-//            }
-            jobInfoPo.setServices(servicePoList);
-        }
-        return jobInfoPo;
-    }
-
     public HashMap<String, byte[]> toContractParams() {
         HashMap<String, byte[]> contractParams = new HashMap<>();
         contractParams.put("applicationID", this.getApplicationID().getBytes());

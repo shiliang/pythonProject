@@ -32,6 +32,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.commons.lang3.StringUtils;
 import org.aspectj.apache.bcel.classfile.ModulePackages;
 
 import java.util.*;
@@ -154,6 +155,29 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         notifyPSIOthers();
         // 合并本地tasks
 //        mergeLocalTasks();
+        HashMap<String, String> nextMap = new HashMap<>();
+        for (Task task : tasks) {
+            for (TaskInputData taskInputData : task.getInput().getData()) {
+                String taskSrc = taskInputData.getTaskSrc();
+                if (!StringUtils.isEmpty(taskSrc)) {
+                    nextMap.put(taskSrc, task.getTaskName());
+                }
+            }
+        }
+        for (Task task : tasks) {
+            task.setTaskLabel("中间任务" + task.getTaskName());
+            for (TaskInputData taskInputData : task.getInput().getData()) {
+                String taskSrc = taskInputData.getTaskSrc();
+                if (StringUtils.isEmpty(taskSrc)) {
+                   task.setTaskLabel("起始任务" + task.getTaskName());
+                   break;
+                }
+            }
+            String nextTaskName = nextMap.getOrDefault(task.getTaskName(), "");
+            if (StringUtils.isEmpty(nextTaskName)) {
+                task.setTaskLabel("最终任务" + task.getTaskName());
+            }
+        }
 
         job.setJobID(jobID);
         job.setJobName(jobID);

@@ -19,6 +19,7 @@ public class Task {
     private String version;
     private String jobID;
     private String taskName;
+    private String taskLabel;
     private String status;
     private String updateTime;
     private String createTime;
@@ -38,6 +39,7 @@ public class Task {
         task.createTime = taskPo.getCreateTime();
         task.output = taskPo.getOutput();
         task.parties = taskPo.getParties();
+        task.taskLabel = taskPo.getTaskLabel();
 
         Module module = new Module();
         module.setModuleName(taskPo.getModule().getModuleName());
@@ -141,6 +143,14 @@ public class Task {
         this.parties = parties;
     }
 
+    public String getTaskLabel() {
+        return taskLabel;
+    }
+
+    public void setTaskLabel(String taskLabel) {
+        this.taskLabel = taskLabel;
+    }
+
     @Override
     public String toString() {
         return "Task{" +
@@ -151,6 +161,7 @@ public class Task {
                 ", updateTime='" + updateTime + '\'' +
                 ", createTime='" + createTime + '\'' +
                 ", module=" + module +
+                ", taskLabel=" + taskLabel +
                 ", input=" + input +
                 ", output=" + output +
                 ", parties=" + parties +

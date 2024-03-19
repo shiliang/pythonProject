@@ -119,25 +119,6 @@ public class ParserController {
         return Result.success(json);
     }
 
-    @WebLog(description = "创建JOB")
-    @RequestMapping(value = "/jobs", method = RequestMethod.POST)
-    public ResponseEntity<String> jobCreate(@RequestBody String req) {
-        MissionInfo missionInfo = JSONObject.parseObject(req, MissionInfo.class, Feature.OrderedField);
-        JobInfo jobInfo = jobParserService.jobCreate(missionInfo);
-        String jobID = jobInfo.getJob().getJobID();
-        JobInfoPo jobInfoPo = JobInfoPo.converterToJobInfoPo(jobInfo);
-        ContractServiceResponse csr = blockchainContractService.invokeContract(CONTRACT_NAME, "CreateJobByApplication", jobInfoPo.toContractParams());
-        csr.setJsonResult("{\"jobID\"" + ":\"" + jobID + "\"}");
-        String response = csr.toString();
-        HttpStatus responseStatus = HttpStatus.OK;
-        if (csr.isOk()) {
-            jobParserService.delete(jobID);
-        } else {
-            responseStatus = HttpStatus.BAD_REQUEST;
-        }
-        return new ResponseEntity<String>(response, responseStatus);
-    }
-
     @WebLog(description = "查询Job待审批信息")
     @RequestMapping(value = "/jobs/dag/{jobID}", method = RequestMethod.GET)
     public Result getJobApproval(@PathVariable String jobID) {
