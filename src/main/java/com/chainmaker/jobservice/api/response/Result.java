@@ -78,13 +78,13 @@ public class Result implements Serializable {
      * 返回失败，含对象
      *
      * @param resultCode
-     * @param data
+     * @param
      * @return
      */
-    public static Result failure(ResultCode resultCode, Object data) {
+    public static Result failure(ResultCode resultCode, String message) {
         Result result = new Result();
         result.setResultCode(resultCode);
-        result.setData(data);
+        result.setMessage(message);
         return result;
     }
 
