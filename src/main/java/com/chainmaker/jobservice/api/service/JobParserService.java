@@ -19,6 +19,8 @@ import java.util.List;
 
 public interface JobParserService {
     void setCatalogConfig(CatalogConfig catalogConfig);
+
+    void setOrgInfo(String orgId, String orgName);
     String getOrgId();
     String getOrgName();
 

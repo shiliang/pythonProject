@@ -241,7 +241,7 @@ public class ContractController {
         MissionGetReq missionGetReq = new MissionGetReq();
         missionGetReq.setStatus(sts);
         missionGetReq.setPartyID(partyID);
-
+        log.info("params: " + JSON.toJSONString(missionGetReq.toContractParams()));
         ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryNotFinishedMissionsBySts", missionGetReq.toContractParams());
 
         String response = csr.toString();

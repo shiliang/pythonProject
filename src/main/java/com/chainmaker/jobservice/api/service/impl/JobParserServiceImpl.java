@@ -49,6 +49,11 @@ public class JobParserServiceImpl implements JobParserService {
     private String orgId;
     private String orgName;
 
+    public void setOrgInfo(String orgId, String orgName) {
+        this.orgId = orgId;
+        this.orgName =orgName;
+    }
+
     public void setCatalogConfig(CatalogConfig catalogConfig) {
         this.catalogConfig = catalogConfig;
     }
