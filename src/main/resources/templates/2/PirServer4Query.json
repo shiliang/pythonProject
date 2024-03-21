@@ -56,7 +56,7 @@
       },
       {
         "key": "address",
-        "values": "127.0.0.1:31005",
+        "values": "127.0.0.1:40000",
         "labels": "通信地址",
         "types": "INPUT"
       },
