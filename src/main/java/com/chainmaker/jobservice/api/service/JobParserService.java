@@ -82,13 +82,8 @@ public interface JobParserService {
 
     JobGraphVo jobPreview(SqlVo sqlVo);
     MissionInfoVo jobCommit(JobGraphVo jobGraphVo);
-    JobInfo jobCreate(MissionInfo missionInfo);
-    JobGraphVo getJobApproval(JobInfoPo jobInfoPo);
-    JobGraphVo getJobInfo(JobInfoPo jobInfoPo);
     JobRunner getJobRunner(JobInfoPo jobInfoPo);
-    ServiceUpdatePo updateService(ServiceUpdateVo serviceUpdateVo);
 
-    void save(List<ServiceValueParam> serviceValues);
     List<ServiceValueParam> get(String orgDID, String jobID);
     UserInfo getUserInfo(String userName);
 

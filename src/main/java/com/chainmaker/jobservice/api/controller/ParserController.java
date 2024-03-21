@@ -119,37 +119,7 @@ public class ParserController {
         return Result.success(json);
     }
 
-    @WebLog(description = "查询Job待审批信息")
-    @RequestMapping(value = "/jobs/dag/{jobID}", method = RequestMethod.GET)
-    public Result getJobApproval(@PathVariable String jobID) {
-        JobGetPo jobGetPo = new JobGetPo();
-        jobGetPo.setJobID(jobID);
-        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
-        JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class, Feature.OrderedField);
-        JobGraphVo jobGraphVo = jobParserService.getJobApproval(jobInfoPo);
-        return Result.success(jobGraphVo);
-    }
-    @WebLog(description = "查询JOB详细信息")
-    @RequestMapping(value = "/jobs/info/{jobID}", method = RequestMethod.GET)
-    public Result getJobInfo(@PathVariable String jobID) {
-        JobGetPo jobGetPo = new JobGetPo();
-        jobGetPo.setJobID(jobID);
-        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
-        JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class, Feature.OrderedField);
-        JobGraphVo jobGraphVo = jobParserService.getJobInfo(jobInfoPo);
-        return Result.success(jobGraphVo);
-    }
 
-    @WebLog(description = "更新service信息")
-    @RequestMapping(value = "/service/list/update", method = RequestMethod.POST)
-    public Result updateService(@RequestBody String req) {
-        ServiceUpdateVo serviceUpdateVo = JSONObject.parseObject(req, ServiceUpdateVo.class, Feature.OrderedField);
-        ServiceUpdatePo serviceUpdatePo = jobParserService.updateService(serviceUpdateVo);
-        ContractServiceResponse csr = blockchainContractService.invokeContract(CONTRACT_NAME, "UpdateServices", serviceUpdatePo.toContractParams());
-        JSONObject res = csr.toJSON(false);
-        return Result.success(res);
-
-    }
 
     // @WebLog(description = "获取JOB信息")
     @WebLog
@@ -179,54 +149,8 @@ public class ParserController {
         HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
         return new ResponseEntity<String>(result.toJSONString(), responseStatus);
     }
-    @WebLog(description = "获取job模型")
-    @RequestMapping(value = "/model/name/{jobID}", method = RequestMethod.GET)
-    public ResponseEntity<String> getModelByJobId(@PathVariable String jobID) {
-        JobGetPo jobGetPo = new JobGetPo();
-        jobGetPo.setJobID(jobID);
-        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobCommon", jobGetPo.toContractParams());
-        String response = csr.toString();
-        JSONObject res = JSONObject.parseObject(csr.toString(), Feature.OrderedField);
-        JSONObject result = new JSONObject();
-        result.put("result", res.get("method_name"));
-        HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
-        return new ResponseEntity<String>(result.toJSONString(), responseStatus);
-    }
 
 
-    @RequestMapping(value = "/version", method = RequestMethod.GET)
-    public Result queryVersion() {
-        HashMap<String, byte[]> params = new HashMap<>();
-        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "version", params);
-
-        if (csr.isOk()) {
-            return Result.success(csr.toString());
-        } else {
-            return Result.failure(ResultCode.CONTRACT_FAILED, csr.toString());
-        }
-    }
-    @RequestMapping(value = "/catalog/version", method = RequestMethod.GET)
-    public Result queryCatalogVersion() {
-        HashMap<String, byte[]> params = new HashMap<>();
-        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME_2, "version", params);
-
-        if (csr.isOk()) {
-            return Result.success(csr.toString());
-        } else {
-            return Result.failure(ResultCode.CONTRACT_FAILED, csr.toString());
-        }
-    }
-    @RequestMapping(value = "/did/version", method = RequestMethod.GET)
-    public Result queryDidVersion() {
-        HashMap<String, byte[]> params = new HashMap<>();
-        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "version", params);
-
-        if (csr.isOk()) {
-            return Result.success(csr.toString());
-        } else {
-            return Result.failure(ResultCode.CONTRACT_FAILED, csr.toString());
-        }
-    }
 
     @WebLog(description = "更新结果")
     @RequestMapping(value = "/result", method = RequestMethod.POST)
@@ -344,11 +268,7 @@ public class ParserController {
             return Result.failure(ResultCode.CONTRACT_FAILED, csr.toString());
         }
     }
-    @RequestMapping(value = "/test", method = RequestMethod.GET)
-    public String test() {
-        String result = "v1";
-        return result;
-    }
+
     @RequestMapping(value = "/did/address/{name}", method = RequestMethod.GET)
     public ResponseEntity<JSONObject> getAddressFromDID(@PathVariable String name) {
         System.out.println("===SAVE DataCatalog===");
@@ -359,21 +279,7 @@ public class ParserController {
         HttpStatus responseStatus = csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
         return new ResponseEntity<JSONObject>(res, responseStatus);
     }
-    @WebLog
-    @RequestMapping(value = "/jobs/address/{jobID}", method = RequestMethod.GET)
-    public ResponseEntity<JSONObject> getAddress(@PathVariable String jobID) {
-        JobGetPo jobGetPo = new JobGetPo();
-        jobGetPo.setJobID(jobID);
-        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
-        JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class, Feature.OrderedField);
-        String submitter = jobInfoPo.getJob().getSubmitter();
-        Map<String, byte[]> params = new HashMap<>();
-        params.put("orgDID", submitter.getBytes(StandardCharsets.UTF_8));
-        ContractServiceResponse res_csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_address_from_did", params);
-        JSONObject res = res_csr.toJSON(false);
-        HttpStatus responseStatus = res_csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
-        return new ResponseEntity<JSONObject>(res, responseStatus);
-    }
+
     @WebLog
     @RequestMapping(value = "/jobs/result/list/{jobID}", method = RequestMethod.GET)
     public ResponseEntity<JSONObject> getResultList(@PathVariable String jobID) {

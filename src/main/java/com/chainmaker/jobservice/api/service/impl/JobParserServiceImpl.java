@@ -78,16 +78,6 @@ public class JobParserServiceImpl implements JobParserService {
     }
 
     @Override
-    public void save(List<ServiceValueParam> serviceValues) {
-        String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/missions/services";
-        RestTemplate restTemplate = new RestTemplate();
-        JSONObject response = restTemplate.postForObject(url, serviceValues, JSONObject.class);
-        if (response == null) {
-            throw new ParserException("本地持久化失败");
-        }
-    }
-
-    @Override
     public List<ServiceValueParam> get(String orgDID, String jobID) {
         String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/missions/serviceValues/" + orgDID + "/local/" + jobID;
         RestTemplate restTemplate = new RestTemplate();
@@ -211,97 +201,6 @@ public class JobParserServiceImpl implements JobParserService {
     }
 
     @Override
-    public JobInfo jobCreate(MissionInfo missionInfo) {
-        String jobID = missionInfo.getJobID();
-        JobGraph jobGraph = getJobGraph(jobID);
-        JobInfo jobInfo = jobGraph.getJobInfo();
-
-        jobInfo.getJob().setJobName(missionInfo.getName());
-        jobInfo.getJob().setCreateTime(String.valueOf(System.currentTimeMillis()));
-        jobInfo.getJob().setUpdateTime(String.valueOf(System.currentTimeMillis()));
-        jobInfo.getJob().setProjectID(missionInfo.getId());
-        jobInfo.getJob().setRequestData(missionInfo.getSqltext());
-        jobInfo.getJob().setSubmitter(missionInfo.getCreateOrgDID());
-        HashSet<String> parties = new HashSet<>();
-        for (ServiceParamsVo serviceParamsVo : missionInfo.getServiceParams()) {
-            if (!serviceParamsVo.getOrgDID().equals("")) {
-                parties.add(serviceParamsVo.getOrgDID());
-            }
-        }
-//        for (MissionDetailInfo missionDetailInfo : missionInfo.getMissionDetailInfos()) {
-//            parties.add(missionDetailInfo.getOrgId());
-//        }
-        for (String value : jobInfo.getJob().getParties()) {
-            parties.add(value);
-        }
-        jobInfo.getJob().setParties(new ArrayList<>(parties));
-        return jobInfo;
-    }
-
-    @Override
-    public JobGraphVo getJobApproval(JobInfoPo jobInfoPo) {
-        JobInfo jobInfo = JobInfo.converterToJobInfo(jobInfoPo);
-
-        int nodePort = 31004;
-        if (jobInfo.getServices() != null) {
-            for (Service service : jobInfo.getServices()) {
-                if (service.getOrgId().equals(getOrgId())) {
-                    UserInfo userInfo = getUserInfo(service.getOrgId());
-//                    service.setNodePort(nodePort);
-                    nodePort += 1;
-//                    for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints()) {
-//                        exposeEndpoint.put("serviceCa", userInfo.getCaCert());
-//                        exposeEndpoint.put("serviceCert", userInfo.getTlsCert());
-//                        exposeEndpoint.put("serviceKey", userInfo.getTlsKey());
-//                    }
-                }
-            }
-        }
-//        JobInfoVo jobInfoVo = JobInfoVo.jobInfoToJobInfoVo(jobInfo);
-
-
-        JobGraphVo jobGraphVo = new JobGraphVo();
-        if (jobInfo.getServices() != null) {
-            Topology topology = serviceToTopology(jobInfo.getServices(), 1);
-            jobGraphVo.setTopology(topology);
-        }
-        if (jobInfo.getTasks() != null) {
-            Dag dag = taskToDag(jobInfo.getTasks(), jobInfoPo.getJob().getStatus());
-            jobGraphVo.setDag(dag);
-        }
-//        jobGraphVo.setJobInfo(jobInfoVo);
-//        jobGraphVo.checkSql(jobInfoPo.getJob().getRequestData());
-        return jobGraphVo;
-    }
-
-    @Override
-    public JobGraphVo getJobInfo(JobInfoPo jobInfoPo) {
-        JobInfo jobInfo = JobInfo.converterToJobInfo(jobInfoPo);
-        JobInfoVo jobInfoVo = JobInfoVo.jobInfoToJobInfoVo(jobInfo);
-
-
-        JobGraphVo jobGraphVo = new JobGraphVo();
-        if (jobInfo.getTasks() != null) {
-            Dag dag = taskToDag(jobInfo.getTasks(), jobInfoPo.getJob().getStatus());
-            jobGraphVo.setDag(dag);
-        }
-        if (jobInfo.getServices() != null) {
-            Topology topology = serviceToTopology(jobInfo.getServices(), 1);
-            jobGraphVo.setTopology(topology);
-
-//            for (Service service : jobInfoVo.getServices()) {
-//                for (ExposeEndpointVo exposeEndpointVo : service.getExposeEndpoints()) {
-//                    exposeEndpointVo.getForm().removeIf(exposeFormVo -> Objects.equals(exposeFormVo.getKey(), "serviceKey"));
-//                }
-//            }
-        }
-        jobGraphVo.setJobInfo(jobInfoVo);
-
-
-        return jobGraphVo;
-    }
-
-    @Override
     public JobRunner getJobRunner(JobInfoPo jobInfoPo) {
         OrgInfo orgInfo = getOrgInfo();
         JobRunnerInfo jobInfo = JobRunnerInfo.converterToJobInfo(jobInfoPo, orgInfo.getOrgId());
@@ -313,38 +212,6 @@ public class JobParserServiceImpl implements JobParserService {
         return jobRunner;
     }
 
-    @Override
-    public ServiceUpdatePo updateService(ServiceUpdateVo serviceUpdateVo) {
-        String jobID = serviceUpdateVo.getJobInfo().getJob().getJobID();
-        String orgDID = serviceUpdateVo.getOrgDID();
-
-        List<ServiceValueParam> serviceValueParamList = new ArrayList<>();
-        List<ServiceParamsPo> serviceParamsPoList = new ArrayList<>();
-//        for (ServiceVo serviceVo : serviceUpdateVo.getJobInfo().getServices()) {
-//            if (Objects.equals(serviceVo.getOrgDID(), orgDID)) {
-//                Service service = Service.serviceVoToService(serviceVo, jobID);
-//                ServiceValueParam serviceValueParam = new ServiceValueParam();
-//                serviceValueParam.setId(service.getId());
-//                serviceValueParam.setOrgDID(service.getOrgId());
-//                serviceValueParam.setJobID(service.getJobID());
-//                serviceValueParam.setName(service.getServiceName());
-//                serviceValueParam.setNodePort(String.valueOf(service.getNodePort()));
-////                for (HashMap<String, String> exposeEndpoint : service.getExposeEndpoints().values()) {
-////                    serviceValueParam.setServiceCa(exposeEndpoint.get("serviceCa").getBytes());
-////                    serviceValueParam.setServiceCert(exposeEndpoint.get("serviceCert").getBytes());
-////                    serviceValueParam.setServiceKey(exposeEndpoint.get("serviceKey").getBytes());
-////                }
-//                serviceValueParamList.add(serviceValueParam);
-//
-//                ServiceParamsPo serviceParamsPo = ServiceParamsPo.converterToServiceParamsPo(service);
-//                serviceParamsPoList.add(serviceParamsPo);
-//            }
-//        }
-//        save(serviceValueParamList);
-        ServiceUpdatePo serviceUpdatePo = new ServiceUpdatePo();
-        serviceUpdatePo.setServiceParamsPoList(serviceParamsPoList);
-        return serviceUpdatePo;
-    }
 
     public JSONObject analyzeSql(String sql) {
         LogicalPlanBuilderV2 logicalPlanBuilder = new LogicalPlanBuilderV2(sql);
