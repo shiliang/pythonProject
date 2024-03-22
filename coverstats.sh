@@ -74,6 +74,7 @@ if [ "$target_language" = "python" ]; then
 
     # 生成测试覆盖率报告
     coverage report -m
+    coverage html -d report
     echo -e "\033[0;31mPython Test Coverage Calculated\033[0m"
 fi
 
@@ -98,6 +99,7 @@ if [ "$target_language" = "java" ]; then
     # 获取测试覆盖率信息
     coverage_percentage=$(grep -o 'Total.*</td>' target/jacoco-reports/index.html | grep -o '[0-9]*%' | head -n 1)
 #     输出覆盖率信息
+    echo -e "\033[33mUT detailed report in target/jacoco-reports/index.html\033[0m"
     echo -e "\033[0;31mComment Coverage is $percentage%\033[0m"
     echo -e "\033[0;31mUT Statements Coverage is: ${coverage_percentage}\033[0m"
 fi
