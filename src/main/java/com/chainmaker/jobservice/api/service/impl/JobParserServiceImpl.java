@@ -10,12 +10,9 @@ import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
 import com.chainmaker.jobservice.api.model.bo.graph.*;
 import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
-import com.chainmaker.jobservice.api.model.bo.job.service.ReferEndpoint;
 import com.chainmaker.jobservice.api.model.bo.job.task.Task;
 import com.chainmaker.jobservice.api.model.bo.job.task.TaskInputData;
 import com.chainmaker.jobservice.api.model.po.contract.JobInfoPo;
-import com.chainmaker.jobservice.api.model.po.contract.ServiceParamsPo;
-import com.chainmaker.jobservice.api.model.po.contract.ServiceUpdatePo;
 import com.chainmaker.jobservice.api.model.po.data.ServiceValueParam;
 import com.chainmaker.jobservice.api.model.po.data.UserInfo;
 import com.chainmaker.jobservice.api.model.vo.*;
@@ -27,7 +24,6 @@ import com.chainmaker.jobservice.core.parser.LogicalPlanBuilderV2;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.*;
-import org.springframework.ui.context.ThemeSource;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -46,13 +42,8 @@ public class JobParserServiceImpl implements JobParserService {
     private HashMap<String, JobGraph> jobGraphHashMap = new HashMap<>();
     private HashMap<String, CatalogCache> catalogCacheHashMap = new HashMap<>();
 
-    private String orgId;
-    private String orgName;
+    private PlatformInfo platformInfo;
 
-    public void setOrgInfo(String orgId, String orgName) {
-        this.orgId = orgId;
-        this.orgName =orgName;
-    }
 
     public void setCatalogConfig(CatalogConfig catalogConfig) {
         this.catalogConfig = catalogConfig;
@@ -60,21 +51,25 @@ public class JobParserServiceImpl implements JobParserService {
 
     @Override
     public String getOrgId() {
-        if (StringUtils.isNotBlank(this.orgId)) {
-            return orgId;
-        }
-
-        this.orgId = getOrgInfo().getOrgId();
-        return this.orgId;
+        return String.valueOf(getPlatformInfo().getRegisterId());
     }
 
     @Override
     public String getOrgName() {
-        if (StringUtils.isNotBlank(this.orgName)) {
-            return this.orgName;
+        return getPlatformInfo().getAccountName();
+    }
+
+    public OrgInfo getOrgInfo() {
+        return  new OrgInfo(getOrgId(), getOrgName());
+    }
+
+    @Override
+    public PlatformInfo getPlatformInfo() {
+        if (this.platformInfo != null) {
+            return this.platformInfo;
         }
-        this.orgName = getOrgInfo().getOrgName();
-        return this.orgName;
+        this.platformInfo = getPlatformInfoFromBackend();
+        return this.platformInfo;
     }
 
     @Override
@@ -410,8 +405,8 @@ public class JobParserServiceImpl implements JobParserService {
         return serviceRunners;
     }
 
-    private OrgInfo getOrgInfo() {
-        String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/v1/mira/configuration/GetOrgInfo";
+    private PlatformInfo getPlatformInfoFromBackend() {
+        String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/v1/mira/configuration/GetPlatformInfo";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -423,12 +418,12 @@ public class JobParserServiceImpl implements JobParserService {
         if (response == null && HttpStatus.OK.value() != response.getStatusCodeValue()) {
             throw new ParserException("获取组织信息失败");
         }
-        HttpResponse<OrgInfo> httpResponse = JSONObject.parseObject(response.getBody(), HttpResponse.class);
+        HttpResponse<PlatformInfo> httpResponse = JSONObject.parseObject(response.getBody(), HttpResponse.class);
         if (httpResponse == null
                 && HttpStatus.OK.value() != httpResponse.getCode()
                 && httpResponse.getData() == null) {
             throw new ParserException("获取组织信息失败");
         }
-        return JSONObject.parseObject(JSONObject.toJSONString(httpResponse.getData()), OrgInfo.class);
+        return JSONObject.parseObject(JSONObject.toJSONString(httpResponse.getData()), PlatformInfo.class);
     }
 }

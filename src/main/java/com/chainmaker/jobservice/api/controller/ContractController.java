@@ -340,12 +340,7 @@ public class ContractController {
     @WebLog
     @RequestMapping(value = "/config/queryPlatformInfo",method = RequestMethod.GET)
     public PlatformInfo queryPlatformInfo(){
-        String orgId = jobParserService.getOrgId();
-        String orgName = jobParserService.getOrgName();
-        PlatformInfo platformInfo = new PlatformInfo();
-        platformInfo.setOrgId(orgId);
-        platformInfo.setOrgName(orgName);
-        return platformInfo;
+        return jobParserService.getPlatformInfo();
     }
 
     @WebLog(description = "更新TASK输出")

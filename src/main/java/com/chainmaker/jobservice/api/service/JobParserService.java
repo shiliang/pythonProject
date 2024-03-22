@@ -1,28 +1,33 @@
 package com.chainmaker.jobservice.api.service;
 
 import com.alibaba.fastjson.JSONObject;
-import com.chainmaker.jobservice.api.model.OrgInfo;
+import com.chainmaker.jobservice.api.model.PlatformInfo;
 import com.chainmaker.jobservice.api.model.Service;
-import com.chainmaker.jobservice.api.model.bo.*;
+import com.chainmaker.jobservice.api.model.bo.JobGraph;
+import com.chainmaker.jobservice.api.model.bo.JobMissionDetail;
+import com.chainmaker.jobservice.api.model.bo.JobRunner;
+import com.chainmaker.jobservice.api.model.bo.ServiceRunner;
 import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
 import com.chainmaker.jobservice.api.model.bo.graph.Dag;
-import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
 import com.chainmaker.jobservice.api.model.bo.graph.Topology;
 import com.chainmaker.jobservice.api.model.bo.job.task.Task;
 import com.chainmaker.jobservice.api.model.po.contract.JobInfoPo;
-import com.chainmaker.jobservice.api.model.po.contract.ServiceUpdatePo;
 import com.chainmaker.jobservice.api.model.po.data.ServiceValueParam;
 import com.chainmaker.jobservice.api.model.po.data.UserInfo;
-import com.chainmaker.jobservice.api.model.vo.*;
+import com.chainmaker.jobservice.api.model.vo.CatalogCache;
+import com.chainmaker.jobservice.api.model.vo.JobGraphVo;
+import com.chainmaker.jobservice.api.model.vo.MissionInfoVo;
+import com.chainmaker.jobservice.api.model.vo.SqlVo;
 
 import java.util.List;
 
 public interface JobParserService {
     void setCatalogConfig(CatalogConfig catalogConfig);
 
-    void setOrgInfo(String orgId, String orgName);
     String getOrgId();
     String getOrgName();
+
+    PlatformInfo getPlatformInfo();
 
     /***
      * @description 根据类型解析SQL
