@@ -28,6 +28,7 @@ public interface JobParserService {
     String getOrgName();
 
     PlatformInfo getPlatformInfo();
+    void setPlatformInfo(PlatformInfo platformInfo);
 
     /***
      * @description 根据类型解析SQL

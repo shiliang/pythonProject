@@ -63,6 +63,9 @@ public class JobParserServiceImpl implements JobParserService {
         return  new OrgInfo(getOrgId(), getOrgName());
     }
 
+    public void setPlatformInfo(PlatformInfo platformInfo) {
+        this.platformInfo = platformInfo;
+    }
     @Override
     public PlatformInfo getPlatformInfo() {
         if (this.platformInfo != null) {

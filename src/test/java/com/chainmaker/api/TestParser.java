@@ -3,6 +3,7 @@ package com.chainmaker.api;
 import com.alibaba.fastjson.JSON;
 import com.chainmaker.jobservice.api.ParserApplication;
 import com.chainmaker.jobservice.api.controller.ParserController;
+import com.chainmaker.jobservice.api.model.PlatformInfo;
 import com.chainmaker.jobservice.api.model.vo.SqlVo;
 import com.chainmaker.jobservice.api.response.Result;
 import com.chainmaker.jobservice.api.service.JobParserService;
@@ -37,7 +38,10 @@ public class TestParser {
 
     @BeforeEach
     public void setup(){
-        this.jobParserService.setOrgInfo("1", "1-c");
+        PlatformInfo platformInfo = new PlatformInfo();
+        platformInfo.setRegisterId(1);
+        platformInfo.setAccountName("1-c");
+        this.jobParserService.setPlatformInfo(platformInfo);
     }
 
 
