@@ -433,4 +433,20 @@ public class ParserController {
     public String getOrgId(){
        return jobParserService.getOrgId();
     }
+
+    @WebLog
+    @RequestMapping(value = "/jobs/address/{jobID}", method = RequestMethod.GET)
+    public ResponseEntity<JSONObject> getAddress(@PathVariable String jobID) {
+        JobGetPo jobGetPo = new JobGetPo();
+        jobGetPo.setJobID(jobID);
+        ContractServiceResponse csr = blockchainContractService.queryContract(CONTRACT_NAME, "QueryJobDetails", jobGetPo.toContractParams());
+        JobInfoPo jobInfoPo = JSONObject.parseObject(csr.toString(), JobInfoPo.class, Feature.OrderedField);
+        String submitter = jobInfoPo.getJob().getSubmitter();
+        Map<String, byte[]> params = new HashMap<>();
+        params.put("orgDID", submitter.getBytes(StandardCharsets.UTF_8));
+        ContractServiceResponse res_csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_address_from_did", params);
+        JSONObject res = res_csr.toJSON(false);
+        HttpStatus responseStatus = res_csr.isOk() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+        return new ResponseEntity<JSONObject>(res, responseStatus);
+    }
 }
