@@ -36,6 +36,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.aspectj.apache.bcel.classfile.ModulePackages;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.chainmaker.jobservice.core.calcite.utils.ConstExprJudgement.isNumeric;
 
@@ -422,6 +423,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             party.setPartyName(inputData.getDomainName());
             parties.add(party);
         }
+        parties = parties.stream().filter(StreamUtils.distinctByKey(Party::getPartyID)).collect(Collectors.toList());
         task.setParties(parties);
         tasks.add(maxPSIid+1, task);
 
@@ -960,6 +962,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             party.setPartyName(inputData.getDomainName());
             parties.add(party);
         }
+        parties = parties.stream().filter(StreamUtils.distinctByKey(Party::getPartyID)).collect(Collectors.toList());
         task.setParties(parties);
 
         for (Party p : parties) {
@@ -1235,6 +1238,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             party.setPartyName(inputData.getDomainName());
             parties.add(party);
         }
+        parties = parties.stream().filter(StreamUtils.distinctByKey(Party::getPartyID)).collect(Collectors.toList());
         task.setParties(parties);
         for (Party party : parties) {
             jobParties.add(party.getPartyID());
@@ -1393,6 +1397,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             party.setPartyName(inputData.getDomainName());
             parties.add(party);
         }
+        parties = parties.stream().filter(StreamUtils.distinctByKey(Party::getPartyID)).collect(Collectors.toList());
         task.setParties(parties);
 
         for (Party party : parties) {
@@ -1525,6 +1530,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             party.setPartyName(inputData.getDomainName());
             parties.add(party);
         }
+        parties = parties.stream().filter(StreamUtils.distinctByKey(Party::getPartyID)).collect(Collectors.toList());
         task.setParties(parties);
 
         for (Party party : parties) {
@@ -1973,6 +1979,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             party.setPartyName(inputData.getDomainName());
             parties.add(party);
         }
+        parties = parties.stream().filter(StreamUtils.distinctByKey(Party::getPartyID)).collect(Collectors.toList());
         task.setParties(parties);
 
         for (Party party : parties) {
@@ -2208,6 +2215,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 party.setPartyName(taskInputData.getDomainName());
                 parties.add(party);
             }
+            parties = parties.stream().filter(StreamUtils.distinctByKey(Party::getPartyID)).collect(Collectors.toList());
             tasks.get(flag).setParties(parties);
         }
     }

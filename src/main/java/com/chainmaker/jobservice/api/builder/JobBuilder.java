@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -536,6 +537,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
             party.setPartyID(partyID);
             parties.add(party);
         }
+        parties = parties.stream().filter(StreamUtils.distinctByKey(Party::getPartyID)).collect(Collectors.toList());
         task.setParties(parties);
         return task;
     }
