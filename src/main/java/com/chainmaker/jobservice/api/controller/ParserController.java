@@ -111,6 +111,9 @@ public class ParserController {
         if (sqlVo.getSqltext().contains("?") && sqlVo.getIsStream() != 1) {
             return Result.failure(ResultCode.NOT_STREAM_WITH_STREAM_PARAM_EXCEPTION);
         }
+        if (!sqlVo.getSqltext().contains("?") && sqlVo.getIsStream() == 1) {
+            return Result.failure(ResultCode.NOT_STREAM_WITH_STREAM_PARAM_EXCEPTION);
+        }
         JobGraphVo jobGraphVo = jobParserService.jobPreview(sqlVo);
         MissionInfoVo missionInfoVo = jobParserService.jobCommit(jobGraphVo);
         JSONObject json = new JSONObject();
