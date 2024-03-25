@@ -34,7 +34,7 @@ import java.util.*;
 
 public class JobBuilder extends PhysicalPlanVisitor {
     private enum JobType {
-        FQ, FQS, FL, FLS, CC, CCS
+        FQ, FQS, FL, FLS, CC, CCS, TEE, MPC
     }
     private enum TaskType {
         QUERY, PSI, MPC, TEE, FL
@@ -93,6 +93,13 @@ public class JobBuilder extends PhysicalPlanVisitor {
             jobType = JobType.CCS.name();
         } else {
             throw new ParserException("暂不支持的任务类型");
+        }
+        if (this.sql.contains("FL")) {
+            jobType = JobType.FL.name();
+        }else if (this.sql.contains("TEE")) {
+            jobType = JobType.TEE.name();
+        }else {
+            jobType = JobType.MPC.name();
         }
         for (Node<PhysicalPlan> next : dag.getNodes()) {
             next.getObject().accept(this);

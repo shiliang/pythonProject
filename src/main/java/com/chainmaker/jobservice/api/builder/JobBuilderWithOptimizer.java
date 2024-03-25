@@ -41,7 +41,7 @@ import static com.chainmaker.jobservice.core.calcite.utils.ConstExprJudgement.is
 
 public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private enum JobType {
-        FQ, FQS, FL, FLS, CC, CCS
+        FQ, FQS, FL, FLS, CC, CCS, TEE, MPC
     }
     private enum TaskType {
         QUERY, LOCALFILTER, LOCALJOIN, OTPSI, PSIRSA, TEEPSI, TEEAVG, MPC, MPCEXP, FL, TEE, LOCALMERGE, LOCALEXP, LOCALAGG, NOTIFY
@@ -136,6 +136,14 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             jobType = JobType.CCS.name();
         } else {
             throw new ParserException("暂不支持的任务类型");
+        }
+
+        if (this.sql.contains("FL")) {
+            jobType = JobType.FL.name();
+        }else if (this.sql.contains("TEE")) {
+            jobType = JobType.TEE.name();
+        }else {
+            jobType = JobType.MPC.name();
         }
 
         System.out.println(

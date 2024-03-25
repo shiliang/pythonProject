@@ -1,10 +1,8 @@
 package com.chainmaker.jobservice.api.model.po.contract.job;
 
 import com.chainmaker.jobservice.api.model.bo.job.task.*;
-import com.chainmaker.jobservice.api.util.ParamsConverter;
 import lombok.Data;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**

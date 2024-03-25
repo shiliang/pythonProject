@@ -90,24 +90,4 @@ public class JobInfoPo {
                 ", services=" + services +
                 '}';
     }
-
-    public static void main(String[] args) {
-        String joinInfo = "{\"applicationID\":\"cbcae9ca38624e4d9536855e67148aae\",\"job\":{\"common\":\"null\",\"createTime\":\"1704441669900\",\"jobID\":\"cbcae9ca38624e4d9536855e67148aae\",\"jobType\":\"FQ\",\"parties\":[\"wx-org3.chainmaker.orgDID\",\"wx-org2.chainmaker.orgDID\"],\"projectID\":\"0cdecc91-a946-41d5-9f88-77500ca20ccf\",\"status\":\"WAITING\",\"tasksDAG\":\"taskDAG\",\"updateTime\":\"1704441669900\"},\"services\":[],\"tasks\":[{\"createTime\":\"1704439857113\",\"input\":{\"data\":[{\"dataID\":\"T_ORG_1\",\"dataName\":\"T_ORG_1\",\"domainID\":\"wx-org3.chainmaker.orgDID\",\"params\":\"{\\\"table\\\":\\\"T_ORG_1\\\",\\\"field\\\":\\\"ID\\\"}\",\"role\":\"client\",\"taskSrc\":\"\"},{\"dataID\":\"T_ORG_2\",\"dataName\":\"T_ORG_2\",\"domainID\":\"wx-org2.chainmaker.orgDID\",\"params\":\"{\\\"table\\\":\\\"T_ORG_2\\\",\\\"field\\\":\\\"ID\\\"}\",\"role\":\"server\",\"taskSrc\":\"\"}]},\"jobID\":\"cbcae9ca38624e4d9536855e67148aae\",\"module\":{\"moduleName\":\"TEEPSI\",\"params\":\"{\\\"joinType\\\":\\\"INNER\\\",\\\"operator\\\":\\\"=\\\",\\\"teeHost\\\":\\\"192.168.40.21\\\",\\\"teePort\\\":\\\"30091\\\",\\\"domainID\\\":\\\"wx-org3.chainmaker.orgDID\\\"}\"},\"output\":{\"data\":[{\"dataID\":\"\",\"dataName\":\"wx-org3.chainmaker.orgDID-1\",\"domainID\":\"wx-org3.chainmaker.orgDID\",\"finalResult\":\"N\"},{\"dataID\":\"\",\"dataName\":\"wx-org2.chainmaker.orgDID-1\",\"domainID\":\"wx-org2.chainmaker.orgDID\",\"finalResult\":\"N\"}]},\"parties\":[{\"partyID\":\"wx-org3.chainmaker.orgDID\"},{\"partyID\":\"wx-org2.chainmaker.orgDID\"}],\"status\":\"WAITING\",\"taskName\":\"0\",\"updateTime\":\"1704439857113\",\"version\":\"1.0.0\"},{\"createTime\":\"1704439857113\",\"input\":{\"data\":[{\"dataID\":\"\",\"dataName\":\"wx-org3.chainmaker.orgDID-1\",\"domainID\":\"wx-org3.chainmaker.orgDID\",\"params\":\"{\\\"table\\\":\\\"T_ORG_1\\\",\\\"field\\\":\\\"VAL1\\\"}\",\"role\":\"server\",\"taskSrc\":\"0\"},{\"dataID\":\"\",\"dataName\":\"wx-org2.chainmaker.orgDID-1\",\"domainID\":\"wx-org2.chainmaker.orgDID\",\"params\":\"{\\\"table\\\":\\\"T_ORG_2\\\",\\\"field\\\":\\\"VAL1\\\"}\",\"role\":\"client\",\"taskSrc\":\"0\"}]},\"jobID\":\"cbcae9ca38624e4d9536855e67148aae\",\"module\":{\"moduleName\":\"TEE\",\"params\":\"{\\\"methodName\\\":\\\"MUL\\\",\\\"teeHost\\\":\\\"192.168.40.21\\\",\\\"teePort\\\":\\\"30091\\\",\\\"domainID\\\":\\\"wx-org3.chainmaker.orgDID\\\"}\"},\"output\":{\"data\":[{\"dataID\":\"\",\"dataName\":\"wx-org3.chainmaker.orgDID-2\",\"domainID\":\"wx-org3.chainmaker.orgDID\",\"finalResult\":\"Y\"}]},\"parties\":[{\"partyID\":\"wx-org3.chainmaker.orgDID\"},{\"partyID\":\"wx-org2.chainmaker.orgDID\"}],\"status\":\"WAITING\",\"taskName\":\"1\",\"updateTime\":\"1704439857113\",\"version\":\"1.0.0\"}]}";
-        JobInfoPo jobInfoPo = JSON.parseObject(joinInfo, JobInfoPo.class);
-        String cache = "{\"T_ORG_2\":{\"code\":\"60-29-34-34\",\"id\":\"60e027fd-b9b9-455a-99b8-557ba1893260\",\"itemVOList\":[{\"dataLength\":12,\"dataType\":4,\"description\":\"\",\"id\":\"2e4fe5c5-9576-4512-bf7e-0f62792bff87\",\"name\":\"id\",\"primaryKey\":0},{\"dataLength\":12,\"dataType\":4,\"description\":\"\",\"id\":\"9b61af23-9a81-4f5a-84fe-3f668af19a51\",\"name\":\"val1\",\"primaryKey\":0}],\"name\":\"T_ORG_2\",\"orgDID\":\"wx-org2.chainmaker.orgDID\",\"orgId\":\"wx-org2.chainmaker.orgId\",\"publishTime\":1702613258,\"remark\":\"org2数据目录\",\"status\":1,\"version\":1},\"T_ORG_1\":{\"code\":\"82-29-99-0\",\"id\":\"ebdcc368-2fb3-4a58-b2b5-490b6a64cf94\",\"itemVOList\":[{\"dataLength\":12,\"dataType\":4,\"description\":\"\",\"id\":\"567faf65-05f5-4d3b-9645-6d68fdcb047e\",\"name\":\"id\",\"primaryKey\":1},{\"dataLength\":12,\"dataType\":4,\"description\":\"\",\"id\":\"5e095cc4-bdb4-4bdf-91b4-1601324a45ab\",\"name\":\"val1\",\"primaryKey\":0}],\"name\":\"T_ORG_1\",\"orgDID\":\"wx-org3.chainmaker.orgDID\",\"orgId\":\"wx-org3.chainmaker.orgId\",\"publishTime\":1702613230,\"remark\":\"org1数据目录\",\"status\":1,\"version\":1}}";
-        JSONObject json = JSON.parseObject(cache);
-        for(String key : json.keySet()){
-            DataCatalogInfo value = JSONObject.parseObject(json.getString(key), DataCatalogInfo.class);
-            value.setDatasourceNo(key + "88888");
-            for(DataCatalogDetailInfo item : value.getItemVOList())
-            {
-                DataCatalogDataSecurityInfo info = new DataCatalogDataSecurityInfo();
-                info.setIsQueryable(1);
-                info.setColumnName("ID");
-                item.setDataSecurity(info);
-            }
-            DataCatalogCache.put(key, value);
-        }
-        jobInfoPo.toContractParams();
-    }
 }
