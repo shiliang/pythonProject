@@ -58,7 +58,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
     private String sql;
 
     public JobBuilder(Integer modelType, Integer isStream, DAG<PhysicalPlan> dag, OrgInfo orgInfo, String sql) {
-        if (this.sql.contains("TEE")){
+        if (this.sql.contains("/*+ TEE */")){
             this.modelType = 3;
         }else {
             this.modelType = modelType;
