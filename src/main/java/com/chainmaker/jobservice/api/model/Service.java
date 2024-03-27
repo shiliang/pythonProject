@@ -15,6 +15,7 @@ import java.util.List;
 public class Service {
 
     private String serviceName;
+    private String serviceLabel;
     private String serviceId;
 
     private String serviceDescription;

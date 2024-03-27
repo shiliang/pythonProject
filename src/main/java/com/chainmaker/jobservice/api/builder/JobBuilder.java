@@ -224,7 +224,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
                 }
 
-
+                service.setServiceLabel(service.getServiceName() + "(" + service.getOrgName() + ")");
                 service.setReferExposeEndpointList(referExposeEndpointList);
                 service.setExposeEndpointList(exposeEndpointList);
                 services.add(service);
@@ -324,6 +324,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
                 service.setReferExposeEndpointList(referExposeEndpointList);
                 service.setExposeEndpointList(exposeEndpointList);
+                service.setServiceLabel(service.getServiceName() + "(" + service.getOrgName() + ")");
                 services.add(service);
             }
             Map<String, String> model_method = new HashMap<>();
