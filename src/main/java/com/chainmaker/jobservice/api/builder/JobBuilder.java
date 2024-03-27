@@ -310,6 +310,15 @@ public class JobBuilder extends PhysicalPlanVisitor {
 //                    exposeEndpoint.setOrgId(exposeEndpointFormMap.get("groupID"));
                     exposeEndpoint.setName(exposeEndpointVo.getName());
                     exposeEndpoint.setServiceClass(serviceVo.getServiceClass());
+                    ValueVo valueVo = serviceVo.getValues().get(0);
+                    List<Value> valueList = new ArrayList<>();
+                    if (!StringUtils.isEmpty(valueVo.getKey())){
+                        Value value = new Value();
+                        value.setKey(valueVo.getKey());
+                        value.setValue(valueVo.getValue());
+                        valueList.add(value);
+                    }
+                    exposeEndpoint.setValueList(valueList);
                     exposeEndpointList.add(exposeEndpoint);
                 }
 
