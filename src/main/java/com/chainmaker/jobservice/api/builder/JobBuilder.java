@@ -58,7 +58,11 @@ public class JobBuilder extends PhysicalPlanVisitor {
     private String sql;
 
     public JobBuilder(Integer modelType, Integer isStream, DAG<PhysicalPlan> dag, OrgInfo orgInfo, String sql) {
-        this.modelType = modelType;
+        if (this.sql.contains("TEE")){
+            this.modelType = 3;
+        }else {
+            this.modelType = modelType;
+        }
         this.isStream = isStream;
         this.dag = dag;
         this.createTime = String.valueOf(System.currentTimeMillis());
