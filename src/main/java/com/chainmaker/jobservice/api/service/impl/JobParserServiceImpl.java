@@ -134,8 +134,10 @@ public class JobParserServiceImpl implements JobParserService {
         List<AssetDetail> assetDetailList = jobMissionDetail.getAssetDetailList();
         JobInfoVo jobInfoVo = JobInfoVo.converterToJobInfoVo(jobTemplate);
         JobInfo jobInfo = JobInfo.jobTemplateToJobInfo(jobTemplate);
-        String orgId = getOrgId();
-        assetDetailList.forEach(assetDetail -> assetDetail.setOrgId(orgId));
+        assetDetailList.forEach(assetDetail -> {
+            String[] split = assetDetail.getAssetName().split("_");
+            assetDetail.setOrgId(split[split.length - 1]);
+        });
         jobInfo.setAssetDetailList(assetDetailList);
         jobInfoVo.setAssetDetailList(assetDetailList);
 
