@@ -14,6 +14,8 @@ public class AssetDetail {
     private String type;
     private int length;
     private String comments;
+    private String orgName;
+    private String holderCompany;
 
 }
 

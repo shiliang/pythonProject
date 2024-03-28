@@ -98,6 +98,8 @@ public class SqlParser {
 //                assetDetail.setOrgId();
                 assetDetail.setColumnName(dataCatalogDetailInfo.getName());
                 assetDetail.setComments(dataCatalogDetailInfo.getDescription());
+                assetDetail.setOrgName(dataCatalogInfo.getHolderCompany());
+                assetDetail.setHolderCompany(dataCatalogInfo.getHolderCompany());
                 assetDetailList.add(assetDetail);
             }
         }
