@@ -206,8 +206,8 @@ public class PhysicalPlanPrinter {
                     if (child.contains("-")) {
                         dataName = child.split(" ")[0];
                     }
-                    if (s.contains("MAX") || s.contains("MIN") || s.contains("COUNT") ||
-                            s.contains("AVG") || s.contains("SUM")) {
+                    if (s.toUpperCase().contains("MAX") || s.toUpperCase().contains("MIN") || s.toUpperCase().contains("COUNT") ||
+                            s.toUpperCase().contains("AVG") || s.toUpperCase().contains("SUM")) {
                         ProjectTask = str2Json(s, cnt, "MPC", dataName, null, stk.isEmpty());
                     } else {
                         ProjectTask = str2Json(s, cnt, "QUERY", dataName, null, stk.isEmpty());

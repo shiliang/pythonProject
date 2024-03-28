@@ -760,7 +760,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         RexNode ans = null;
         SqlAggFunction op = SqlStdOperatorTable.SUM;
         String function = expr.getFunction();
-        switch (function) {
+        switch (function.toUpperCase()) {
             case "SUM":
                 op = SqlStdOperatorTable.SUM;
                 break;
