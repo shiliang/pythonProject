@@ -13,8 +13,6 @@ import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
 import com.chainmaker.jobservice.api.model.bo.job.task.Task;
 import com.chainmaker.jobservice.api.model.bo.job.task.TaskInputData;
 import com.chainmaker.jobservice.api.model.po.contract.JobInfoPo;
-import com.chainmaker.jobservice.api.model.po.data.ServiceValueParam;
-import com.chainmaker.jobservice.api.model.po.data.UserInfo;
 import com.chainmaker.jobservice.api.model.vo.*;
 import com.chainmaker.jobservice.api.response.HttpResponse;
 import com.chainmaker.jobservice.api.response.ParserException;
@@ -73,23 +71,6 @@ public class JobParserServiceImpl implements JobParserService {
         }
         this.platformInfo = getPlatformInfoFromBackend();
         return this.platformInfo;
-    }
-
-    @Override
-    public List<ServiceValueParam> get(String orgDID, String jobID) {
-        String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/missions/serviceValues/" + orgDID + "/local/" + jobID;
-        RestTemplate restTemplate = new RestTemplate();
-        JSONObject result = JSONObject.parseObject(restTemplate.getForObject(url, String.class), Feature.OrderedField);
-        ServiceValueParam[] serviceValueParams = JSONObject.parseObject(result.getString("data"), ServiceValueParam[].class, Feature.OrderedField);
-        return new ArrayList<>(Arrays.asList(serviceValueParams));
-    }
-
-    @Override
-    public UserInfo getUserInfo(String userName) {
-        String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/login/orgDID/" + userName;
-        RestTemplate restTemplate = new RestTemplate();
-        JSONObject result = JSONObject.parseObject(restTemplate.getForObject(url, String.class), Feature.OrderedField);
-        return JSONObject.parseObject(result.getString("data"), UserInfo.class, Feature.OrderedField);
     }
 
     @Override
