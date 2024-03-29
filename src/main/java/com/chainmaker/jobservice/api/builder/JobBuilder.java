@@ -164,7 +164,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
                 }
                 ValueVo valueTable = new ValueVo();
                 valueTable.setKey("pirParams");
-                valueTable.setValue(pirParams.toString().replace("[", "").replace("]", ""));
+                valueTable.setValue(pirParams.toString().replace("[", "").replace("]", "").replace(" ", ""));
                 serviceVo.getValues().set(0, valueTable);
                 map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getServiceId());
                 serviceVos.add(serviceVo);
@@ -262,7 +262,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
                 }
                 ValueVo valueTable = new ValueVo();
                 valueTable.setKey("pirParams");
-                valueTable.setValue(pirParams.toString().replace("[", "").replace("]", ""));
+                valueTable.setValue(pirParams.toString().replace("[", "").replace("]", "").replace(" ", ""));
                 serviceVo.getValues().set(0, valueTable);
                 map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getServiceId());
                 serviceVos.add(serviceVo);

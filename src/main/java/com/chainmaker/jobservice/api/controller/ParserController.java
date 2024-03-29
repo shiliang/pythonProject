@@ -303,8 +303,8 @@ public class ParserController {
 
                     JSONObject temp = new JSONObject();
                     Map<String, byte[]> params = new HashMap<>();
-                    params.put("orgDID", orgDID.getBytes(StandardCharsets.UTF_8));
-                    ContractServiceResponse res_csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_address_from_did", params);
+                    params.put("orgId", orgDID.getBytes(StandardCharsets.UTF_8));
+                    ContractServiceResponse res_csr = blockchainContractService.queryContract(CONTRACT_NAME_3, "get_address_from_org_id", params);
                     JSONObject res = res_csr.toJSON(false);
                     String url1 = "http://" + res.getString("result") + "/kms/sm2/file/url/result/" + jobID + "/" + dataID;
                     System.out.println(url1);
