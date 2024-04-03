@@ -12,8 +12,6 @@ import com.chainmaker.jobservice.api.model.bo.graph.Dag;
 import com.chainmaker.jobservice.api.model.bo.graph.Topology;
 import com.chainmaker.jobservice.api.model.bo.job.task.Task;
 import com.chainmaker.jobservice.api.model.po.contract.JobInfoPo;
-import com.chainmaker.jobservice.api.model.po.data.ServiceValueParam;
-import com.chainmaker.jobservice.api.model.po.data.UserInfo;
 import com.chainmaker.jobservice.api.model.vo.CatalogCache;
 import com.chainmaker.jobservice.api.model.vo.JobGraphVo;
 import com.chainmaker.jobservice.api.model.vo.MissionInfoVo;
@@ -89,9 +87,6 @@ public interface JobParserService {
     JobGraphVo jobPreview(SqlVo sqlVo);
     MissionInfoVo jobCommit(JobGraphVo jobGraphVo);
     JobRunner getJobRunner(JobInfoPo jobInfoPo);
-
-    List<ServiceValueParam> get(String orgDID, String jobID);
-    UserInfo getUserInfo(String userName);
 
 
     JSONObject analyzeSql(String sqltext);
