@@ -253,6 +253,44 @@
                 <outputDirectory>${project.build.directory}/jacoco-reports</outputDirectory>
             </configuration>
         </plugin>
+
+        <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>0.8.4</version>
+            <configuration>
+                <!--指定生成 .exec 文件的存放位置-->
+                <destFile>target/coverage-reports/jacoco-unit.exec</destFile>
+                <!--Jacoco 是根据 .exec 文件生成最终的报告，所以需指定 .exec 的存放路径-->
+                <dataFile>target/coverage-reports/jacoco-unit.exec</dataFile>
+                <excludes>
+                    <!-- 排除某个包下的所有类 -->
+                    <exclude>proto/**</exclude>
+                    <exclude>com/chainmaker/jobservice/api/model/**</exclude>
+                    <exclude>com/chainmaker/jobservice/api/service/grpc/**</exclude>
+                    <exclude>com/chainmaker/jobservice/api/common/**</exclude>
+                    <exclude>com/chainmaker/jobservice/core/analyzer/**</exclude>
+                    <exclude>com/chainmaker/jobservice/core/optimizer/join/**</exclude>
+                    <exclude>com/chainmaker/jobservice/api/model/**</exclude>
+                    <exclude>com/chainmaker/jobservice/core/antlr4/gen/**</exclude>
+                </excludes>
+            </configuration>
+            <executions>
+                <execution>
+                    <id>jacoco-initialize</id>
+                    <goals>
+                        <goal>prepare-agent</goal>
+                    </goals>
+                </execution>
+                <execution>
+                    <id>jacoco-site</id>
+                    <phase>test</phase>
+                    <goals>
+                        <goal>report</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
     </plugins>
 </build>
 
