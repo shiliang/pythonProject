@@ -1,34 +1,80 @@
 #!/bin/bash
 
-# 检查参数数量是否正确
+show_help() {
+    echo "Usage: $0 -t <tag> [-p <true|false>] [-r <registry_address>]"
+    echo "Options:"
+    echo "  -t <tag>                Specify the tag for Docker images."
+    echo "  -p <true|false>         Push the Docker images to the registry. (Default: false)"
+    echo "  -r <registry_address>   Specify the address of the Docker registry."
+    echo "                          If not provided, Docker Hub is assumed as the default registry."
+}
+
+# Check if the number of parameters is correct
 if [ $# -lt 1 ]; then
-    echo "Usage: $0 <please input tag>"
+    show_help
     exit 1
 fi
 
-docker_tag=$1
+# Default values
+push_flag=false
 
-is_push=$3
+# Parse command line options
+while getopts ":t::p:r:" opt; do
+    case ${opt} in
+        t)
+            docker_tag=$OPTARG
+            ;;
+        p)
+            push_flag=true
+            if [[ ! $OPTARG =~ ^(true|false)$ ]]; then
+                echo "Invalid argument for -p. Please provide 'true' or 'false'." >&2
+                show_help
+                exit 1
+            fi
+            ;;
+        r)
+            registry_address=$OPTARG
+            ;;
+        \?)
+            echo "Invalid option: $OPTARG" 1>&2
+            show_help
+            exit 1
+            ;;
+        :)
+            echo "Option -$OPTARG requires an argument." 1>&2
+            show_help
+            exit 1
+            ;;
+    esac
+done
 
-# 设置默认的 Docker register 地址
-docker_register_address=$3
+shift $((OPTIND -1))
 
-git pull && mvn clean package
+# Check if tag is provided
+if [ -z "$docker_tag" ]; then
+    echo "Tag not specified."
+    show_help
+    exit 1
+fi
 
-docker build -f ./Dockerfile-simple -t mira/mira-job-service:${docker_tag} .
+echo "Building mira-job-service environment image"
 
 
-if [ ! -z "$docker_register_address" ]; then
+git pull && mvn clean package && docker build -f ./Dockerfile-simple -t mira-job-service:${docker_tag} .
+
+
+if [ ! -z "$registry_address" ]; then
   #tag mira-backend-service-build
-    docker tag mira/mira-job-service:${docker_tag} ${docker_register_address}/mira/mira-job-service:${docker_tag}
+    docker tag mira-job-service:${docker_tag} ${registry_address}/mira/mira-job-service:${docker_tag}
 fi
 
 #是否push
-if [ "$is_push" == "true" ]; then
+if [ "$push_flag" == "true" ]; then
   # 假设$docker_register_address 为空，则默认为docker hub
-  if [ -z "$docker_register_address" ]; then
+  if [ -z "$registry_address" ]; then
+    docker tag mira-job-service:${docker_tag} mira/mira-job-service:${docker_tag}
     docker push mira/mira-job-service:${docker_tag}
   else
-    docker push ${docker_register_address}/mira/mira-job-service:${docker_tag}
+    docker push ${registry_address}/mira/mira-job-service:${docker_tag}
   fi
 fi
