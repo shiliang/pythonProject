@@ -3,6 +3,7 @@ package com.chainmaker.jobservice.api.service.impl;
 import com.chainmaker.jobservice.api.response.ContractException;
 import com.chainmaker.jobservice.api.response.ContractServiceResponse;
 import com.chainmaker.jobservice.api.service.BlockchainContractService;
+import lombok.extern.slf4j.Slf4j;
 import org.chainmaker.pb.common.ChainmakerTransaction;
 import org.chainmaker.pb.common.ContractOuterClass;
 import org.chainmaker.pb.common.Request;
@@ -13,10 +14,12 @@ import org.chainmaker.sdk.utils.FileUtils;
 import org.chainmaker.sdk.utils.SdkUtils;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class BlockchainContractServiceImpl implements BlockchainContractService {
 
     private ChainClient chainClient;
@@ -115,10 +118,20 @@ public class BlockchainContractServiceImpl implements BlockchainContractService 
         ContractServiceResponse csr = new ContractServiceResponse();
         csr.setQuery(false);
         try {
-            responseInfo = chainClient.invokeContract(contractName, contractMethod, null, params, 10000, 10000);
+            // 创建一个StringBuilder来构建日志信息
+            StringBuilder sb = new StringBuilder();
+            sb.append("Contract Invoke: ").append(contractName).append("---").append(contractMethod).append("---");
+            for (Map.Entry<String, byte[]> entry : params.entrySet()) {
+                String key = entry.getKey();
+                String value = new String(entry.getValue(), StandardCharsets.UTF_8);
+                sb.append(key).append("=").append(value).append("; ");
+            }
+            log.info(sb.toString());
+
+            responseInfo = chainClient.invokeContract(contractName, contractMethod, null, params, 10000, 100000);
             csr.fromChainResponse(responseInfo);
         } catch (Exception e) {
-            System.out.println("Exception");
+
             csr.setMessage(e.getMessage());
         }
         if (csr.isOk()) {
@@ -134,9 +147,18 @@ public class BlockchainContractServiceImpl implements BlockchainContractService 
         ContractServiceResponse csr = new ContractServiceResponse();
         csr.setQuery(true);
         try {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Contract Query: ").append(contractName).append("---").append(contractMethod).append("---");
+            for (Map.Entry<String, byte[]> entry : params.entrySet()) {
+                String key = entry.getKey();
+                String value = new String(entry.getValue(), StandardCharsets.UTF_8);
+                sb.append(key).append("=").append(value).append("; ");
+            }
+            log.info(sb.toString());
+
             responseInfo = chainClient.queryContract(contractName, contractMethod, null, params, 10000);
-//            System.out.println(responseInfo);
             csr.fromChainResponse(responseInfo);
+            log.info(contractName + contractMethod + " contract return: " + csr.getJsonResult());
         } catch (Exception e) {
             csr.setMessage(e.getMessage());
         }
