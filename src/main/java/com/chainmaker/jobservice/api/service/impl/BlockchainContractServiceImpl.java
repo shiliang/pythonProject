@@ -158,7 +158,7 @@ public class BlockchainContractServiceImpl implements BlockchainContractService 
 
             responseInfo = chainClient.queryContract(contractName, contractMethod, null, params, 10000);
             csr.fromChainResponse(responseInfo);
-            log.info(contractName + contractMethod + " contract return: " + csr.getJsonResult());
+            log.info("Contract return: " + contractName + "---" + contractMethod + "---" + csr.getJsonResult());
         } catch (Exception e) {
             csr.setMessage(e.getMessage());
         }
