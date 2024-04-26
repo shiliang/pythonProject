@@ -1,9 +1,12 @@
 package com.chainmaker.jobservice.api.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.TypeReference;
 import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.builder.JobBuilder;
 import com.chainmaker.jobservice.api.builder.JobBuilderWithOptimizer;
+import com.chainmaker.jobservice.api.common.errors.BizException;
+import com.chainmaker.jobservice.api.common.errors.ErrorEnum;
 import com.chainmaker.jobservice.api.model.*;
 import com.chainmaker.jobservice.api.model.bo.*;
 import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
@@ -19,11 +22,16 @@ import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.api.service.JobParserService;
 import com.chainmaker.jobservice.core.SqlParser;
 import com.chainmaker.jobservice.core.parser.LogicalPlanBuilderV2;
+import com.chainmaker.jobservice.service.grpc.IdaGrpc;
+import com.chainmaker.jobservice.util.ProtobufBeanUtil;
 import lombok.extern.slf4j.Slf4j;
+import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.util.*;
 
 
@@ -41,6 +49,17 @@ public class JobParserServiceImpl implements JobParserService {
     private HashMap<String, CatalogCache> catalogCacheHashMap = new HashMap<>();
 
     private PlatformInfo platformInfo;
+
+    @GrpcClient("idaGrpcClient")
+    private IdaGrpc.IdaBlockingStub blockingStub;
+
+    @org.springframework.beans.factory.annotation.Value("${grpc.client.assetGrpcClient.address}")
+    private String assetServiceAddr;
+    @Value("${grpc.client.keyGrpcClient.address}")
+    private String keyServiceAddr;
+
+
+
 
 
     public void setCatalogConfig(CatalogConfig catalogConfig) {
@@ -396,24 +415,30 @@ public class JobParserServiceImpl implements JobParserService {
     }
 
     private PlatformInfo getPlatformInfoFromBackend() {
-        String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/v1/mira/configuration/GetPlatformInfo";
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        HttpEntity<String> request = new HttpEntity<>(headers);
-
-        // 发送POST请求
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
-        if (response == null && HttpStatus.OK.value() != response.getStatusCodeValue()) {
-            throw new ParserException("获取组织信息失败");
+        proto.GetAccountInfoRequest request = proto.GetAccountInfoRequest.newBuilder().setRequestId(UUID.randomUUID().toString()).build();
+        proto.GetAccountInfoResponse getAccountInfoResponse = blockingStub.getAccountInfo(request);
+        TypeReference<PlatformInfo> typeReference = new TypeReference<>() {
+        };
+        PlatformInfo platformInfo = null;
+        try {
+            platformInfo = ProtobufBeanUtil.toPojoBean(typeReference, getAccountInfoResponse.getData());
+        } catch (IOException e) {
+            log.error("getPlatformInfo. err code: {}, err msg: {}", ErrorEnum.ErrCodeProtoToBean.getErrorCode(), ErrorEnum.ErrCodeProtoToBean.getErrorMsg());
+            throw new BizException(ErrorEnum.ErrCodeProtoToBean, e.getMessage());
         }
-        HttpResponse<PlatformInfo> httpResponse = JSONObject.parseObject(response.getBody(), HttpResponse.class);
-        if (httpResponse == null
-                && HttpStatus.OK.value() != httpResponse.getCode()
-                && httpResponse.getData() == null) {
-            throw new ParserException("获取组织信息失败");
+        if (platformInfo == null || platformInfo.getRegisterId() == 0) {
+            log.error("getPlatformInfo. err code: {}, err msg: {}", ErrorEnum.ErrCodeLocalResourcePlatformInformationNotFound.getErrorCode(), ErrorEnum.ErrCodeLocalResourcePlatformInformationNotFound.getErrorMsg());
+            throw new BizException(ErrorEnum.ErrCodeLocalResourcePlatformInformationNotFound, ErrorEnum.ErrCodeLocalResourcePlatformInformationNotFound.getErrorMsg());
         }
-        return JSONObject.parseObject(JSONObject.toJSONString(httpResponse.getData()), PlatformInfo.class);
+
+        String assetServiceAddr = this.assetServiceAddr.split("//")[1];
+        String keyServiceAddr = this.keyServiceAddr.split("//")[1];
+        platformInfo.setAssetServiceAddr(assetServiceAddr);
+        platformInfo.setKeyServiceAddr(keyServiceAddr);
+        this.platformInfo = platformInfo;
+        return platformInfo;
     }
 }
+
+
+

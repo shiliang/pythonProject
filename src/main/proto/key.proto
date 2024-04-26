@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+//消息实体生成包路径
+package proto;
+
+option java_multiple_files = true;
+
+message AccountData {
+  uint32 keyId = 1;
+  string keyMode = 2;
+  string chainId = 3;
+  string subChainId = 4;
+  string chainName = 5;
+
+  // 链账户地址
+  string accountAddress = 6;
+  string accountName = 7;
+  string accountType = 8;
+
+  // 社会信用代码
+  string socialCreditCode = 9;
+  map<uint32,string> authUsers = 10;
+
+  // 链上注册 id
+  uint32 registerId = 11;
+
+  // 创建时间
+  int64 createdAt = 12;
+
+  // 更新时间
+  int64 updatedAt = 13;
+
+}
+
+message GetAccountInfoRequest {
+  string requestId = 1;
+}
+
+message GetAccountInfoResponse {
+  int32 code = 1;
+  string msg = 2;
+  AccountData data = 3;
+}
