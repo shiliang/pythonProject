@@ -416,7 +416,11 @@ public class JobParserServiceImpl implements JobParserService {
 
     private PlatformInfo getPlatformInfoFromBackend() {
         proto.GetAccountInfoRequest request = proto.GetAccountInfoRequest.newBuilder().setRequestId(UUID.randomUUID().toString()).build();
-        proto.GetAccountInfoResponse getAccountInfoResponse = blockingStub.getAccountInfo(request);
+        proto.GetAccountPlatformInfoResponse getAccountInfoResponse = blockingStub.getAccountInfo(request);
+        if (HttpStatus.OK.value() != getAccountInfoResponse.getCode()) {
+            log.error("getPlatformInfo. err Code: {}, err Msg: {}", ErrorEnum.ErrCodeLocalResourcePlatformInformationNotFound, getAccountInfoResponse.getCode() + ":" + getAccountInfoResponse.getMsg());
+            throw new BizException(ErrorEnum.ErrCodeLocalResourcePlatformInformationNotFound, getAccountInfoResponse.getMsg());
+        }
         TypeReference<PlatformInfo> typeReference = new TypeReference<>() {
         };
         PlatformInfo platformInfo = null;
@@ -430,11 +434,6 @@ public class JobParserServiceImpl implements JobParserService {
             log.error("getPlatformInfo. err code: {}, err msg: {}", ErrorEnum.ErrCodeLocalResourcePlatformInformationNotFound.getErrorCode(), ErrorEnum.ErrCodeLocalResourcePlatformInformationNotFound.getErrorMsg());
             throw new BizException(ErrorEnum.ErrCodeLocalResourcePlatformInformationNotFound, ErrorEnum.ErrCodeLocalResourcePlatformInformationNotFound.getErrorMsg());
         }
-
-        String assetServiceAddr = this.assetServiceAddr.split("//")[1];
-        String keyServiceAddr = this.keyServiceAddr.split("//")[1];
-        platformInfo.setAssetServiceAddr(assetServiceAddr);
-        platformInfo.setKeyServiceAddr(keyServiceAddr);
         this.platformInfo = platformInfo;
         return platformInfo;
     }

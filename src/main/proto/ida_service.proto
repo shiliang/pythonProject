@@ -15,7 +15,7 @@ option java_package = "com.chainmaker.jobservice.service.grpc";
 
 // 通用结构定义
 service Ida {
-  rpc GetAccountInfo(GetAccountInfoRequest)returns(GetAccountInfoResponse);
+  rpc GetAccountInfo(GetAccountInfoRequest)returns(GetAccountPlatformInfoResponse);
 }
 
 

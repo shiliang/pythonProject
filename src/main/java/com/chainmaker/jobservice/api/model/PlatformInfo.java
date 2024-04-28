@@ -22,4 +22,6 @@ public class PlatformInfo {
 
     private String assetServiceAddr;
     private String keyServiceAddr;
+    private String chainServiceAddr;
+
 }

@@ -5,7 +5,12 @@ package proto;
 
 option java_multiple_files = true;
 
-message AccountData {
+message GetAccountPlatformInfoResponse {
+  int32 code = 1;
+  string msg = 2;
+  AccountPlatformData data = 3;
+}
+message AccountPlatformData {
   uint32 keyId = 1;
   string keyMode = 2;
   string chainId = 3;
@@ -30,14 +35,13 @@ message AccountData {
   // 更新时间
   int64 updatedAt = 13;
 
-}
+  string assetServiceAddr = 14;
+  string keyServiceAddr = 15;
+  string chainServiceAddr = 16;
 
+
+}
 message GetAccountInfoRequest {
   string requestId = 1;
 }
 
-message GetAccountInfoResponse {
-  int32 code = 1;
-  string msg = 2;
-  AccountData data = 3;
-}
