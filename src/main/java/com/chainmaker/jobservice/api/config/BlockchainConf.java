@@ -4,6 +4,7 @@ import com.chainmaker.jobservice.api.service.BlockchainContractService;
 import com.chainmaker.jobservice.api.service.JobParserService;
 import org.chainmaker.sdk.ChainManager;
 import org.chainmaker.sdk.Node;
+import org.chainmaker.sdk.config.AuthType;
 import org.chainmaker.sdk.config.NodeConfig;
 import org.chainmaker.sdk.config.SdkConfig;
 import org.chainmaker.sdk.utils.FileUtils;
@@ -55,20 +56,21 @@ public class BlockchainConf {
             buffer.close();
 
 
-//            in.close();
-            List<Node> nodeList = new ArrayList<>();
-
-            for (NodeConfig nodeConfig : sdkConfig.getChain_client().getNodes()) {
-                List<byte[]> tlsCaCertList = new ArrayList<>();
-                for (String rootPath : nodeConfig.getTrustRootPaths()) {
-                    List<String> filePathList = FileUtils.getFilesByPath(rootPath);
-                    for (String filePath : filePathList) {
-                        tlsCaCertList.add(FileUtils.getFileBytes(filePath));
+            String auth = sdkConfig.getChain_client().getAuth_type();
+            //如果auth为permissionedWithcert则执行，否则不执行。
+            if (auth.equals(AuthType.PermissionedWithCert.getMsg())) {
+                for (NodeConfig nodeConfig : sdkConfig.getChain_client().getNodes()) {
+                    List<byte[]> tlsCaCertList = new ArrayList<>();
+                    for (String rootPath : nodeConfig.getTrustRootPaths()) {
+                        List<String> filePathList = FileUtils.getFilesByPath(rootPath);
+                        for (String filePath : filePathList) {
+                            tlsCaCertList.add(FileUtils.getFileBytes(filePath));
+                        }
                     }
+                    byte[][] tlsCaCerts = new byte[tlsCaCertList.size()][];
+                    tlsCaCertList.toArray(tlsCaCerts);
+                    nodeConfig.setTrustRootBytes(tlsCaCerts);
                 }
-                byte[][] tlsCaCerts = new byte[tlsCaCertList.size()][];
-                tlsCaCertList.toArray(tlsCaCerts);
-                nodeConfig.setTrustRootBytes(tlsCaCerts);
             }
             ChainManager chainManager = ChainManager.getInstance();
 
