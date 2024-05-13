@@ -61,7 +61,7 @@ echo "Building mira-job-service environment image"
 
 
 #git pull && mvn clean package && docker build -f ./Dockerfile -t chainweaver/mira-job-service:${docker_tag} .
-mvn clean package && docker build -f ./Dockerfile -t chainweaver/mira-job-service:${docker_tag} .
+docker build -f ./Dockerfile -t chainweaver/mira-job-service:${docker_tag} .
 
 
 if [ ! -z "$registry_address" ]; then

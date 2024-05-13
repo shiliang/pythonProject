@@ -3,7 +3,7 @@ FROM maven:3.8.6-openjdk-11 as builder
 WORKDIR /home/workspace
 ADD . /home/workspace
 COPY base-env/settings.xml /usr/share/maven/conf/
-RUN mvn install:install-file -Dfile=/home/workspace/base-env/chainmaker-sdk-java-2.1.0.jar -DgroupId=org.chainmaker.sdk  \
+RUN mvn clean package && mvn install:install-file -Dfile=/home/workspace/base-env/chainmaker-sdk-java-2.1.0.jar -DgroupId=org.chainmaker.sdk  \
     -DartifactId=chainmaker-sdk-java -Dversion=2.1.0 -Dpackaging=jar -DpomFile=/home/workspace/base-env/pom.xml
 # RUN ["/usr/local/bin/mvn-entrypoint.sh","mvn","verify","clean","--fail-never"]
 # RUN mvn install:install-file -Dfile=./lib/traffic-1.0.jar -DgropuId=com.baec -DartifactId=traffic-spring-boot-starter -Dversion=1.0 -Dpackaging=jar
