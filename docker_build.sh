@@ -60,7 +60,7 @@ fi
 echo "Building mira-job-service environment image"
 
 
-git pull && mvn clean package && docker build -f ./Dockerfile-simple -t mira/mira-job-service:${docker_tag} .
+git pull && mvn clean package && docker build -f ./Dockerfile -t mira/mira-job-service:${docker_tag} .
 
 
 if [ ! -z "$registry_address" ]; then
