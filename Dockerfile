@@ -15,5 +15,5 @@ RUN mvn package
 #基础镜像
 FROM openjdk:11.0.14.1-slim-buster
 WORKDIR /home/workspace
-#COPY --from=builder /code/target/job-service-0.0.1-SNAPSHOT.jar /home/workspace/job-service-0.0.1-SNAPSHOT.jar
+COPY --from=builder /home/workspace/target/backendservice-0.0.1-SNAPSHOT.jar /home/workspace/backendservice-0.0.1-SNAPSHOT.jar
 CMD [ "java", "-jar", "job-service-0.0.1-SNAPSHOT.jar" ]
