@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.api.model.vo;
 
 import com.chainmaker.jobservice.api.model.AssetInfo;
+import com.chainmaker.jobservice.api.model.OrgInfo;
 import lombok.Data;
 
 import java.util.List;
@@ -21,4 +22,6 @@ public class SqlVo {
     private List<AssetInfo> assetInfoList;
 
     private List<ModelParamsVo> modelParams;
+
+    private OrgInfo orgInfo;
 }

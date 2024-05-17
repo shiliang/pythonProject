@@ -1,32 +1,17 @@
 package com.chainmaker.jobservice.api.service;
 
 import com.alibaba.fastjson.JSONObject;
-import com.chainmaker.jobservice.api.model.PlatformInfo;
-import com.chainmaker.jobservice.api.model.Service;
-import com.chainmaker.jobservice.api.model.bo.JobGraph;
+import com.chainmaker.jobservice.api.model.job.Job;
+import com.chainmaker.jobservice.api.model.job.service.Service;
 import com.chainmaker.jobservice.api.model.bo.JobMissionDetail;
-import com.chainmaker.jobservice.api.model.bo.JobRunner;
-import com.chainmaker.jobservice.api.model.bo.ServiceRunner;
-import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
-import com.chainmaker.jobservice.api.model.bo.graph.Dag;
-import com.chainmaker.jobservice.api.model.bo.graph.Topology;
-import com.chainmaker.jobservice.api.model.bo.job.task.Task;
-import com.chainmaker.jobservice.api.model.po.contract.JobInfoPo;
-import com.chainmaker.jobservice.api.model.vo.CatalogCache;
-import com.chainmaker.jobservice.api.model.vo.JobGraphVo;
-import com.chainmaker.jobservice.api.model.vo.MissionInfoVo;
+import com.chainmaker.jobservice.api.model.graph.Dag;
+import com.chainmaker.jobservice.api.model.graph.Topology;
+import com.chainmaker.jobservice.api.model.job.task.Task;
 import com.chainmaker.jobservice.api.model.vo.SqlVo;
 
 import java.util.List;
 
 public interface JobParserService {
-    void setCatalogConfig(CatalogConfig catalogConfig);
-
-    String getOrgId();
-    String getOrgName();
-
-    PlatformInfo getPlatformInfo();
-    void setPlatformInfo(PlatformInfo platformInfo);
 
     /***
      * @description 根据类型解析SQL
@@ -76,17 +61,8 @@ public interface JobParserService {
      */
     List<Service> topologyToService(Topology topology, List<Service> services);
 
-    List<ServiceRunner> converterToServiceRunner(List<ServiceRunner> services, String orgDID);
 
-    void put(String key, JobGraph value);
-    JobGraph getJobGraph(String key);
-    void put(String key, CatalogCache value);
-    CatalogCache getCatalogCache(String key);
-    void delete(String key);
-
-    JobGraphVo jobPreview(SqlVo sqlVo);
-    MissionInfoVo jobCommit(JobGraphVo jobGraphVo);
-    JobRunner getJobRunner(JobInfoPo jobInfoPo);
+    Job jobPreview(SqlVo sqlVo);
 
 
     JSONObject analyzeSql(String sqltext);

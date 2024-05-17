@@ -1,37 +1,22 @@
 package com.chainmaker.jobservice.api.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.TypeReference;
-import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.builder.JobBuilder;
 import com.chainmaker.jobservice.api.builder.JobBuilderWithOptimizer;
-import com.chainmaker.jobservice.api.common.errors.BizException;
-import com.chainmaker.jobservice.api.common.errors.ErrorEnum;
 import com.chainmaker.jobservice.api.model.*;
 import com.chainmaker.jobservice.api.model.bo.*;
-import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
-import com.chainmaker.jobservice.api.model.bo.graph.*;
-import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
-import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
-import com.chainmaker.jobservice.api.model.bo.job.task.Task;
-import com.chainmaker.jobservice.api.model.bo.job.task.TaskInputData;
-import com.chainmaker.jobservice.api.model.po.contract.JobInfoPo;
+import com.chainmaker.jobservice.api.model.job.Job;
+import com.chainmaker.jobservice.api.model.job.service.ReferExposeEndpoint;
+import com.chainmaker.jobservice.api.model.job.service.Service;
+import com.chainmaker.jobservice.api.model.job.task.Task;
+import com.chainmaker.jobservice.api.model.job.task.InputDetail;
+import com.chainmaker.jobservice.api.model.graph.*;
 import com.chainmaker.jobservice.api.model.vo.*;
-import com.chainmaker.jobservice.api.response.HttpResponse;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.api.service.JobParserService;
 import com.chainmaker.jobservice.core.SqlParser;
 import com.chainmaker.jobservice.core.parser.LogicalPlanBuilderV2;
-import com.chainmaker.jobservice.service.grpc.IdaGrpc;
-import com.chainmaker.jobservice.util.ProtobufBeanUtil;
 import lombok.extern.slf4j.Slf4j;
-import net.devh.boot.grpc.client.inject.GrpcClient;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
-import org.springframework.web.client.RestTemplate;
-
-import java.io.IOException;
 import java.util.*;
 
 
@@ -44,115 +29,26 @@ import java.util.*;
 @Slf4j
 @org.springframework.stereotype.Service
 public class JobParserServiceImpl implements JobParserService {
-    private CatalogConfig catalogConfig;
-    private HashMap<String, JobGraph> jobGraphHashMap = new HashMap<>();
-    private HashMap<String, CatalogCache> catalogCacheHashMap = new HashMap<>();
-
-    private PlatformInfo platformInfo;
-
-    @GrpcClient("idaGrpcClient")
-    private IdaGrpc.IdaBlockingStub blockingStub;
-
-    @org.springframework.beans.factory.annotation.Value("${grpc.client.assetGrpcClient.address}")
-    private String assetServiceAddr;
-    @Value("${grpc.client.keyGrpcClient.address}")
-    private String keyServiceAddr;
-
-
-
-
-
-    public void setCatalogConfig(CatalogConfig catalogConfig) {
-        this.catalogConfig = catalogConfig;
-    }
 
     @Override
-    public String getOrgId() {
-        return String.valueOf(getPlatformInfo().getRegisterId());
-    }
-
-    @Override
-    public String getOrgName() {
-        return getPlatformInfo().getAccountName();
-    }
-
-    public OrgInfo getOrgInfo() {
-        return  new OrgInfo(getOrgId(), getOrgName());
-    }
-
-    public void setPlatformInfo(PlatformInfo platformInfo) {
-        this.platformInfo = platformInfo;
-    }
-    @Override
-    public PlatformInfo getPlatformInfo() {
-        if (this.platformInfo != null) {
-            return this.platformInfo;
-        }
-        this.platformInfo = getPlatformInfoFromBackend();
-        return this.platformInfo;
-    }
-
-    @Override
-    public void put(String key, JobGraph value) {
-        jobGraphHashMap.put(key, value);
-    }
-
-    @Override
-    public JobGraph getJobGraph(String key) {
-        if (jobGraphHashMap.containsKey(key)) {
-            return jobGraphHashMap.get(key);
-        } else {
-            throw new ParserException("jobID查询失败");
-        }
-    }
-
-    @Override
-    public void put(String key, CatalogCache value) {
-        catalogCacheHashMap.put(key, value);
-    }
-
-    @Override
-    public CatalogCache getCatalogCache(String key) {
-        if (catalogCacheHashMap.containsKey(key)) {
-            return catalogCacheHashMap.get(key);
-        } else {
-            throw new ParserException("jobID查询失败");
-        }
-    }
-
-
-    @Override
-    public void delete(String key) {
-        jobGraphHashMap.remove(key);
-        catalogCacheHashMap.remove(key);
-    }
-
-    @Override
-    public JobGraphVo jobPreview(SqlVo sqlVo) {
+    public Job jobPreview(SqlVo sqlVo) {
         JobMissionDetail jobMissionDetail = parserSql(sqlVo);
-        JobTemplate jobTemplate = jobMissionDetail.getJobTemplate();
+        Job jobInfo = jobMissionDetail.getJob();
         List<AssetDetail> assetDetailList = jobMissionDetail.getAssetDetailList();
-        JobInfoVo jobInfoVo = JobInfoVo.converterToJobInfoVo(jobTemplate);
-        JobInfo jobInfo = JobInfo.jobTemplateToJobInfo(jobTemplate);
         assetDetailList.forEach(assetDetail -> {
             String[] split = assetDetail.getAssetName().split("_");
             assetDetail.setOrgId(split[split.length - 1]);
         });
         jobInfo.setAssetDetailList(assetDetailList);
-        jobInfoVo.setAssetDetailList(assetDetailList);
 
 
-        JobGraphVo jobGraphVo = new JobGraphVo();
-        JobGraph jobGraph = new JobGraph();
-        if (jobInfo.getTasks() != null) {
-            Dag dag = taskToDag(jobInfo.getTasks(), jobTemplate.getJob().getStatus());
-            jobGraphVo.setDag(dag);
-            jobGraph.setDag(dag);
+        if (jobInfo.getTaskList() != null) {
+            Dag dag = taskToDag(jobInfo.getTaskList(), jobInfo.getStatus());
+            jobInfo.setDag(dag);
         }
-        if (jobInfo.getServices() != null) {
-            Topology topology = serviceToTopology(jobInfo.getServices(), 1);
-            jobGraphVo.setTopology(topology);
-            jobGraph.setTopology(topology);
+        if (jobInfo.getServiceList() != null) {
+            Topology topology = serviceToTopology(jobInfo.getServiceList(), 1);
+            jobInfo.setTopology(topology);
         }
 //        if (jobInfoVo.getServices() != null) {
 //            for (Service service : jobInfoVo.getServices()) {
@@ -161,56 +57,13 @@ public class JobParserServiceImpl implements JobParserService {
 //                }
 //            }
 //        }
-        jobGraphVo.setJobInfo(jobInfoVo);
-        jobGraph.setJobInfo(jobInfo);
 
 
-        String jobID = jobInfo.getJob().getJobID();
-        put(jobID, jobGraph);
-        CatalogCache catalogCache = new CatalogCache();
-        System.out.println(jobMissionDetail.getMissionDetailVOList());
-        catalogCache.setMissionDetailVOList(jobMissionDetail.getMissionDetailVOList());
-        catalogCache.setModelParamsVoList(jobMissionDetail.getModelParamsVoList());
-        put(jobID, catalogCache);
-        return jobGraphVo;
+
+//        put(jobID, jobGraph);
+        return jobInfo;
     }
 
-    @Override
-    public MissionInfoVo jobCommit(JobGraphVo jobGraphVo) {
-        String jobID = jobGraphVo.getJobInfo().getJob().getJobID();
-        JobGraph jobGraph = JobGraph.updateFromJobGraphVo(jobGraphVo, getJobGraph(jobID).getJobInfo().getJob());
-        put(jobID, jobGraph);
-        MissionInfoVo missionInfoVo = new MissionInfoVo();
-        missionInfoVo.setJobID(jobID);
-        missionInfoVo.setMissionDetailVOs(getCatalogCache(jobID).getMissionDetailVOList());
-        missionInfoVo.setModelParams(getCatalogCache(jobID).getModelParamsVoList());
-        System.out.println(missionInfoVo.getJobID());
-
-        List<ServiceParamsVo> serviceParamsVos = new ArrayList<>();
-        for (Service service : jobGraph.getJobInfo().getServices()) {
-            ServiceParamsVo serviceParamsVo = new ServiceParamsVo();
-            serviceParamsVo.setServiceName(service.getServiceName());
-            serviceParamsVo.setServiceClass(service.getServiceClass());
-            serviceParamsVo.setServiceID(service.getServiceId());
-            serviceParamsVo.setOrgDID(service.getOrgId());
-            serviceParamsVos.add(serviceParamsVo);
-
-        }
-        missionInfoVo.setServiceParams(serviceParamsVos);
-        return missionInfoVo;
-    }
-
-    @Override
-    public JobRunner getJobRunner(JobInfoPo jobInfoPo) {
-        OrgInfo orgInfo = getOrgInfo();
-        JobRunnerInfo jobInfo = JobRunnerInfo.converterToJobInfo(jobInfoPo, orgInfo.getOrgId());
-        JobRunner jobRunner = new JobRunner();
-        jobRunner.setJob(jobInfo.getJob());
-        jobRunner.setTaskList(jobInfo.getTasks());
-        List<ServiceRunner> serviceRunners = converterToServiceRunner(jobInfo.getServices(), orgInfo.getOrgId());
-        jobRunner.setServiceList(serviceRunners);
-        return jobRunner;
-    }
 
 
     public JSONObject analyzeSql(String sql) {
@@ -223,7 +76,6 @@ public class JobParserServiceImpl implements JobParserService {
         return json;
     }
 
-
     @Override
     public JobMissionDetail parserSql(SqlVo sqlVo) {
         String sqltext = sqlVo.getSqltext().replace("\"", "");
@@ -232,21 +84,20 @@ public class JobParserServiceImpl implements JobParserService {
         }
         sqltext = sqltext.replace("/*+ FILTER(TEE) */".replace("\\s", ""), "");
         SqlParser sqlParser = new SqlParser(sqltext, sqlVo.getIsStream(), sqlVo.getModelType(), sqlVo.getAssetInfoList(), sqlVo.getModelParams());
-        sqlParser.setCatalogConfig(catalogConfig);
         if (sqlVo.getIsStream() == 1) {
-            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser(), getOrgInfo(), sqlParser.getSql());
+            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser(), sqlVo.getOrgInfo(), sqlParser.getSql());
             jobBuilder.build();
             JobMissionDetail jobMissionDetail = new JobMissionDetail();
-            jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
+            jobMissionDetail.setJob(jobBuilder.getJob());
             jobMissionDetail.setMissionDetailVOList(sqlParser.getMissionDetailVOs());
             jobMissionDetail.setModelParamsVoList(sqlParser.getModelParamsVos());
             jobMissionDetail.setAssetDetailList(sqlParser.getAssetDetailList());
             return jobMissionDetail;
         } else {
-            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parserWithOptimizer(), sqlParser.getColumnInfoMap(), getOrgId(), sqlParser.getSql());
+            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parserWithOptimizer(), sqlParser.getColumnInfoMap(), sqlVo.getOrgInfo(), sqlParser.getSql());
             jobBuilder.build();
             JobMissionDetail jobMissionDetail = new JobMissionDetail();
-            jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
+            jobMissionDetail.setJob(jobBuilder.getJob());
             jobMissionDetail.setMissionDetailVOList(sqlParser.getMissionDetailVOs());
             jobMissionDetail.setModelParamsVoList(sqlParser.getModelParamsVos());
             jobMissionDetail.setAssetDetailList(sqlParser.getAssetDetailList());
@@ -275,7 +126,7 @@ public class JobParserServiceImpl implements JobParserService {
             nodes.add(dagNode);
 
             String taskName = task.getTaskName();
-            for (TaskInputData taskInputData : task.getInput().getData()) {
+            for (InputDetail taskInputData : task.getInput().getInputDataDetailList()) {
                 if (!Objects.equals(taskInputData.getTaskSrc(), "")) {
                     DagEdge dagEdge = new DagEdge();
                     dagEdge.setFrom(Integer.parseInt(taskInputData.getTaskSrc()));
@@ -359,84 +210,7 @@ public class JobParserServiceImpl implements JobParserService {
         return null;
     }
 
-    @Override
-    public List<ServiceRunner> converterToServiceRunner(List<ServiceRunner> services, String orgDID) {
-        List<ServiceRunner> serviceRunners = new ArrayList<>();
 
-        HashMap<String, ExposeEndpoint> exposeEndpointMap = new HashMap<>();
-        HashMap<String, String> clientIdMap = new HashMap<>();
-        if (services != null) {
-            for (ServiceRunner service : services) {
-                clientIdMap.put(service.getId(), "");
-            }
-            for (ServiceRunner service : services) {
-                for (ExposeEndpoint exposeEndpoint : service.getExposeEndpointList()) {
-                    exposeEndpointMap.put(service.getId(), exposeEndpoint);
-                }
-                for (ReferExposeEndpoint referEndpoint : service.getReferExposeEndpointList()) {
-                    if (!Objects.equals(referEndpoint.getReferServiceId(), "") && referEndpoint.getReferServiceId() != null) {
-                        clientIdMap.put(referEndpoint.getReferServiceId(), service.getId());
-                    }
-                }
-            }
-            log.info("exposeEndpointMap {}", JSONObject.toJSONString(exposeEndpointMap));
-            for (ServiceRunner service : services) {
-                if (StringUtils.equals(service.getOrgId(), orgDID)) {
-                    String path = service.getExposeEndpointList().get(0).getAddress();
-                    String[] split = path.split(":");
-                    if (split.length == 2) {
-                        Integer port = Integer.valueOf(split[1]);
-                        service.setNodePort((port));
-                    }
-                    if (null != service.getReferExposeEndpointList() && service.getReferExposeEndpointList().size() > 0) {
-                        for (ReferExposeEndpoint referExposeEndpoint : service.getReferExposeEndpointList()) {
-                            if (referExposeEndpoint != null) {
-                                if (!Objects.equals(referExposeEndpoint.getName(), "")) {
-                                    ExposeEndpoint referExposeEndpointRunner = exposeEndpointMap.get(referExposeEndpoint.getReferServiceId());
-                                    if (referExposeEndpointRunner == null)
-                                        continue;
-                                    referExposeEndpoint.setAddress(referExposeEndpointRunner.getAddress());
-//                                referExposeEndpoint.setPath(referExposeEndpoint.get("path"));
-//                                referExposeEndpoint.setMethod(referExposeEndpoint.get("method"));
-                                    referExposeEndpoint.setServiceCa(referExposeEndpointRunner.getServiceCa());
-                                    referExposeEndpoint.setServiceCert(referExposeEndpointRunner.getServiceCert());
-                                }
-                            }
-                        }
-                    }
-
-
-                    log.info("serviceRunner {}", JSONObject.toJSONString(service));
-                    serviceRunners.add(service);
-                }
-            }
-        }
-        return serviceRunners;
-    }
-
-    private PlatformInfo getPlatformInfoFromBackend() {
-        proto.GetAccountInfoRequest request = proto.GetAccountInfoRequest.newBuilder().setRequestId(UUID.randomUUID().toString()).build();
-        proto.GetAccountPlatformInfoResponse getAccountInfoResponse = blockingStub.getAccountInfo(request);
-        if (HttpStatus.OK.value() != getAccountInfoResponse.getCode()) {
-            log.error("getPlatformInfo. err Code: {}, err Msg: {}", ErrorEnum.ErrCodeLocalResourcePlatformInformationNotFound, getAccountInfoResponse.getCode() + ":" + getAccountInfoResponse.getMsg());
-            throw new BizException(ErrorEnum.ErrCodeLocalResourcePlatformInformationNotFound, getAccountInfoResponse.getMsg());
-        }
-        TypeReference<PlatformInfo> typeReference = new TypeReference<>() {
-        };
-        PlatformInfo platformInfo = null;
-        try {
-            platformInfo = ProtobufBeanUtil.toPojoBean(typeReference, getAccountInfoResponse.getData());
-        } catch (IOException e) {
-            log.error("getPlatformInfo. err code: {}, err msg: {}", ErrorEnum.ErrCodeProtoToBean.getErrorCode(), ErrorEnum.ErrCodeProtoToBean.getErrorMsg());
-            throw new BizException(ErrorEnum.ErrCodeProtoToBean, e.getMessage());
-        }
-        if (platformInfo == null || platformInfo.getRegisterId() == 0) {
-            log.error("getPlatformInfo. err code: {}, err msg: {}", ErrorEnum.ErrCodeLocalResourcePlatformInformationNotFound.getErrorCode(), ErrorEnum.ErrCodeLocalResourcePlatformInformationNotFound.getErrorMsg());
-            throw new BizException(ErrorEnum.ErrCodeLocalResourcePlatformInformationNotFound, ErrorEnum.ErrCodeLocalResourcePlatformInformationNotFound.getErrorMsg());
-        }
-        this.platformInfo = platformInfo;
-        return platformInfo;
-    }
 }
 
 

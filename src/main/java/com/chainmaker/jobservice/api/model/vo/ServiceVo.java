@@ -2,7 +2,6 @@ package com.chainmaker.jobservice.api.model.vo;
 
 
 import com.alibaba.fastjson.JSONObject;
-import com.chainmaker.jobservice.api.model.bo.job.service.ReferEndpoint;
 import org.antlr.v4.runtime.CharStreams;
 import org.apache.commons.codec.Charsets;
 import org.springframework.core.io.ClassPathResource;

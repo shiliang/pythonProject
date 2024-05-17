@@ -3,15 +3,11 @@ package com.chainmaker.jobservice.api.builder;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.model.*;
-import com.chainmaker.jobservice.api.model.bo.job.Job;
-import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
-import com.chainmaker.jobservice.api.model.bo.job.service.ReferEndpoint;
-import com.chainmaker.jobservice.api.model.bo.job.task.*;
-import com.chainmaker.jobservice.api.model.bo.job.task.Module;
-import com.chainmaker.jobservice.api.model.vo.ExposeEndpointVo;
-import com.chainmaker.jobservice.api.model.vo.ExposeFormVo;
-import com.chainmaker.jobservice.api.model.vo.ServiceVo;
-import com.chainmaker.jobservice.api.model.vo.ValueVo;
+import com.chainmaker.jobservice.api.model.job.Job;
+import com.chainmaker.jobservice.api.model.job.service.*;
+import com.chainmaker.jobservice.api.model.job.task.*;
+import com.chainmaker.jobservice.api.model.job.task.Module;
+import com.chainmaker.jobservice.api.model.vo.*;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.core.optimizer.model.FL.FlInputData;
 import com.chainmaker.jobservice.core.optimizer.model.InputData;
@@ -52,7 +48,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
     private List<Service> services = new ArrayList<>();
     private List<Task> tasks = new ArrayList<>();
 
-    private HashSet<String> jobParties = new HashSet<>();
+    private List<Party> jobPartyList = new ArrayList<>();
 
     private Integer templateId = 1;
     private String sql;
@@ -68,12 +64,10 @@ public class JobBuilder extends PhysicalPlanVisitor {
         this.sql = sql;
     }
 
-    public JobTemplate getJobTemplate() {
-        JobTemplate jobTemplate = new JobTemplate();
-        jobTemplate.setJob(job);
-        jobTemplate.setServices(services);
-        jobTemplate.setTasks(tasks);
-        return jobTemplate;
+    public Job getJob() {
+        job.setServiceList(services);
+        job.setTaskList(tasks);
+        return job;
     }
 
     public void build() {
@@ -106,15 +100,18 @@ public class JobBuilder extends PhysicalPlanVisitor {
             next.getObject().accept(this);
         }
 
-        job.setJobID(jobID);
-        job.setJobType(jobType);
+        job.setJobId(jobID);
+        job.setModelType(jobType);
         job.setStatus(jobStatus);
         job.setCreateTime(createTime);
         job.setUpdateTime(createTime);
         job.setTasksDAG(taskDAG);
         job.setSubmitter(orgID);
+        job.setCreateUserId(orgID);
+        job.setCreatePartyId(orgID);
+        job.setCreatePartyName(orgName);
         job.setRequestData(sql);
-        job.setParties(new ArrayList<>(jobParties));
+        job.setPartyList(jobPartyList);
     }
 
 
@@ -125,9 +122,11 @@ public class JobBuilder extends PhysicalPlanVisitor {
             Task task = basePlanToTask(plan);
             Module module = new Module();
             module.setModuleName(moduleName);
-            JSONObject param = new JSONObject();
-            param.put("alias", plan.getOutputDataList().get(0).getOutputSymbol());
-            module.setParams(param);
+            List<ModuleParam> moduleParams = new ArrayList<>();
+            moduleParams.add(new ModuleParam("alias", plan.getOutputDataList().get(0).getOutputSymbol()));
+//            JSONObject param = new JSONObject();
+//            param.put("alias", plan.getOutputDataList().get(0).getOutputSymbol());
+            module.setParamList(moduleParams);
             task.setModule(module);
             tasks.add(task);
         }
@@ -173,11 +172,11 @@ public class JobBuilder extends PhysicalPlanVisitor {
                 Service service = new Service();
                 BeanUtils.copyProperties(serviceVo, service);
                 if (serviceVo.getServiceClass().equals("PirClient4Query")) {
-                    service.setOrgId(orgID);
-                    service.setOrgName(orgName);
+                    service.setPartyId(orgID);
+                    service.setPartyName(orgName);
                 } else {
-                    service.setOrgId(defaultOdgDID);
-                    service.setOrgName(defaultOrgName);
+                    service.setPartyId(defaultOdgDID);
+                    service.setPartyName(defaultOrgName);
                 }
                 List<ReferExposeEndpoint> referExposeEndpointList = new ArrayList<>();
                 for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
@@ -197,8 +196,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
                     for (ExposeFormVo exposeFormVo : exposeEndpointVo.getForm()) {
                         exposeEndpointFormMap.put(exposeFormVo.getKey(), exposeFormVo.getValues());
                     }
-                    exposeEndpoint.setOrgId(service.getOrgId());
-                    exposeEndpoint.setOrgName(service.getOrgName());
+                    exposeEndpoint.setPartyId(service.getPartyId());
+                    exposeEndpoint.setPartyName(service.getPartyName());
                     exposeEndpoint.setDescription(exposeEndpointFormMap.get("description"));
                     exposeEndpoint.setTlsEnabled(Boolean.valueOf(exposeEndpointFormMap.get("tlsEnabled")));
                     exposeEndpoint.setServiceCa(exposeEndpointFormMap.get("serviceCa"));
@@ -224,7 +223,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
                 }
 
-                service.setServiceLabel(service.getServiceName() + "(" + service.getOrgName() + ")");
+                service.setServiceLabel(service.getServiceName() + "(" + service.getPartyName() + ")");
                 service.setReferExposeEndpointList(referExposeEndpointList);
                 service.setExposeEndpointList(exposeEndpointList);
                 services.add(service);
@@ -271,11 +270,11 @@ public class JobBuilder extends PhysicalPlanVisitor {
                 Service service = new Service();
                 BeanUtils.copyProperties(serviceVo, service);
                 if (serviceVo.getServiceClass().equals("TeePirClient4Query")) {
-                    service.setOrgId(orgID);
-                    service.setOrgName(orgName);
+                    service.setPartyId(orgID);
+                    service.setPartyName(orgName);
                 } else {
-                    service.setOrgId(defaultOdgDID);
-                    service.setOrgName(defaultOrgName);
+                    service.setPartyId(defaultOdgDID);
+                    service.setPartyName(defaultOrgName);
                 }
                 List<ReferExposeEndpoint> referExposeEndpointList = new ArrayList<>();
                 for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
@@ -296,8 +295,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
                     for (ExposeFormVo exposeFormVo : exposeEndpointVo.getForm()) {
                         exposeEndpointFormMap.put(exposeFormVo.getKey(), exposeFormVo.getValues());
                     }
-                    exposeEndpoint.setOrgName(service.getOrgName());
-                    exposeEndpoint.setOrgId(service.getOrgId());
+                    exposeEndpoint.setPartyName(service.getPartyName());
+                    exposeEndpoint.setPartyId(service.getPartyId());
                     exposeEndpoint.setDescription(exposeEndpointFormMap.get("description"));
                     exposeEndpoint.setTlsEnabled(Boolean.valueOf(exposeEndpointFormMap.get("tlsEnabled")));
                     exposeEndpoint.setServiceCa(exposeEndpointFormMap.get("serviceCa"));
@@ -324,7 +323,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
                 service.setReferExposeEndpointList(referExposeEndpointList);
                 service.setExposeEndpointList(exposeEndpointList);
-                service.setServiceLabel(service.getServiceName() + "(" + service.getOrgName() + ")");
+                service.setServiceLabel(service.getServiceName() + "(" + service.getPartyName() + ")");
                 services.add(service);
             }
             Map<String, String> model_method = new HashMap<>();
@@ -343,10 +342,13 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
         Module module = new Module();
         module.setModuleName(moduleName);
-        JSONObject param = new JSONObject();
-        param.put("expression", plan.getExpression());
-        param.put("aggregate", plan.getAggregateType());
-        module.setParams(param);
+        List<ModuleParam> moduleParams = new ArrayList<>();
+        moduleParams.add(new ModuleParam("expression", plan.getExpression()));
+        moduleParams.add(new ModuleParam("aggregate", plan.getAggregateType()));
+//        JSONObject param = new JSONObject();
+//        param.put("expression", plan.getExpression());
+//        param.put("aggregate", plan.getAggregateType());
+        module.setParamList(moduleParams);
         task.setModule(module);
 
         tasks.add(task);
@@ -360,9 +362,12 @@ public class JobBuilder extends PhysicalPlanVisitor {
             Module module = new Module();
             module.setModuleName(moduleName);
             JSONObject param = new JSONObject();
-            param.put("methodName", plan.getTeeModel().getMethodName());
-            param.put("domainID", plan.getTeeModel().getDomainID());
-            module.setParams(param);
+            List<ModuleParam> moduleParams = new ArrayList<>();
+            moduleParams.add(new ModuleParam("methodName", plan.getTeeModel().getMethodName()));
+            moduleParams.add(new ModuleParam("domainID", plan.getTeeModel().getDomainID()));
+//            param.put("methodName", plan.getTeeModel().getMethodName());
+//            param.put("domainID", plan.getTeeModel().getDomainID());
+            module.setParamList(moduleParams);
             task.setModule(module);
 
             tasks.add(task);
@@ -396,8 +401,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
                 Service service = new Service();
                 BeanUtils.copyProperties(serviceVo, service);
-                service.setOrgName(defaultOrgName);
-                service.setOrgId(defaultOdgDID);
+                service.setPartyName(defaultOrgName);
+                service.setPartyId(defaultOdgDID);
 
                 List<ReferExposeEndpoint> referExposeEndpointList = new ArrayList<>();
                 for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
@@ -417,8 +422,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
                     for (ExposeFormVo exposeFormVo : exposeEndpointVo.getForm()) {
                         exposeEndpointFormMap.put(exposeFormVo.getKey(), exposeFormVo.getValues());
                     }
-                    exposeEndpoint.setOrgId(service.getOrgId());
-                    exposeEndpoint.setOrgName(service.getOrgName());
+                    exposeEndpoint.setPartyId(service.getPartyId());
+                    exposeEndpoint.setPartyName(service.getPartyName());
                     exposeEndpoint.setDescription(exposeEndpointFormMap.get("description"));
                     exposeEndpoint.setTlsEnabled(Boolean.valueOf(exposeEndpointFormMap.get("tlsEnabled")));
                     exposeEndpoint.setServiceCa(exposeEndpointFormMap.get("serviceCa"));
@@ -452,16 +457,20 @@ public class JobBuilder extends PhysicalPlanVisitor {
         Task task = basePlanToTask(plan);
         Module module = new Module();
         module.setModuleName(moduleName);
-        JSONObject param = new JSONObject();
-        param.put("FL", plan.getFateModel().getFl());
-        param.put("EVAL", plan.getFateModel().getEval());
-        param.put("MODEL", plan.getFateModel().getModel());
-        param.put("INTERSECTION", plan.getFateModel().getIntersection());
-        module.setParams(param);
+        List<ModuleParam> moduleParams = new ArrayList<>();
+        moduleParams.add(new ModuleParam("FL", plan.getFateModel().getFl()));
+        moduleParams.add(new ModuleParam("EVAL", plan.getFateModel().getEval()));
+        moduleParams.add(new ModuleParam("MODEL", plan.getFateModel().getEval()));
+        moduleParams.add(new ModuleParam("INTERSECTION", plan.getFateModel().getIntersection()));
+//        param.put("FL", plan.getFateModel().getFl());
+//        param.put("EVAL", plan.getFateModel().getEval());
+//        param.put("MODEL", plan.getFateModel().getModel());
+//        param.put("INTERSECTION", plan.getFateModel().getIntersection());
+        module.setParamList(moduleParams);
         task.setModule(module);
         for (int i=0; i<plan.getInputDataList().size(); i++) {
             FlInputData flInputData = (FlInputData) plan.getInputDataList().get(i);
-            task.getInput().getData().get(i).setRole(flInputData.getRole());
+            task.getInput().getInputDataDetailList().get(i).setRole(flInputData.getRole());
             JSONObject inputParam = new JSONObject();
             inputParam.put("label_type", flInputData.getLabel_type());
             inputParam.put("output_format", flInputData.getOutput_format());
@@ -469,7 +478,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
             inputParam.put("namespace", flInputData.getNamespace());
             inputParam.put("table", flInputData.getTableName());
 
-            task.getInput().getData().get(i).setParams(inputParam);
+            task.getInput().getInputDataDetailList().get(i).setParams(inputParam);
         }
         tasks.add(task);
     }
@@ -491,22 +500,25 @@ public class JobBuilder extends PhysicalPlanVisitor {
         task.setCreateTime(createTime);
         task.setUpdateTime(createTime);
         task.setStatus(taskStatus);
-        task.setJobID(jobID);
+        task.setJobId(jobID);
         task.setTaskName(taskName);
+        task.setTaskId(taskName);
 
         // module部分不处理
 
         Input input = new Input();
-        List<TaskInputData> taskInputDataList = new ArrayList<>();
+        List<InputDetail> taskInputDataList = new ArrayList<>();
+        String srcTaskName = "";
         for (int i=0; i<plan.getInputDataList().size(); i++) {
             InputData inputData = plan.getInputDataList().get(i);
-            TaskInputData taskInputData = new TaskInputData();
+            InputDetail taskInputData = new InputDetail();
             taskInputData.setDataName(inputData.getTableName().toLowerCase());
             if (inputData.getNodeSrc() != null) {
+                srcTaskName = String.valueOf(inputData.getNodeSrc());
                 taskInputData.setTaskSrc(String.valueOf(inputData.getNodeSrc()));
                 taskInputData.setDataName(inputData.getTableName().toLowerCase() + "-" + inputData.getNodeSrc());
             } else {
-                taskInputData.setDataID(inputData.getTableName().toLowerCase());
+                taskInputData.setDataId(inputData.getTableName().toLowerCase());
             }
 
 
@@ -517,18 +529,21 @@ public class JobBuilder extends PhysicalPlanVisitor {
                 inputParam.put("field", inputData.getColumn().toLowerCase());
             }
             taskInputData.setParams(inputParam);
-            taskInputData.setDomainID(inputData.getDomainID());
+            taskInputData.setDomainId(inputData.getDomainID());
             taskInputDataList.add(taskInputData);
         }
-        input.setData(taskInputDataList);
+        input.setInputDataDetailList(taskInputDataList);
+        input.setTaskId(taskName);
+        input.setSrcTaskId(srcTaskName);
+        input.setSrcTaskId(srcTaskName);
         task.setInput(input);
-        Output output = new Output();
-        List<TaskOutputData> taskOutputDataList = new ArrayList<>();
+//        Output output = new Output();
+        List<Output> taskOutputDataList = new ArrayList<>();
         for (int i=0; i<plan.getOutputDataList().size(); i++) {
             OutputData outputData = plan.getOutputDataList().get(i);
-            TaskOutputData taskOutputData = new TaskOutputData();
+            Output taskOutputData = new Output();
             taskOutputData.setDataName(outputData.getTableName().toLowerCase() + "-" + plan.getId());
-            taskOutputData.setDomainID(outputData.getDomainID());
+            taskOutputData.setDomainId(outputData.getDomainID());
 //            taskOutputData.setType(outputData.getOutputSymbol());
 //            taskOutputData.setColumnName(outputData.getDomainID());
 //            taskOutputData.setLength(outputData.);
@@ -537,18 +552,18 @@ public class JobBuilder extends PhysicalPlanVisitor {
             }
             taskOutputDataList.add(taskOutputData);
         }
-        output.setData(taskOutputDataList);
-        task.setOutput(output);
+//        output.setData(taskOutputDataList);
+        task.setOutputList(taskOutputDataList);
 
         List<Party> parties = new ArrayList<>();
         for (String partyID : plan.getParties()) {
-            jobParties.add(partyID);
             Party party = new Party();
-            party.setPartyID(partyID);
+            party.setPartyId(partyID);
             parties.add(party);
+            jobPartyList.add(party);
         }
-        parties = parties.stream().filter(StreamUtils.distinctByKey(Party::getPartyID)).collect(Collectors.toList());
-        task.setParties(parties);
+        parties = parties.stream().filter(StreamUtils.distinctByKey(Party::getPartyId)).collect(Collectors.toList());
+        task.setPartyList(parties);
         return task;
     }
     

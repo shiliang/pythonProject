@@ -3,7 +3,6 @@ package com.chainmaker.api;
 import com.alibaba.fastjson.JSON;
 import com.chainmaker.jobservice.api.ParserApplication;
 import com.chainmaker.jobservice.api.controller.ParserController;
-import com.chainmaker.jobservice.api.model.PlatformInfo;
 import com.chainmaker.jobservice.api.model.vo.SqlVo;
 import com.chainmaker.jobservice.api.response.Result;
 import com.chainmaker.jobservice.api.service.JobParserService;
@@ -24,7 +23,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest(classes = ParserApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-@RunWith(SpringRunner.class)
 public class TestParser {
 
     @Autowired
@@ -36,13 +34,6 @@ public class TestParser {
     @Autowired
     TestRestTemplate testTemplate;
 
-    @BeforeEach
-    public void setup(){
-        PlatformInfo platformInfo = new PlatformInfo();
-        platformInfo.setRegisterId(1);
-        platformInfo.setAccountName("1-c");
-        this.jobParserService.setPlatformInfo(platformInfo);
-    }
 
 
     @Test
@@ -237,7 +228,11 @@ public class TestParser {
                 "    \"sqltext\": \"SELECT SUM(whh_enterprise_3.balance * whh_security_1.balance + 1) FROM whh_enterprise_3,whh_security_1 WHERE whh_enterprise_3.socialid=whh_security_1.socialid \",\n" +
                 "    \"modelParams\": null,\n" +
                 "    \"isStream\": 0,\n" +
-                "    \"modelType\": 0\n" +
+                "    \"modelType\": 0,\n" +
+                "    \"orgInfo\": {\n" +
+        "                        \"orgId\": 1,\n" +
+                "                        \"orgName\": \"1-c\",\n" +
+                "                    },\n" +
                 "}";
 
         Result result = testTemplate.postForObject("/v1/commit/dag", req, Result.class);
@@ -436,7 +431,11 @@ public class TestParser {
                 "    \"sqltext\": \"SELECT whh_enterprise_3.balance  FROM whh_enterprise_3 WHERE whh_enterprise_3.socialid=? \",\n" +
                 "    \"modelParams\": null,\n" +
                 "    \"isStream\": 1,\n" +
-                "    \"modelType\": 0\n" +
+                "    \"modelType\": 0,\n" +
+                "    \"orgInfo\": {\n" +
+                "                        \"orgId\": 1,\n" +
+                "                        \"orgName\": \"1-c\",\n" +
+                "                    },\n" +
                 "}";
 
         Result result = testTemplate.postForObject("/v1/commit/dag", req, Result.class);
@@ -635,7 +634,11 @@ public class TestParser {
                 "    \"sqltext\": \"SELECT  /*+ JOIN(TEE) */ whh_enterprise_3.socialid FROM whh_enterprise_3,whh_security_1 WHERE whh_enterprise_3.socialid=whh_security_1.socialid \",\n" +
                 "    \"modelParams\": null,\n" +
                 "    \"isStream\": 0,\n" +
-                "    \"modelType\": 0\n" +
+                "    \"modelType\": 0,\n" +
+                "    \"orgInfo\": {\n" +
+                "                        \"orgId\": 1,\n" +
+                "                        \"orgName\": \"1-c\",\n" +
+                "                    },\n" +
                 "}";
 
         Result result = testTemplate.postForObject("/v1/commit/dag", req, Result.class);
@@ -834,7 +837,11 @@ public class TestParser {
                 "    \"sqltext\": \"SELECT /*+ FILTER(TEE) */ whh_enterprise_3.balance  FROM whh_enterprise_3 WHERE whh_enterprise_3.socialid=? \",\n" +
                 "    \"modelParams\": null,\n" +
                 "    \"isStream\": 1,\n" +
-                "    \"modelType\": 0\n" +
+                "    \"modelType\": 0,\n" +
+                "    \"orgInfo\": {\n" +
+                "                        \"orgId\": 1,\n" +
+                "                        \"orgName\": \"1-c\",\n" +
+                "                    },\n" +
                 "}";
 
         Result result = testTemplate.postForObject("/v1/commit/dag", req, Result.class);
