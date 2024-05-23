@@ -25,7 +25,7 @@ while getopts ":t::p:r:" opt; do
             docker_tag=$OPTARG
             ;;
         p)
-            push_flag=true
+            push_flag=$OPTARG
             if [[ ! $OPTARG =~ ^(true|false)$ ]]; then
                 echo "Invalid argument for -p. Please provide 'true' or 'false'." >&2
                 show_help

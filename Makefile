@@ -17,4 +17,4 @@ build_local:
 
 build_docker:
 	# build docker image
-	./docker_build.sh -t v1.1.0 -p false
+	./docker_build.sh -t ${VERSION} -p false
