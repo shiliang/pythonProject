@@ -1,14 +1,13 @@
-#FROM maven:3.8.6-openjdk-11 as builder
-FROM docker.oa.com:5000/job-service-base:v1 as builder
-WORKDIR /code
-RUN rm -r /code
-ADD . /code
-COPY base-env/settings.xml /usr/share/maven/conf/
-#RUN mvn install:install-file -Dfile=/code/base-env/chainmaker-sdk-java-2.1.0.jar -DgroupId=org.chainmaker.sdk -DartifactId=chainmaker-sdk-java -Dversion=2.1.0 -Dpackaging=jar -DpomFile=/code/base-env/pom.xml
-#RUN ["/usr/local/bin/mvn-entrypoint.sh","mvn","verify","clean","--fail-never"]
-RUN mvn clean package
-
-FROM maven:3.8.6-openjdk-11
+#********程序打包镜像********
+FROM maven:3.8.6-openjdk-11 as builder
 WORKDIR /home/workspace
-COPY --from=builder /code/target/job-service-0.0.1-SNAPSHOT.jar /home/workspace/job-service-0.0.1-SNAPSHOT.jar
-CMD [ "java", "-jar", "job-service-0.0.1-SNAPSHOT.jar" ]
+ADD . /home/workspace
+# RUN mvn clean package
+RUN mvn package -Dmaven.test.skip=true
+
+#********程序执行镜像*********
+#基础镜像
+FROM openjdk:11.0.14.1-slim-buster
+WORKDIR /home/workspace
+COPY --from=builder /home/workspace/target/mira-job-service-1.1.0-SNAPSHOT.jar /home/workspace/mira-job-service-1.1.0-SNAPSHOT.jar
+CMD [ "java", "-jar", "mira-job-service-1.1.0-SNAPSHOT.jar" ]

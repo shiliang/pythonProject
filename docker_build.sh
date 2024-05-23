@@ -60,20 +60,21 @@ fi
 echo "Building mira-job-service environment image"
 
 
-git pull && mvn clean package && docker build -f ./Dockerfile-simple -t mira/mira-job-service:${docker_tag} .
+#git pull && mvn clean package && docker build -f ./Dockerfile -t chainweaver/mira-job-service:${docker_tag} .
+docker build -f ./Dockerfile -t chainweaver/mira-job-service:${docker_tag} .
 
 
 if [ ! -z "$registry_address" ]; then
   #tag mira-backend-service-build
-    docker tag mira/mira-job-service:${docker_tag} ${registry_address}/mira/mira-job-service:${docker_tag}
+    docker tag chainweaver/mira-job-service:${docker_tag} ${registry_address}/chainweaver/mira-job-service:${docker_tag}
 fi
 
 #是否push
 if [ "$push_flag" == "true" ]; then
   # 假设$docker_register_address 为空，则默认为docker hub
   if [ -z "$registry_address" ]; then
-    docker push mira/mira-job-service:${docker_tag}
+    docker push chainweaver/mira-job-service:${docker_tag}
   else
-    docker push ${registry_address}/mira/mira-job-service:${docker_tag}
+    docker push ${registry_address}/chainweaver/mira-job-service:${docker_tag}
   fi
 fi
