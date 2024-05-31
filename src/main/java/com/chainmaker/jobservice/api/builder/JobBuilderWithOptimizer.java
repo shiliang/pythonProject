@@ -14,7 +14,7 @@ import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCFilter;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCJoin;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCProject;
-import com.chainmaker.jobservice.core.calcite.utils.parserWithOptimizerReturnValue;
+import com.chainmaker.jobservice.core.calcite.utils.ParserWithOptimizerReturnValue;
 import com.chainmaker.jobservice.core.optimizer.plans.*;
 import com.chainmaker.jobservice.core.parser.plans.FederatedLearning;
 import com.chainmaker.jobservice.core.parser.plans.LogicalHint;
@@ -91,7 +91,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private String orgID;
     private String sql;
 
-    public JobBuilderWithOptimizer(Integer modelType, Integer isStream, parserWithOptimizerReturnValue value, HashMap<String, String> columnInfoMap, String orgID, String sql) {
+    public JobBuilderWithOptimizer(Integer modelType, Integer isStream, ParserWithOptimizerReturnValue value, HashMap<String, String> columnInfoMap, String orgID, String sql) {
         this.modelType = modelType;
         this.isStream = isStream;
         this.phyPlan = value.getPhyPlan();
@@ -261,7 +261,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         for (int i = 0; i < n; i++) {
             result.addAll(dfsPlan(phyPlan.getInput(i), phyTaskMap));
         }
-        result.addAll(generateTasks(phyPlan, phyTaskMap));
+        result.addAll(generateMpcTasks(phyPlan, phyTaskMap));
         return result;
     }
 
@@ -1052,7 +1052,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * @param phyTaskMap
      * @return
      */
-    public List<Task> generateTasks(RelNode phyPlan, HashMap<RelNode, Task> phyTaskMap) {
+    public List<Task> generateMpcTasks(RelNode phyPlan, HashMap<RelNode, Task> phyTaskMap) {
         List<Task> tasks = new ArrayList<>();
 
 //        if (phyPlan instanceof RelSubset) {

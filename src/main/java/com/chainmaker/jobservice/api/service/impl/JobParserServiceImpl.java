@@ -1,7 +1,6 @@
 package com.chainmaker.jobservice.api.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.builder.JobBuilder;
 import com.chainmaker.jobservice.api.builder.JobBuilderWithOptimizer;
 import com.chainmaker.jobservice.api.model.*;
@@ -18,6 +17,7 @@ import com.chainmaker.jobservice.api.response.HttpResponse;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.api.service.JobParserService;
 import com.chainmaker.jobservice.core.SqlParser;
+import com.chainmaker.jobservice.core.calcite.utils.ParserWithOptimizerReturnValue;
 import com.chainmaker.jobservice.core.parser.LogicalPlanBuilderV2;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -109,7 +109,7 @@ public class JobParserServiceImpl implements JobParserService {
     }
 
     @Override
-    public JobGraphVo jobPreview(SqlVo sqlVo) {
+    public JobGraphVo jobPreview(SqlVo sqlVo) throws Exception {
         JobMissionDetail jobMissionDetail = parserSql(sqlVo);
         JobTemplate jobTemplate = jobMissionDetail.getJobTemplate();
         List<AssetDetail> assetDetailList = jobMissionDetail.getAssetDetailList();
@@ -206,7 +206,7 @@ public class JobParserServiceImpl implements JobParserService {
 
 
     @Override
-    public JobMissionDetail parserSql(SqlVo sqlVo) {
+    public JobMissionDetail parserSql(SqlVo sqlVo) throws Exception {
         String sqltext = sqlVo.getSqltext().replace("\"", "");
         if (sqltext.contains("/*+ FILTER(TEE) */".replace("\\s", ""))){
             sqlVo.setModelType(2);
@@ -215,7 +215,11 @@ public class JobParserServiceImpl implements JobParserService {
         SqlParser sqlParser = new SqlParser(sqltext, sqlVo.getIsStream(), sqlVo.getModelType(), sqlVo.getAssetInfoList(), sqlVo.getModelParams());
         sqlParser.setCatalogConfig(catalogConfig);
         if (sqlVo.getIsStream() == 1) {
-            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser(), getOrgInfo(), sqlParser.getSql());
+//            OrgInfo orgInfo = getOrgInfo(); //从mira backendservice 获取orgId
+            OrgInfo orgInfo = new OrgInfo("org_id1","org_name1");
+            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(),
+                    sqlParser.parser(), orgInfo,
+                    sqlParser.getSql());
             jobBuilder.build();
             JobMissionDetail jobMissionDetail = new JobMissionDetail();
             jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
@@ -224,7 +228,13 @@ public class JobParserServiceImpl implements JobParserService {
             jobMissionDetail.setAssetDetailList(sqlParser.getAssetDetailList());
             return jobMissionDetail;
         } else {
-            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parserWithOptimizer(), sqlParser.getColumnInfoMap(), getOrgId(), sqlParser.getSql());
+            ParserWithOptimizerReturnValue optimizer = sqlParser.parserWithOptimizer();
+//            String orgId = getOrgId(); //从mira backendservice 获取orgId
+            String orgId = "org1";
+            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(),  sqlVo.getIsStream(),
+                    optimizer, sqlParser.getColumnInfoMap(), orgId,
+                    sqlParser.getSql()
+            );
             jobBuilder.build();
             JobMissionDetail jobMissionDetail = new JobMissionDetail();
             jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());

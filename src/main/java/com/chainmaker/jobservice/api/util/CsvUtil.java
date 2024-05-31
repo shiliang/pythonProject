@@ -1,11 +1,13 @@
 package com.chainmaker.jobservice.api.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 public class CsvUtil {
 
     public static void writeToCsv(String headLabel, List<String> dataList, String filePath, boolean addFlag) {
@@ -44,7 +46,7 @@ public class CsvUtil {
         try {
             File csvFile = new File(filePath);
             if (!csvFile.exists()) {
-                System.out.println("文件不存在");
+                log.info("文件不存在");
                 return dataList;
             }
             FileReader fileReader = new FileReader(csvFile);
@@ -56,7 +58,7 @@ public class CsvUtil {
                 }
             }
         } catch (Exception e) {
-            System.out.println("读取csv文件发生异常");
+            log.error("读取csv文件发生异常",e);
             e.printStackTrace();
         } finally {
             try {

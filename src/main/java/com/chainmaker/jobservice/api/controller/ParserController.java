@@ -105,7 +105,7 @@ public class ParserController {
 
     @WebLog(description = "提交DAG")
     @RequestMapping(value = "/commit/dag", method = RequestMethod.POST)
-    public Result jobCommit(@RequestBody String req) {
+    public Result jobCommit(@RequestBody String req) throws Exception {
         SqlVo sqlVo = JSONObject.parseObject(req, SqlVo.class, Feature.OrderedField);
         log.info(sqlVo.getSqltext().toString());
         if (sqlVo.getSqltext().contains("?") && sqlVo.getIsStream() != 1) {

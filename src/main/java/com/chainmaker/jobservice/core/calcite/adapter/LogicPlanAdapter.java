@@ -18,6 +18,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.schema.*;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.sql.*;
@@ -39,7 +40,7 @@ import static com.chainmaker.jobservice.core.calcite.utils.ConstExprJudgement.is
 public class LogicPlanAdapter extends LogicalPlanRelVisitor {
 
     private String originQuery;                 // sql语句
-    private LogicalPlan originLogicalPlan;      // antlr4的逻辑计划
+    private LogicalPlan originLogicalPlan;      // 根据antlr4语法树生成的逻辑计划
 
     private MPCMetadata metadata;               // 全局metadata
     private RelNode root;                       // 生成的calcite的逻辑计划
@@ -233,7 +234,6 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
                 multiTableList.add("::");
             }
         }
-//        System.out.println(multiTableList);
 
         // 找到所有映射相关表达式
         List<RexNode> projections = new ArrayList<>();
@@ -244,22 +244,8 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         for (NamedExpression exp : namedExpressionList) {
             Expression expr = exp.getExpression();
             String alias = exp.getIdentifier().getIdentifier();
-//            System.out.println("Project Expression = " + expr.toString());
-//            System.out.println("expression class = " + expr.getClass());
-//            boolean funcTee = false;
-//            if (hints != null) {
-//                for (HintExpression kv : hints.getValues()) {
-//                    if (kv.getKey().equals("FUNC") && kv.getValues().get(0).equals("TEE")) {
-//                        funcTee = true;
-//                    }
-//                }
-//            }
-//            if (funcTee && expr instanceof FunctionCallExpression) {
-//                continue;
-//            }
             RexNode proj = dealWithExpression(expr);
             projectionNames.add(expr.toString());
-//            System.out.println(expr.toString() + " : " + proj);
             if (alias != null) {
                 projections.add(builder.alias(proj, alias));
             } else {
@@ -268,7 +254,6 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         }
 
         // 应用所有映射并返回
-//        builder.project(projections);
         builder.project(projections, projectionNames);
         ans = builder.build();
         multiTableList.clear();
@@ -387,6 +372,20 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
 //                        SqlExplainLevel.EXPPLAN_ATTRIBUTES));
 
         return ans;
+    }
+
+    public RelNode visit(SubQuery subQuery){
+        LogicalPlan child = subQuery.getChildren().get(0);
+        if(child instanceof LogicalTable){
+            builder.scan(((LogicalTable) child).getTableName());
+            String alias = subQuery.getAlias();
+            if (alias != null) {
+                builder.as(alias);      // 别名
+            }
+            return builder.build();
+        }
+        RexBuilder rexBuidler = builder.getRexBuilder();
+        return child.accept(this);
     }
 
     /**

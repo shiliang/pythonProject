@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.core.calcite.optimizer.metadata;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
@@ -14,6 +15,7 @@ import java.util.List;
 /**
  * 单例类，全局共享一个MPCMetadata
  */
+@Slf4j
 public class MPCMetadata {
     private HashMap<String, TableInfo> tables;
 
@@ -173,7 +175,7 @@ public class MPCMetadata {
 //            this.tables.get("TB").setOrgDId("source2");
 //            this.tables.get("TC").setRowCount(100);
         }
-        System.out.println("fieldNameInfoMap:" + fieldNameInfoMap);
+        log.info("fieldNameInfoMap:" + fieldNameInfoMap);
     }
 
     /**

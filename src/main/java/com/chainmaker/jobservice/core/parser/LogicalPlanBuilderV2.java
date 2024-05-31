@@ -3,16 +3,16 @@ package com.chainmaker.jobservice.core.parser;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.core.antlr4.gen.SqlBaseLexer;
 import com.chainmaker.jobservice.core.antlr4.gen.SqlBaseParser;
+import com.chainmaker.jobservice.core.antlr4.gen.SqlBaseParser.*;
 import com.chainmaker.jobservice.core.antlr4.gen.SqlBaseParserBaseVisitor;
 import com.chainmaker.jobservice.core.parser.plans.*;
 import com.chainmaker.jobservice.core.parser.tree.*;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 import lombok.Data;
-import lombok.extern.java.Log;
+import lombok.EqualsAndHashCode;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
-import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.commons.lang3.StringUtils;
@@ -26,6 +26,8 @@ import java.util.stream.Collectors;
  * @description:
  * @version:
  */
+@EqualsAndHashCode(callSuper = true)
+@Data
 public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     private HashMap<String, String> tableNameMap = new HashMap<>();
     public List<String> modelNameList = new ArrayList<>();
@@ -38,17 +40,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
 
     private Set<String> assetAndColumnList = new HashSet<>();
 
-    public HashMap<String, String> getTableNameMap() {
-        return tableNameMap;
-    }
-
-    public List<String> getModelNameList() {
-        return modelNameList;
-    }
-
-    public LogicalPlan getLogicalPlan() {
-        return logicalPlan;
-    }
+    private HashMap<String,LogicalPlan> subQueryTables = Maps.newHashMap();
 
     public  List<String> getColumnList() {
         final String regexStr = "\\d+.\\d*";
@@ -91,48 +83,48 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     }
 
     @Override
-    public LogicalPlan visitSingleStatement(SqlBaseParser.SingleStatementContext context) {
-        if (context.statement() instanceof SqlBaseParser.StatementDefaultContext) {
-            return visitStatementDefault((SqlBaseParser.StatementDefaultContext) context.statement());
+    public LogicalPlan visitSingleStatement(SingleStatementContext context) {
+        if (context.statement() instanceof StatementDefaultContext) {
+            return visitStatementDefault((StatementDefaultContext) context.statement());
         } else {
             throw new ParserException(DEFAULT_ERROR + ": " + context.statement().getChild(0).getText());
         }
     }
 
     @Override
-    public LogicalPlan visitStatementDefault(SqlBaseParser.StatementDefaultContext context) {
+    public LogicalPlan visitStatementDefault(StatementDefaultContext context) {
         return visitQuery(context.query());
     }
 
     @Override
-    public LogicalPlan visitQuery(SqlBaseParser.QueryContext context) {
-        if (context.queryTerm() instanceof SqlBaseParser.QueryTermDefaultContext) {
-            return visitQueryTermDefault((SqlBaseParser.QueryTermDefaultContext) context.queryTerm());
+    public LogicalPlan visitQuery(QueryContext context) {
+        if (context.queryTerm() instanceof QueryTermDefaultContext) {
+            return visitQueryTermDefault((QueryTermDefaultContext) context.queryTerm());
         } else {
             throw new ParserException(DEFAULT_ERROR + ": " + context.queryTerm().getChild(0).getText());
         }
     }
 
     @Override
-    public LogicalPlan visitQueryTermDefault(SqlBaseParser.QueryTermDefaultContext context) {
-        if (context.queryPrimary() instanceof SqlBaseParser.QueryPrimaryDefaultContext) {
-            return visitQueryPrimaryDefault((SqlBaseParser.QueryPrimaryDefaultContext)context.queryPrimary());
+    public LogicalPlan visitQueryTermDefault(QueryTermDefaultContext context) {
+        if (context.queryPrimary() instanceof QueryPrimaryDefaultContext) {
+            return visitQueryPrimaryDefault((QueryPrimaryDefaultContext)context.queryPrimary());
         } else {
             throw new ParserException(DEFAULT_ERROR + ": " + context.queryPrimary().getText());
         }
     }
     @Override
-    public LogicalPlan visitQueryPrimaryDefault(SqlBaseParser.QueryPrimaryDefaultContext context) {
-        if (context.querySpecification() instanceof SqlBaseParser.RegularQuerySpecificationContext) {
-            if (((SqlBaseParser.RegularQuerySpecificationContext) context.querySpecification()).selectClause().hints.size() == 0) {
-                return visitRegularQuerySpecification((SqlBaseParser.RegularQuerySpecificationContext) context.querySpecification());
+    public LogicalPlan visitQueryPrimaryDefault(QueryPrimaryDefaultContext context) {
+        if (context.querySpecification() instanceof RegularQuerySpecificationContext) {
+            if (((RegularQuerySpecificationContext) context.querySpecification()).selectClause().hints.isEmpty()) {
+                return visitRegularQuerySpecification((RegularQuerySpecificationContext) context.querySpecification());
             } else {
-                LogicalPlan child = visitRegularQuerySpecification((SqlBaseParser.RegularQuerySpecificationContext) context.querySpecification());
+                LogicalPlan child = visitRegularQuerySpecification((RegularQuerySpecificationContext) context.querySpecification());
                 List<HintExpression> hintExpressions = new ArrayList<>();
-                for (SqlBaseParser.HintStatementContext hintStatementContext: ((SqlBaseParser.RegularQuerySpecificationContext) context.querySpecification()).selectClause().hint(0).hintStatement()) {
+                for (HintStatementContext hintStatementContext: ((RegularQuerySpecificationContext) context.querySpecification()).selectClause().hint(0).hintStatement()) {
                     List<String> values = new ArrayList<>();
                     String key = hintStatementContext.hintName.getText();
-                    for (SqlBaseParser.PrimaryExpressionContext primaryExpressionContext: hintStatementContext.parameters) {
+                    for (PrimaryExpressionContext primaryExpressionContext: hintStatementContext.parameters) {
                         values.add(primaryExpressionContext.getText());
                     }
                     HintExpression hintExpression = new HintExpression(key, values);
@@ -149,7 +141,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     }
 
     @Override
-    public LogicalPlan visitRegularQuerySpecification(SqlBaseParser.RegularQuerySpecificationContext context) {
+    public LogicalPlan visitRegularQuerySpecification(RegularQuerySpecificationContext context) {
 
         List<LogicalPlan> children = new ArrayList<>();
 
@@ -159,27 +151,15 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             List<LogicalPlan> fromList = visitFrom(context.fromClause());
             children.addAll(fromList);
         } else {
+            visitFrom(context.fromClause());
             children.add(visitWhere(context));
         }
 
-//        if (context.aggregationClause() == null) {
-//            if (context.whereClause() == null) {
-//                List<LogicalPlan> fromList = visitFrom(context.fromClause());
-//                children.addAll(fromList);
-//            } else {
-//                children.add(visitWhere(context));
-//            }
-//        } else if (context.havingClause() == null) {
-//            children.add(visitAggregate(context));
-//        } else {
-//            children.add(visitHaving(context));
-//        }
-
-        if (context.selectClause().namedExpressionSeq() instanceof SqlBaseParser.FederatedLearningExpressionContext) {
-            FederatedLearningExpression expression = visitFederatedLearningExpression((SqlBaseParser.FederatedLearningExpressionContext) context.selectClause().namedExpressionSeq());
+        if (context.selectClause().namedExpressionSeq() instanceof FederatedLearningExpressionContext) {
+            FederatedLearningExpression expression = visitFederatedLearningExpression((FederatedLearningExpressionContext) context.selectClause().namedExpressionSeq());
             return new FederatedLearning(expression, children);
         } else {
-            FaderatedQueryExpression projectList = visitFederatedQueryExpression((SqlBaseParser.FederatedQueryExpressionContext) context.selectClause().namedExpressionSeq());
+            FaderatedQueryExpression projectList = visitFederatedQueryExpression((FederatedQueryExpressionContext) context.selectClause().namedExpressionSeq());
 
             if (context.aggregationClause() == null) {
                 if (projectList.getValues().get(0).toString().equals("*")) {
@@ -198,7 +178,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         }
     }
 
-    private LogicalPlan visitHaving(SqlBaseParser.RegularQuerySpecificationContext context, List<LogicalPlan> children) {
+    private LogicalPlan visitHaving(RegularQuerySpecificationContext context, List<LogicalPlan> children) {
         Expression havingCond = visitBooleanExpression(context.havingClause().booleanExpression());
 //        System.out.println(havingCond);
 //        String[] sp = havingCond.toString().split(" |=|\\(|\\)|>|<|\\+|-|\\*|/|!=|,|\\[|]");
@@ -211,23 +191,23 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         return new LogicalFilter(havingCond, List.of(child));
     }
 
-    public LogicalPlan visitAggregate(SqlBaseParser.RegularQuerySpecificationContext context, List<LogicalPlan> children) {
+    public LogicalPlan visitAggregate(RegularQuerySpecificationContext context, List<LogicalPlan> children) {
 
         List<Expression> groupKeys = new ArrayList<>();
 //        System.out.println(context.aggregationClause().groupByClause());
-        for (SqlBaseParser.GroupByClauseContext ctx : context.aggregationClause().groupByClause()) {
+        for (GroupByClauseContext ctx : context.aggregationClause().groupByClause()) {
             groupKeys.add(visitExpression(ctx.expression()));
         }
         List<Expression> aggCallList = new ArrayList<>();
         return new LogicalAggregate(groupKeys, aggCallList, children);
     }
-//    public LogicalPlan visitWhere(SqlBaseParser.RegularQuerySpecificationContext context) {
+//    public LogicalPlan visitWhere(RegularQuerySpecificationContext context) {
 //        Expression expression = visitBooleanExpression(context.whereClause().booleanExpression());
 //        List<LogicalPlan> children = visitFrom(context.fromClause());
 //        return new LogicalFilter(expression, children);
 //    }
 
-    public LogicalPlan visitWhere(SqlBaseParser.RegularQuerySpecificationContext context) {
+    public LogicalPlan visitWhere(RegularQuerySpecificationContext context) {
         Expression expression = visitBooleanExpression(context.whereClause().booleanExpression());
         if (expression instanceof ComparisonExpression) {
             dealWithComparisonExpression((ComparisonExpression) expression);
@@ -274,12 +254,16 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             LogicalPlan left, right;
             if (joinCache.containsKey(leftTable)) {
                 left = joinCache.get(leftTable);
-            } else {
+            } else if(subQueryTables.containsKey(leftTable)) {
+                left = subQueryTables.get(leftTable);
+            } else{
                 left = new LogicalTable(((DereferenceExpression) expression.getLeft()).getBase().toString());
             }
             if (joinCache.containsKey(rightTable)) {
                 right = joinCache.get(rightTable);
-            } else {
+            } else if(subQueryTables.containsKey(rightTable)) {
+                right = subQueryTables.get(rightTable);
+            }else {
                 right = new LogicalTable(((DereferenceExpression) expression.getRight()).getBase().toString());
             }
             LogicalJoin.Type joinType = LogicalJoin.Type.INNER;
@@ -297,138 +281,142 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         }
     }
 
-    public Expression visitBooleanExpression(SqlBaseParser.BooleanExpressionContext context) {
-        if (context instanceof SqlBaseParser.LogicalBinaryContext) {
-            return visitLogicalBinary((SqlBaseParser.LogicalBinaryContext) context);
-        } else if (context instanceof SqlBaseParser.LogicalNotContext) {
-            return visitLogicalNot((SqlBaseParser.LogicalNotContext) context);
-        } else if (context instanceof SqlBaseParser.PredicatedContext) {
-            return visitPredicated((SqlBaseParser.PredicatedContext) context);
+    private void dealWithSubQueryExpression(SubQueryExpression expression) {
+        //todo
+    }
+
+    public Expression visitBooleanExpression(BooleanExpressionContext context) {
+        if (context instanceof LogicalBinaryContext) {
+            return visitLogicalBinary((LogicalBinaryContext) context);
+        } else if (context instanceof LogicalNotContext) {
+            return visitLogicalNot((LogicalNotContext) context);
+        } else if (context instanceof PredicatedContext) {
+            return visitPredicated((PredicatedContext) context);
         } else {
             throw new ParserException(DEFAULT_ERROR + ": " + context.getText());
         }
     }
 
     @Override
-    public LogicalExpression visitLogicalBinary(SqlBaseParser.LogicalBinaryContext context) {
+    public LogicalExpression visitLogicalBinary(LogicalBinaryContext context) {
         Expression left = visitBooleanExpression(context.left);
         LogicalExpression.Operator operator = getLogicalOperator(context.operator);
         Expression right = visitBooleanExpression(context.right);
         return new LogicalExpression(left, right, operator);
     }
     @Override
-    public NotExpression visitLogicalNot(SqlBaseParser.LogicalNotContext context) {
+    public NotExpression visitLogicalNot(LogicalNotContext context) {
         Expression expression = visitBooleanExpression(context.booleanExpression());
         return new NotExpression(expression);
     }
 
     @Override
-    public Expression visitPredicated(SqlBaseParser.PredicatedContext context) {
+    public Expression visitPredicated(PredicatedContext context) {
         if (context.predicate() == null) {
             return visitValueExpression(context.valueExpression());
         } else {
             throw new ParserException(DEFAULT_ERROR + ": " + context.getText());
         }
     }
-    public Expression visitValueExpression(SqlBaseParser.ValueExpressionContext context) {
-        if (context instanceof SqlBaseParser.ValueExpressionDefaultContext) {
-            return visitValueExpressionDefault((SqlBaseParser.ValueExpressionDefaultContext) context);
-        } else if (context instanceof SqlBaseParser.ArithmeticBinaryContext) {
-            return visitArithmeticBinary((SqlBaseParser.ArithmeticBinaryContext) context);
-        } else if (context instanceof SqlBaseParser.ArithmeticUnaryContext) {
-            return visitArithmeticUnary((SqlBaseParser.ArithmeticUnaryContext) context);
-        } else if (context instanceof SqlBaseParser.ComparisonContext) {
-            return visitComparison((SqlBaseParser.ComparisonContext) context);
+    public Expression visitValueExpression(ValueExpressionContext context) {
+        if (context instanceof ValueExpressionDefaultContext) {
+            return visitValueExpressionDefault((ValueExpressionDefaultContext) context);
+        } else if (context instanceof ArithmeticBinaryContext) {
+            return visitArithmeticBinary((ArithmeticBinaryContext) context);
+        } else if (context instanceof ArithmeticUnaryContext) {
+            return visitArithmeticUnary((ArithmeticUnaryContext) context);
+        } else if (context instanceof ComparisonContext) {
+            return visitComparison((ComparisonContext) context);
         } else {
             throw new ParserException(DEFAULT_ERROR + ": " + context.getText());
         }
     }
     @Override
-    public ArithmeticBinaryExpression visitArithmeticBinary(SqlBaseParser.ArithmeticBinaryContext context) {
+    public ArithmeticBinaryExpression visitArithmeticBinary(ArithmeticBinaryContext context) {
         Expression left = visitValueExpression(context.left);
         ArithmeticBinaryExpression.Operator operator = getArithmeticBinaryOperator(context.operator);
         Expression right = visitValueExpression(context.right);
         return new ArithmeticBinaryExpression(left, right, operator);
     }
     @Override
-    public ArithmeticUnaryExpression visitArithmeticUnary(SqlBaseParser.ArithmeticUnaryContext context) {
+    public ArithmeticUnaryExpression visitArithmeticUnary(ArithmeticUnaryContext context) {
         ArithmeticUnaryExpression.Sign sign = getArithmeticUnaryOperator(context.operator);
         Expression expression = visitValueExpression(context.valueExpression());
         return new ArithmeticUnaryExpression(expression, sign);
     }
     @Override
-    public ComparisonExpression visitComparison(SqlBaseParser.ComparisonContext context) {
+    public ComparisonExpression visitComparison(ComparisonContext context) {
         Expression left = visitValueExpression(context.left);
         ComparisonExpression.Operator operator = getComparisonOperator(((TerminalNode) context.comparisonOperator().getChild(0)).getSymbol());
         Expression right = visitValueExpression(context.right);
         return new ComparisonExpression(left, right, operator);
     }
     @Override
-    public Expression visitValueExpressionDefault(SqlBaseParser.ValueExpressionDefaultContext context) {
+    public Expression visitValueExpressionDefault(ValueExpressionDefaultContext context) {
         return visitPrimaryExpression(context.primaryExpression());
     }
 
-    public Expression visitPrimaryExpression(SqlBaseParser.PrimaryExpressionContext context) {
-        if (context instanceof SqlBaseParser.ColumnReferenceContext) {
+    public Expression visitPrimaryExpression(PrimaryExpressionContext context) {
+        if (context instanceof ColumnReferenceContext) {
             assetAndColumnList.add(context.getText());
-            return visitColumnReference((SqlBaseParser.ColumnReferenceContext) context);
-        } else if (context instanceof SqlBaseParser.DereferenceContext) {
+            return visitColumnReference((ColumnReferenceContext) context);
+        } else if (context instanceof DereferenceContext) {
             assetAndColumnList.add(context.getText());
-            return visitDereference((SqlBaseParser.DereferenceContext) context);
-        } else if (context instanceof SqlBaseParser.ConstantDefaultContext) {
-            return visitConstantDefault((SqlBaseParser.ConstantDefaultContext) context);
-        } else if (context instanceof SqlBaseParser.ParenthesizedExpressionContext) {
-            return visitParenthesizedExpression((SqlBaseParser.ParenthesizedExpressionContext) context);
-        } else if (context instanceof SqlBaseParser.FunctionCallContext) {
-            return visitFunctionCall((SqlBaseParser.FunctionCallContext) context);
-        } else if (context instanceof SqlBaseParser.FeatureReferenceContext) {
-            return visitFeatureReference((SqlBaseParser.FeatureReferenceContext) context);
-        } else if (context instanceof SqlBaseParser.PirCaseContext) {
-            return visitPirCase((SqlBaseParser.PirCaseContext) context);
-        } else if (context instanceof SqlBaseParser.StarContext) {
-            return visitStar((SqlBaseParser.StarContext) context);
+            return visitDereference((DereferenceContext) context);
+        } else if (context instanceof ConstantDefaultContext) {
+            return visitConstantDefault((ConstantDefaultContext) context);
+        } else if (context instanceof ParenthesizedExpressionContext) {
+            return visitParenthesizedExpression((ParenthesizedExpressionContext) context);
+        } else if (context instanceof FunctionCallContext) {
+            return visitFunctionCall((FunctionCallContext) context);
+        } else if (context instanceof FeatureReferenceContext) {
+            return visitFeatureReference((FeatureReferenceContext) context);
+        } else if (context instanceof PirCaseContext) {
+            return visitPirCase((PirCaseContext) context);
+        } else if (context instanceof StarContext) {
+            return visitStar((StarContext) context);
         } else {
             throw new ParserException(DEFAULT_ERROR + ": " + context.getText());
         }
     }
     @Override
-    public Identifier visitPirCase(SqlBaseParser.PirCaseContext context) {
+    public Identifier visitPirCase(PirCaseContext context) {
         String identifier = context.getText();
         return new Identifier(identifier);
     }
     @Override
-    public Identifier visitStar(SqlBaseParser.StarContext context) {
+    public Identifier visitStar(StarContext context) {
         String identifier = context.getText();
         return new Identifier(identifier);
     }
     @Override
-    public Identifier visitColumnReference(SqlBaseParser.ColumnReferenceContext context) {
+    public Identifier visitColumnReference(ColumnReferenceContext context) {
         String identifier = context.identifier().getChild(0).getText();
         return new Identifier(identifier);
     }
     @Override
-    public Identifier visitFeatureReference(SqlBaseParser.FeatureReferenceContext context) {
+    public Identifier visitFeatureReference(FeatureReferenceContext context) {
         String identifier = context.getText();
         return new Identifier(identifier);
     }
     @Override
-    public DereferenceExpression visitDereference(SqlBaseParser.DereferenceContext context) {
+    public DereferenceExpression visitDereference(DereferenceContext context) {
         Expression base = visitPrimaryExpression(context.base);
         String fieldName = context.fieldName.getChild(0).getText();
         return new DereferenceExpression(base, fieldName);
     }
     @Override
-    public ConstantExpression visitConstantDefault(SqlBaseParser.ConstantDefaultContext context) {
+    public ConstantExpression visitConstantDefault(ConstantDefaultContext context) {
         String identifier = context.constant().getChild(0).getText();
         return new ConstantExpression(identifier);
     }
     @Override
-    public ParenthesizedExpression visitParenthesizedExpression(SqlBaseParser.ParenthesizedExpressionContext context) {
+    public ParenthesizedExpression visitParenthesizedExpression(ParenthesizedExpressionContext context) {
         Expression expression = visitExpression(context.expression());
         return new ParenthesizedExpression(expression);
     }
     @Override
-    public FunctionCallExpression visitFunctionCall(SqlBaseParser.FunctionCallContext context) {
+    public FunctionCallExpression visitFunctionCall(FunctionCallContext context) {
         String function = context.functionName().getChild(0).getText();
         modelNameList.add(function);
         List<Expression> arrayExpression = new ArrayList<>();
@@ -440,7 +428,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     }
 
     @Override
-    public FaderatedQueryExpression visitFederatedQueryExpression(SqlBaseParser.FederatedQueryExpressionContext context) {
+    public FaderatedQueryExpression visitFederatedQueryExpression(FederatedQueryExpressionContext context) {
         List<NamedExpression> namedExpressions = new ArrayList<>();
         for (int i=0; i<context.namedExpression().size(); i++) {
             NamedExpression namedExpression = visitNamedExpression(context.namedExpression(i));
@@ -449,7 +437,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         return new FaderatedQueryExpression(namedExpressions);
     }
 
-    public List<LogicalPlan> visitFrom(SqlBaseParser.FromClauseContext context) {
+    public List<LogicalPlan> visitFrom(FromClauseContext context) {
         List<LogicalPlan> logicalPlans = new ArrayList<>();
         for (int i=0; i<context.relation().size(); i++) {
             logicalPlans.add(visitRelation(context.relation(i)));
@@ -458,8 +446,8 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     }
 
     @Override
-    public LogicalPlan visitRelation(SqlBaseParser.RelationContext context) {
-        if (context.relationExtension().size() == 0) {
+    public LogicalPlan visitRelation(RelationContext context) {
+        if (context.relationExtension().isEmpty()) {
             return visitRelationPrimary(context.relationPrimary());
         } else {
             if (context.relationExtension(0).joinRelation().NATURAL() == null && context.relationExtension(0).joinRelation().joinCriteria() != null) {
@@ -475,7 +463,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
                 }
                 LogicalPlan left = visitRelationPrimary(context.relationPrimary());
                 LogicalPlan right = visitRelationPrimary(context.relationExtension(0).joinRelation().relationPrimary());
-                Expression expression = visitPredicated((SqlBaseParser.PredicatedContext) context.relationExtension(0).joinRelation().joinCriteria().booleanExpression());
+                Expression expression = visitPredicated((PredicatedContext) context.relationExtension(0).joinRelation().joinCriteria().booleanExpression());
                 return new LogicalJoin(expression, joinType, left, right);
             } else {
                 throw new ParserException(DEFAULT_ERROR + ": " + context.getText());
@@ -484,22 +472,30 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     }
 
 
-    public LogicalPlan visitRelationPrimary(SqlBaseParser.RelationPrimaryContext context) {
-        if (context instanceof SqlBaseParser.TableNameContext) {
-            return visitTableName((SqlBaseParser.TableNameContext) context);
-        } else if (context instanceof SqlBaseParser.AliasedQueryContext) {
-            if (((SqlBaseParser.AliasedQueryContext) context).query().queryTerm() instanceof SqlBaseParser.QueryTermDefaultContext) {
-                return visitQueryTermDefault((SqlBaseParser.QueryTermDefaultContext) ((SqlBaseParser.AliasedQueryContext) context).query().queryTerm());
+    public LogicalPlan visitRelationPrimary(RelationPrimaryContext context) {
+        if (context instanceof TableNameContext) {
+            return visitTableName((TableNameContext) context);
+        } else if (context instanceof AliasedQueryContext) {
+            AliasedQueryContext aliaseCtx = (AliasedQueryContext) context;
+            QueryTermContext queryTermContext = aliaseCtx.query().queryTerm();
+            if (queryTermContext instanceof QueryTermDefaultContext) {
+                QueryTermDefaultContext termCtx = (QueryTermDefaultContext) queryTermContext;
+//                LogicalPlan child = visitQueryTermDefault(termCtx);
+                LogicalPlan child = visitAliasedQuery(aliaseCtx);
+                String tableAlias = aliaseCtx.tableAlias().getText();
+                SubQuery subQuery = new SubQuery(tableAlias, child);
+                subQueryTables.put(tableAlias, subQuery);
+                return new SubQuery(tableAlias, child);
             } else {
                 throw new ParserException(DEFAULT_ERROR + ": " + context.getText());
             }
-        } else if (context instanceof SqlBaseParser.AliasedRelationContext) {
-            if (((SqlBaseParser.AliasedRelationContext) context).relation().relationExtension().size() == 0) {
+        } else if (context instanceof AliasedRelationContext) {
+            if (((AliasedRelationContext) context).relation().relationExtension().isEmpty()) {
                 throw new ParserException(DEFAULT_ERROR + ": " + context.getText());
             } else {
-                LogicalJoin logicalJoin = (LogicalJoin) visitRelation(((SqlBaseParser.AliasedRelationContext) context).relation());
-                if (((SqlBaseParser.AliasedRelationContext) context).tableAlias().strictIdentifier() != null) {
-                    logicalJoin.setAlias(((SqlBaseParser.AliasedRelationContext) context).tableAlias().strictIdentifier().getText());
+                LogicalJoin logicalJoin = (LogicalJoin) visitRelation(((AliasedRelationContext) context).relation());
+                if (((AliasedRelationContext) context).tableAlias().strictIdentifier() != null) {
+                    logicalJoin.setAlias(((AliasedRelationContext) context).tableAlias().strictIdentifier().getText());
                 }
                 return logicalJoin;
             }
@@ -509,7 +505,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     }
 
     // tableName或者db.tableName
-    public LogicalPlan visitTableName(SqlBaseParser.TableNameContext context) {
+    public LogicalPlan visitTableName(TableNameContext context) {
         String tableName = context.multipartIdentifier().errorCapturingIdentifier.identifier().getText();
         if (context.tableAlias().strictIdentifier() != null) {
             String alias = context.tableAlias().strictIdentifier().getText();
@@ -520,12 +516,12 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         return new LogicalTable(tableName);
     }
 
-//    public LogicalPlan visitJoinRelation(SqlBaseParser.JoinRelationContext context) {
+//    public LogicalPlan visitJoinRelation(JoinRelationContext context) {
 //        return new NonRelation();
 //    }
 
     @Override
-    public NamedExpression visitNamedExpression(SqlBaseParser.NamedExpressionContext context) {
+    public NamedExpression visitNamedExpression(NamedExpressionContext context) {
         if (context.identifierList() == null) {
             if (context.errorCapturingIdentifier() == null) {
                 Expression expression = visitExpression(context.expression());
@@ -541,12 +537,12 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     }
 
     @Override
-    public Identifier visitIdentifier(SqlBaseParser.IdentifierContext context) {
+    public Identifier visitIdentifier(IdentifierContext context) {
         return new Identifier(context.getChild(0).getText());
     }
 
     @Override
-    public Expression visitExpression(SqlBaseParser.ExpressionContext context) {
+    public Expression visitExpression(ExpressionContext context) {
         return visitBooleanExpression(context.booleanExpression());
     }
 
@@ -558,7 +554,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
      * @date 2022/8/14 22:01
      */
     @Override
-    public FederatedLearningExpression visitFederatedLearningExpression(SqlBaseParser.FederatedLearningExpressionContext context) {
+    public FederatedLearningExpression visitFederatedLearningExpression(FederatedLearningExpressionContext context) {
         List<FlExpression> fl = new ArrayList<>();
         for (int i=0; i<context.flExpressionSeq().flExpression().size(); i++) {
             FlExpression flExpression = visitFlExpression(context.flExpressionSeq().flExpression(i));
@@ -576,7 +572,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         }
 
         List<FlExpression> psi = new ArrayList<>();
-        if (context.flPSISeq().size() != 0) {
+        if (!context.flPSISeq().isEmpty()) {
             for (int i = 0; i < context.flPSISeq(0).flPSI(0).flExpressionSeq().flExpression().size(); i++) {
                 FlExpression flExpression = visitFlExpression(context.flPSISeq(0).flPSI(0).flExpressionSeq().flExpression(i));
                 psi.add(flExpression);
@@ -584,12 +580,12 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         }
 
         List<FlExpression> feat = new ArrayList<>();
-        if (context.flFeatSeq().size() != 0) {
+        if (!context.flFeatSeq().isEmpty()) {
             Identifier feature_key = new Identifier("feature_name");
             Identifier feature_value = new Identifier(context.flFeatSeq(0).flFeat(0).feat.getText());
             FlExpression featName = new FlExpression(feature_key, feature_value, FlExpression.Operator.EQUAL);
             feat.add(featName);
-            if (context.flFeatSeq().size() != 0) {
+            if (!context.flFeatSeq().isEmpty()) {
                 for (int i = 0; i < context.flFeatSeq(0).flFeat(0).flExpressionSeq().flExpression().size(); i++) {
                     FlExpression flExpression = visitFlExpression(context.flFeatSeq(0).flFeat(0).flExpressionSeq().flExpression(i));
                     feat.add(flExpression);
@@ -597,7 +593,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             }
         }
         List<FlExpression> model = new ArrayList<>();
-        if (context.flModelSeq().size() != 0) {
+        if (!context.flModelSeq().isEmpty()) {
             Identifier key = new Identifier("model_name");
             Identifier value = new Identifier(context.flModelSeq(0).flModel(0).model.getText());
             FlExpression modelName = new FlExpression(key, value, FlExpression.Operator.EQUAL);
@@ -609,7 +605,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         }
 
         List<FlExpression> eval = new ArrayList<>();
-        if (context.flModelSeq().size() != 0) {
+        if (!context.flModelSeq().isEmpty()) {
             for (int i = 0; i < context.flEvalSeq(0).flEval(0).flExpressionSeq().flExpression().size(); i++) {
                 FlExpression flExpression = visitFlExpression(context.flEvalSeq(0).flEval(0).flExpressionSeq().flExpression(i));
                 eval.add(flExpression);
@@ -620,9 +616,9 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     }
 
     @Override
-    public FlExpression visitFlExpression(SqlBaseParser.FlExpressionContext context) {
-        Expression left = visitValueExpressionDefault((SqlBaseParser.ValueExpressionDefaultContext) context.left);
-        Expression right = visitValueExpressionDefault((SqlBaseParser.ValueExpressionDefaultContext) context.right);
+    public FlExpression visitFlExpression(FlExpressionContext context) {
+        Expression left = visitValueExpressionDefault((ValueExpressionDefaultContext) context.left);
+        Expression right = visitValueExpressionDefault((ValueExpressionDefaultContext) context.right);
         FlExpression.Operator operator = FlExpression.Operator.EQUAL;
         return new FlExpression(left, right, operator);
     }
@@ -685,5 +681,16 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         }
 
         throw new ParserException(DEFAULT_ERROR + ": " + symbol.getText());
+    }
+
+    @Override
+    public LogicalPlan visitAliasedQuery(AliasedQueryContext ctx) {
+//        QueryTermContext queryTermContext = ctx.query().queryTerm();
+//        if (queryTermContext instanceof QueryTermDefaultContext) {
+//            QueryTermDefaultContext termCtx = (QueryTermDefaultContext) queryTermContext;
+//            return visitQuery(ctx.query());
+//        }
+        subQueryTables.put(ctx.tableAlias().getText(), visitQuery(ctx.query()));
+        return visitQuery(ctx.query());
     }
 }

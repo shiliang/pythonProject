@@ -16,7 +16,7 @@
 
 parser grammar SqlBaseParser;
 
-options { tokenVocab = com.chainmaker.jobservice.core.antlr4.gen.SqlBaseLexer.SqlBaseLexer; }
+options { tokenVocab = SqlBaseLexer; }
 
 @members {
   /**
@@ -822,8 +822,8 @@ namedExpression
     ;
 
 namedExpressionSeq
-    : namedExpression (',' namedExpression)*                        #federatedQueryExpression
-    | flType '(' flExpressionSeq (',' flLabelSeq)+ (',' flPSISeq)* (',' flFeatSeq)* (',' flModelSeq)* (',' flEvalSeq)* ')'   #federatedLearningExpression
+    : namedExpression (COMMA namedExpression)*                        #federatedQueryExpression
+    | flType LEFT_BRACKET flExpressionSeq (COMMA flLabelSeq)+ (COMMA flPSISeq)* (COMMA flFeatSeq)* (COMMA flModelSeq)* (COMMA flEvalSeq)* RIGHT_BRACKET   #federatedLearningExpression
     ;
 
 // task type(federated learning)
@@ -833,51 +833,51 @@ flType
 
 // TRANSFORM(dataIO)
 flLabelSeq
-    :flLabel (',' flLabel)*
+    :flLabel (COMMA flLabel)*
     ;
 
 flLabel
-    : FLLABEL '(' flExpressionSeq ')'
+    : FLLABEL LEFT_BRACKET flExpressionSeq RIGHT_BRACKET
     ;
 
 // psi
 flPSISeq
-    : flPSI (',' flPSI)*
+    : flPSI (COMMA flPSI)*
     ;
 
 flPSI
-    : INTERSECTION* '(' flExpressionSeq ')'
+    : INTERSECTION* LEFT_BRACKET flExpressionSeq RIGHT_BRACKET
     ;
 
 // feature engineer
 flFeatSeq
-    : flFeat (',' flFeat)*
+    : flFeat (COMMA flFeat)*
     ;
 
 flFeat
-    : feat=(HEFSL |HEFB | HOFB | HEFSC | HEFSP | HEFIM | HEPEAR | HO1HOT | HEDS) '(' flExpressionSeq ')'
+    : feat=(HEFSL |HEFB | HOFB | HEFSC | HEFSP | HEFIM | HEPEAR | HO1HOT | HEDS) LEFT_BRACKET flExpressionSeq RIGHT_BRACKET
     ;
 
 // model
 flModelSeq
-    : flModel (',' flModel)*
+    : flModel (COMMA flModel)*
     ;
 
 flModel
-    : model=(HESB | HOSB | HELR | HEKMS | HELNR | HOLR | HEPR | HEFTL | HONN | HENN)  '(' flExpressionSeq ')'
+    : model=(HESB | HOSB | HELR | HEKMS | HELNR | HOLR | HEPR | HEFTL | HONN | HENN)  LEFT_BRACKET flExpressionSeq RIGHT_BRACKET
     ;
 
 // evaluation
 flEvalSeq
-    : flEval (',' flEval)*
+    : flEval (COMMA flEval)*
     ;
 
 flEval
-    : EVAL '(' flExpressionSeq ')'
+    : EVAL LEFT_BRACKET flExpressionSeq RIGHT_BRACKET
     ;
 
 flExpressionSeq
-    : flExpression (',' flExpression)*
+    : flExpression (COMMA flExpression)*
     ;
 
 flExpression

@@ -11,7 +11,7 @@ import com.chainmaker.jobservice.core.calcite.adapter.LogicPlanAdapter;
 import com.chainmaker.jobservice.core.calcite.optimizer.OptimizerPlanner;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.FieldInfo;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
-import com.chainmaker.jobservice.core.calcite.utils.parserWithOptimizerReturnValue;
+import com.chainmaker.jobservice.core.calcite.utils.ParserWithOptimizerReturnValue;
 import com.chainmaker.jobservice.core.optimizer.PlanOptimizer;
 import com.chainmaker.jobservice.core.optimizer.nodes.DAG;
 import com.chainmaker.jobservice.core.optimizer.plans.PhysicalPlan;
@@ -21,7 +21,11 @@ import com.chainmaker.jobservice.core.parser.printer.LogicalPlanPrinter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +40,7 @@ import java.util.List;
  */
 
 @Data
+@Slf4j
 public class SqlParser {
     private final String sql;
     private final Integer isStream;
@@ -84,7 +89,7 @@ public class SqlParser {
 //            missionDetailVO.setVersion(Integer.parseInt(newVerArray.toString()));
             missionDetailVO.setDatacatalogId(dataCatalogInfo.getAssetId());
             missionDetailVOs.add(missionDetailVO);
-            System.out.println("dataCatalogInfo: " + dataCatalogInfo);
+            log.info("dataCatalogInfo: " + dataCatalogInfo);
             DataInfo dataInfo = dataCatalogInfo.getDataInfo();
             for (SaveTableColumnItem dataCatalogDetailInfo : dataInfo.getItemList()) {
                 columnInfoMap.put(dataCatalogInfo.getAssetEnName().toUpperCase()+"."+dataCatalogDetailInfo.getName().toUpperCase(), String.valueOf(dataCatalogDetailInfo.getDataType()));
@@ -151,14 +156,13 @@ public class SqlParser {
      * 带查询优化的parser
      * @return
      */
-    public parserWithOptimizerReturnValue parserWithOptimizer() {
+    public ParserWithOptimizerReturnValue parserWithOptimizer() throws Exception {
         LogicalPlanBuilderV2 logicalPlanBuilder = new LogicalPlanBuilderV2(this.sql);
         LogicalPlan logicalPlan = logicalPlanBuilder.getLogicalPlan();
 
         LogicalPlanPrinter printer = new LogicalPlanPrinter();
         printer.visitTree(logicalPlan, 0);
-        System.out.println(printer.logicalPlanString);
-
+        log.info(String.valueOf(printer.logicalPlanString));
         HashMap<String, String> tableOwnerMap = buildMetaData(assetInfoList);
         List<String> columnList = logicalPlanBuilder.getColumnList();
 
@@ -177,7 +181,13 @@ public class SqlParser {
                 if  (!columnList.contains(assetName + "." + detailInfo.getName())) {
                     continue;
                 }
-                FieldInfo field = new FieldInfo(detailInfo.getName(), detailInfo.getDataType(), null, null, FieldInfo.DistributionType.Uniform,
+                String dataType = detailInfo.getDataType();
+                SqlTypeName sqlDataType = SqlTypeName.get(dataType.toUpperCase());
+                if(sqlDataType == null){
+                    //todo
+                    //throw new Exception("dataType: " + dataType + " is not supported");
+                }
+                FieldInfo field = new FieldInfo(detailInfo.getName(), dataType, null, null, FieldInfo.DistributionType.Uniform,
                         assetName, detailInfo.getDataLength(), domainId, assetInfo.getHolderCompany(), detailInfo.getDescription(), databaseName, assetName);
                 fields.put(field.getUniqueName(), field);
             }
@@ -186,18 +196,25 @@ public class SqlParser {
             TableInfo tableInfo = new TableInfo(fields, rowCount, tableName, assetInfo.getHolderCompany(), domainId, assetName);
             metadata.put(assetInfo.getAssetEnName(), tableInfo);
         }
+        //检查sql是否可执行？
 
         // 之前的sqlparser约用时1500ms
         // 接入Calcite    3000ms
         LogicPlanAdapter planAdapter = new LogicPlanAdapter(this.sql.toUpperCase(), logicalPlan, metadata, modelType);
-
-        planAdapter.CastToRelNode();
+        try {
+            planAdapter.CastToRelNode(); //核心步骤，将LogicalPlan转换为Calcite的RelNode
+        }catch (Exception e){
+            log.error(e.getMessage(), e);
+//            System.exit(-1);
+        }
 
         // 查询优化部分   300ms
         RelNode root = planAdapter.getRoot();
+        log.info("calcite reltree: " + RelOptUtil.toString(root, SqlExplainLevel.ALL_ATTRIBUTES));
+
         OptimizerPlanner planner = new OptimizerPlanner(root, true);
         RelNode phyPlan = planner.optimize();
 
-        return new parserWithOptimizerReturnValue(phyPlan, logicalPlan);
+        return new ParserWithOptimizerReturnValue(phyPlan, logicalPlan);
     }
 }

@@ -35,7 +35,7 @@ public interface JobParserService {
      * @author gaokang
      * @date 2022/9/22 21:27
      */
-    JobMissionDetail parserSql(SqlVo sqlVo);
+    JobMissionDetail parserSql(SqlVo sqlVo) throws Exception;
 
     /***
      * @description 由任务列表生成有向无环图
@@ -84,7 +84,7 @@ public interface JobParserService {
     CatalogCache getCatalogCache(String key);
     void delete(String key);
 
-    JobGraphVo jobPreview(SqlVo sqlVo);
+    JobGraphVo jobPreview(SqlVo sqlVo) throws Exception;
     MissionInfoVo jobCommit(JobGraphVo jobGraphVo);
     JobRunner getJobRunner(JobInfoPo jobInfoPo);
 

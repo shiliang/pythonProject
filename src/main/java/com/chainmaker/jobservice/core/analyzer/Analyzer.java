@@ -93,7 +93,7 @@ public class Analyzer extends LogicalPlanVisitor {
             missionDetailVO.setOrgId(dataCatalogInfo.getOrgId());
             missionDetailVO.setDatacatalogId(dataCatalogInfo.getId());
             missionDetailVOs.add(missionDetailVO);
-            System.out.println("dataCatalogInfo: " + dataCatalogInfo);
+            log.info("dataCatalogInfo: " + dataCatalogInfo);
             for (DataCatalogDetailInfo dataCatalogDetailInfo : dataCatalogInfo.getItemVOList()) {
                 columnInfoMap.put(dataCatalogInfo.getName().toUpperCase()+"."+dataCatalogDetailInfo.getName().toUpperCase(), String.valueOf(dataCatalogDetailInfo.getDataType()));
             }

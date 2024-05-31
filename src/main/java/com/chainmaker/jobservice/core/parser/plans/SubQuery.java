@@ -42,10 +42,16 @@ public class SubQuery extends LogicalPlan {
         children.add(child);
         return children;
     }
+//
+//    @Override
+//    public String toString() {
+//        return  child.toString();
+//    }
+
 
     @Override
     public String toString() {
-        return  child.toString();
+        return  "SubQuery" + "[ " + alias+ " ]";
     }
 
     @Override
