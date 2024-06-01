@@ -13,11 +13,11 @@ import java.util.List;
  * @version: 1.0.0
  */
 
-public class LogicalSort extends LogicalPlan {
+public class XPCSort extends XPCPlan {
     private Expression expression;
-    private LogicalPlan child;
+    private XPCPlan child;
 
-    public LogicalSort(Expression expression, LogicalPlan child) {
+    public XPCSort(Expression expression, XPCPlan child) {
         this.expression = expression;
         this.child = child;
     }
@@ -30,11 +30,11 @@ public class LogicalSort extends LogicalPlan {
         this.expression = expression;
     }
 
-    public LogicalPlan getChild() {
+    public XPCPlan getChild() {
         return child;
     }
 
-    public void setChild(LogicalPlan child) {
+    public void setChild(XPCPlan child) {
         this.child = child;
     }
 

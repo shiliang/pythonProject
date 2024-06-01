@@ -13,17 +13,17 @@ import java.util.List;
  * from (select...from...where...) join b:  左子节点为Project，右子节点为UnreservedRelation
  * from (a join b on...) join c:            左节点为Join节点，右节点为UnreservedRelation
  */
-public class LogicalJoin extends LogicalPlan {
+public class XPCJoin extends XPCPlan {
     public enum Type {
         INNER, LEFT, RIGHT, FULL
     }
     private final Expression condition;
     private final Type joinType;
-    private final LogicalPlan left;
-    private final LogicalPlan right;
+    private final XPCPlan left;
+    private final XPCPlan right;
     private String alias;
 
-    public LogicalJoin(Expression condition, Type joinType, LogicalPlan left, LogicalPlan right, String alias) {
+    public XPCJoin(Expression condition, Type joinType, XPCPlan left, XPCPlan right, String alias) {
         this.condition = condition;
         this.joinType = joinType;
         this.left = left;
@@ -31,7 +31,7 @@ public class LogicalJoin extends LogicalPlan {
         this.alias = alias;
     }
 
-    public LogicalJoin(Expression condition, Type joinType, LogicalPlan left, LogicalPlan right) {
+    public XPCJoin(Expression condition, Type joinType, XPCPlan left, XPCPlan right) {
         this.condition = condition;
         this.joinType = joinType;
         this.left = left;
@@ -56,18 +56,18 @@ public class LogicalJoin extends LogicalPlan {
         return joinType;
     }
 
-    public LogicalPlan getLeft() {
+    public XPCPlan getLeft() {
         return left;
     }
 
-    public LogicalPlan getRight() {
+    public XPCPlan getRight() {
         return right;
     }
 
 
     @Override
-    public List<LogicalPlan> getChildren() {
-        List<LogicalPlan> children = new ArrayList<>();
+    public List<XPCPlan> getChildren() {
+        List<XPCPlan> children = new ArrayList<>();
         children.add(left);
         children.add(right);
         return children;

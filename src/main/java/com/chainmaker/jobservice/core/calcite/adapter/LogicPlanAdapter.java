@@ -18,7 +18,6 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.schema.*;
 import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.sql.*;
@@ -28,6 +27,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 
@@ -40,7 +40,7 @@ import static com.chainmaker.jobservice.core.calcite.utils.ConstExprJudgement.is
 public class LogicPlanAdapter extends LogicalPlanRelVisitor {
 
     private String originQuery;                 // sql语句
-    private LogicalPlan originLogicalPlan;      // 根据antlr4语法树生成的逻辑计划
+    private XPCPlan originLogicalPlan;      // 根据antlr4语法树生成的逻辑计划
 
     private MPCMetadata metadata;               // 全局metadata
     private RelNode root;                       // 生成的calcite的逻辑计划
@@ -51,7 +51,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
     private RexBuilder rexBuilder;              // RexNode生成器
     private Integer modelType;                      // 需要处理的任务类型（已弃用，用Hint代替）
 
-    private LogicalHint hints;                   // 替换modelType，识别TEE
+    private XPCHint hints;                   // 替换modelType，识别TEE
 
     List<String> multiTableList = new ArrayList<>(); // 用于存储参加join的属性名
 
@@ -60,7 +60,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
      * @param sql
      * @param plan
      */
-    public LogicPlanAdapter(String sql, LogicalPlan plan, HashMap<String, TableInfo> data, Integer type) {
+    public LogicPlanAdapter(String sql, XPCPlan plan, HashMap<String, TableInfo> data, Integer type) {
         originQuery = sql;
         originLogicalPlan = plan;
         root = null;
@@ -115,13 +115,13 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
      * @return
      */
     @Override
-    public RelNode visit(LogicalPlan plan) {
+    public RelNode visit(XPCPlan plan) {
 //        System.out.println("enter logical plan relvisit");
         return plan.accept(this);
     }
 
     @Override
-    public RelNode visit(LogicalHint node) {
+    public RelNode visit(XPCHint node) {
         RelNode ans = null;
         hints = node;
         int childNum = node.getChildren().size();
@@ -169,7 +169,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
      * @return
      */
     @Override
-    public RelNode visit(LogicalAggregate node) {
+    public RelNode visit(XPCAggregate node) {
         RelNode ans = null;
         int childNum = node.getChildren().size();
         RelNode[] childs = new RelNode[childNum];
@@ -204,7 +204,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
      * @return
      */
     @Override
-    public RelNode visit(LogicalSort node) {
+    public RelNode visit(XPCSort node) {
         RelNode ans = null;
         RelNode child = node.getChild().accept(this);
         builder.push(child);
@@ -221,15 +221,16 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
      * @return
      */
     @Override
-    public RelNode visit(LogicalProject node) {
+    public RelNode visit(XPCProject node) {
         RelNode ans = null;
         // 优先处理子节点
-        int childNum = node.getChildren().size();
-        RelNode[] childs = new RelNode[childNum];
+        List<XPCPlan> planNodes = node.getChildren();
+        int childNum = planNodes.size();
+        RelNode[] relChilds = new RelNode[childNum];
         for (int i = 0; i < childNum; i++) {
-            childs[i] = node.getChildren().get(i).accept(this);
-            builder.push(childs[i]);
-            multiTableList.addAll(childs[i].getRowType().getFieldNames());
+            relChilds[i] = planNodes.get(i).accept(this);
+            builder.push(relChilds[i]);
+            multiTableList.addAll(relChilds[i].getRowType().getFieldNames());
             if (i != childNum-1) {
                 multiTableList.add("::");
             }
@@ -237,29 +238,47 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
 
         // 找到所有映射相关表达式
         List<RexNode> projections = new ArrayList<>();
-        List<NamedExpression> namedExpressionList = node.getProjectList().getValues();
         List<String> projectionNames = new ArrayList<>();
+        List<NamedExpression> namedExpressionList = node.getProjectList().getValues();
 
         // 将每个表达式转换成的RexNode放入需要映射的列表
         for (NamedExpression exp : namedExpressionList) {
             Expression expr = exp.getExpression();
             String alias = exp.getIdentifier().getIdentifier();
+//            if(exp.toString().contains("*")){;
+//                RexNode rexNode = builder.getRexBuilder().makeRangeReference(relChilds[0]);
+//                projections.add(rexNode);
+//            }else {
+//                RexNode proj = dealWithExpression(expr);
+//                projectionNames.add(expr.toString());
+//                if (StringUtils.isNotEmpty(alias)) {
+//                    projections.add(builder.alias(proj, alias));
+//                } else {
+//                    projections.add(proj);
+//                }
+//            }
+
             RexNode proj = dealWithExpression(expr);
             projectionNames.add(expr.toString());
-            if (alias != null) {
+            if (StringUtils.isNotEmpty(alias)) {
                 projections.add(builder.alias(proj, alias));
             } else {
                 projections.add(proj);
             }
         }
 
+
         // 应用所有映射并返回
-        builder.project(projections, projectionNames);
+        if(!projectionNames.isEmpty()) {
+            builder.project(projections, projectionNames);
+        }else{
+            builder.project(projections);
+        }
         ans = builder.build();
         multiTableList.clear();
-//        System.out.println(
-//                RelOptUtil.dumpPlan("[Logical plan]", ans, SqlExplainFormat.TEXT,
-//                        SqlExplainLevel.ALL_ATTRIBUTES));
+        System.out.println(
+                RelOptUtil.dumpPlan("[Logical plan]", ans, SqlExplainFormat.TEXT,
+                        SqlExplainLevel.ALL_ATTRIBUTES));
         return ans;
     }
 
@@ -269,7 +288,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
      * @return
      */
     @Override
-    public RelNode visit(LogicalFilter node) {
+    public RelNode visit(XPCFilter node) {
         RelNode ans = null;
         // 优先处理子节点
         int childNum = node.getChildren().size();
@@ -303,7 +322,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
      * @return
      */
     @Override
-    public RelNode visit(LogicalJoin node) {
+    public RelNode visit(XPCJoin node) {
         RelNode ans = null;
         // 先访问要Join的左右节点，并获取JoinType
         RelNode left = node.getLeft().accept(this);
@@ -355,7 +374,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
      * @return
      */
     @Override
-    public RelNode visit(LogicalTable node) {
+    public RelNode visit(XPCTable node) {
         String tableName = node.getTableName();
         String alias = node.getAlias();
 
@@ -364,7 +383,6 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         if (alias != null) {
             builder.as(alias);      // 别名
         }
-
         RelNode ans = builder.build();
         long end = System.currentTimeMillis();
 //        System.out.println(
@@ -374,18 +392,11 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         return ans;
     }
 
-    public RelNode visit(SubQuery subQuery){
-        LogicalPlan child = subQuery.getChildren().get(0);
-        if(child instanceof LogicalTable){
-            builder.scan(((LogicalTable) child).getTableName());
-            String alias = subQuery.getAlias();
-            if (alias != null) {
-                builder.as(alias);      // 别名
-            }
-            return builder.build();
-        }
-        RexBuilder rexBuidler = builder.getRexBuilder();
-        return child.accept(this);
+    public RelNode visit(XPCSubQuery subQuery){
+        XPCPlan child = subQuery.getChildren().get(0);
+        RelNode node = child.accept(this);
+        RelNode tmpInner = builder.push(node).as(subQuery.getAlias()).build();
+        return tmpInner;
     }
 
     /**
@@ -500,6 +511,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
 
     /**
      * 处理子查询表达式（不过目前Parser并没有支持）
+     * 这里的子查询有歧义，更多的是指 in exists等表达式，而不是from子句。
      * @param expr
      * @return
      */

@@ -1,6 +1,6 @@
 package com.chainmaker.jobservice.core.parser.printer;
 
-import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
+import com.chainmaker.jobservice.core.parser.plans.XPCPlan;
 
 /**
  * @author gaokang
@@ -12,7 +12,7 @@ import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
 public class LogicalPlanPrinter {
     public StringBuilder logicalPlanString = new StringBuilder();
 
-    public void visitTree(LogicalPlan plan, Integer level) {
+    public void visitTree(XPCPlan plan, Integer level) {
         for (int i=0; i<level; i++) {
             logicalPlanString.append("\t");
         }
@@ -21,7 +21,7 @@ public class LogicalPlanPrinter {
         level = level + 1;
         if (plan.getChildren() != null) {
             for (int i = 0; i < plan.getChildren().size(); i++) {
-                visitTree((LogicalPlan) plan.getChildren().get(i), level);
+                visitTree((XPCPlan) plan.getChildren().get(i), level);
             }
         }
     }

@@ -1,18 +1,16 @@
 package com.chainmaker.jobservice.core.parser.plans;
 
-import com.chainmaker.jobservice.core.parser.tree.DereferenceExpression;
 import com.chainmaker.jobservice.core.parser.tree.Expression;
-import com.chainmaker.jobservice.core.parser.tree.Node;
 import org.apache.calcite.rel.RelNode;
 
 import java.util.HashSet;
 import java.util.List;
 
-public class LogicalAggregate extends LogicalPlan{
+public class XPCAggregate extends XPCPlan {
 
     private final List<Expression> groupKeys;   // 分组键
     private final List<Expression> aggCallList;          // 聚合列
-    private final List<LogicalPlan> children;
+    private final List<XPCPlan> children;
 
     public List<Expression> getGroupKeys() {
         return groupKeys;
@@ -22,7 +20,7 @@ public class LogicalAggregate extends LogicalPlan{
         return aggCallList;
     }
 
-    public LogicalAggregate(List<Expression> groupKeys, List<Expression> aggCallList, List<LogicalPlan> children) {
+    public XPCAggregate(List<Expression> groupKeys, List<Expression> aggCallList, List<XPCPlan> children) {
         this.groupKeys = groupKeys;
         this.aggCallList = aggCallList;
         this.children = children;
@@ -33,7 +31,7 @@ public class LogicalAggregate extends LogicalPlan{
     }
 
     @Override
-    public List<LogicalPlan> getChildren() {
+    public List<XPCPlan> getChildren() {
         return children;
     }
 

@@ -11,16 +11,16 @@ import java.util.List;
  * @version: 1.0.0
  */
 
-public class LogicalTable extends LogicalPlan {
+public class XPCTable extends XPCPlan {
     private final String tableName;
     private final String alias;
 
-    public LogicalTable(String tableName, String alias) {
+    public XPCTable(String tableName, String alias) {
         this.tableName = tableName;
         this.alias = alias;
     }
 
-    public LogicalTable(String tableName) {
+    public XPCTable(String tableName) {
         this.tableName = tableName;
         this.alias = tableName;
     }
@@ -34,7 +34,7 @@ public class LogicalTable extends LogicalPlan {
     }
 
     @Override
-    public List<LogicalPlan> getChildren() {
+    public List<XPCPlan> getChildren() {
         return null;
     }
 

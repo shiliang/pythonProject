@@ -49,18 +49,18 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         }
         return dag;
     }
-    public void visit(LogicalPlan plan) {
+    public void visit(XPCPlan plan) {
         plan.accept(this);
     }
 
     public void visit(FederatedLearning node) {
-        for (LogicalPlan child: node.getChildren()) {
+        for (XPCPlan child: node.getChildren()) {
             child.accept(this);
         }
         FederatedLearningExpression expression = node.getParamsList();
         buildFate(expression);
     }
-    public void visit(LogicalProject node) {
+    public void visit(XPCProject node) {
 
         List<NamedExpression> preProject = node.getProjectList().getValues();
         for (int i=0; i<preProject.size(); i++) {
@@ -76,7 +76,7 @@ public class PlanOptimizer extends LogicalPlanVisitor {
 
             }
         }
-        for (LogicalPlan child: node.getChildren()) {
+        for (XPCPlan child: node.getChildren()) {
             child.accept(this);
         }
         List<NamedExpression> namedExpressionList = node.getProjectList().getValues();
@@ -120,7 +120,7 @@ public class PlanOptimizer extends LogicalPlanVisitor {
      * @author gaokang
      * @date 2022/8/24 10:29
      */
-    public void visit(LogicalTable node) {
+    public void visit(XPCTable node) {
         TableScan tableScan = new TableScan();
 //        tableScan.setId(count);
 //        count += 1;
@@ -152,16 +152,16 @@ public class PlanOptimizer extends LogicalPlanVisitor {
      * @author gaokang
      * @date 2022/8/24 10:30
      */
-    public void visit(LogicalJoin node) {
-        for (LogicalPlan child: node.getChildren()) {
+    public void visit(XPCJoin node) {
+        for (XPCPlan child: node.getChildren()) {
             child.accept(this);
         }
 //         System.out.println("JOIN");
 
     }
 
-    public void visit(LogicalFilter node) {
-        for (LogicalPlan child: node.getChildren()) {
+    public void visit(XPCFilter node) {
+        for (XPCPlan child: node.getChildren()) {
             child.accept(this);
         }
         System.out.println("Filter");

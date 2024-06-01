@@ -16,7 +16,7 @@ import com.chainmaker.jobservice.core.optimizer.PlanOptimizer;
 import com.chainmaker.jobservice.core.optimizer.nodes.DAG;
 import com.chainmaker.jobservice.core.optimizer.plans.PhysicalPlan;
 import com.chainmaker.jobservice.core.parser.LogicalPlanBuilderV2;
-import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
+import com.chainmaker.jobservice.core.parser.plans.XPCPlan;
 import com.chainmaker.jobservice.core.parser.printer.LogicalPlanPrinter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -114,7 +114,7 @@ public class SqlParser {
 
     public DAG<PhysicalPlan> parser() {
         LogicalPlanBuilderV2 logicalPlanBuilder = new LogicalPlanBuilderV2(this.sql);
-        LogicalPlan logicalPlan = logicalPlanBuilder.getLogicalPlan();
+        XPCPlan logicalPlan = logicalPlanBuilder.getLogicalPlan();
         LogicalPlanPrinter printer = new LogicalPlanPrinter();
         printer.visitTree(logicalPlan, 0);
         System.out.println(printer.logicalPlanString);
@@ -158,7 +158,7 @@ public class SqlParser {
      */
     public ParserWithOptimizerReturnValue parserWithOptimizer() throws Exception {
         LogicalPlanBuilderV2 logicalPlanBuilder = new LogicalPlanBuilderV2(this.sql);
-        LogicalPlan logicalPlan = logicalPlanBuilder.getLogicalPlan();
+        XPCPlan logicalPlan = logicalPlanBuilder.getLogicalPlan();
 
         LogicalPlanPrinter printer = new LogicalPlanPrinter();
         printer.visitTree(logicalPlan, 0);

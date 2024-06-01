@@ -1,24 +1,24 @@
 package com.chainmaker.jobservice.core.parser.tree;
 
-import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
+import com.chainmaker.jobservice.core.parser.plans.XPCPlan;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class SubQueryExpression extends Expression {
-    private final LogicalPlan plan;
+    private final XPCPlan plan;
 
-    public SubQueryExpression(LogicalPlan plan) {
+    public SubQueryExpression(XPCPlan plan) {
         this.plan = plan;
     }
 
-    public LogicalPlan getPlan() {
+    public XPCPlan getPlan() {
         return plan;
     }
 
     @Override
-    public List<LogicalPlan> getChildren() {
-        List<LogicalPlan> children = new ArrayList<>();
+    public List<XPCPlan> getChildren() {
+        List<XPCPlan> children = new ArrayList<>();
         children.add(plan);
         return children;
     }

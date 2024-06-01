@@ -1,8 +1,6 @@
 package com.chainmaker.jobservice.core.parser.plans;
 
-import com.chainmaker.jobservice.core.parser.tree.Expression;
 import com.chainmaker.jobservice.core.parser.tree.HintExpression;
-import com.chainmaker.jobservice.core.parser.tree.Identifier;
 import org.apache.calcite.rel.RelNode;
 
 import java.util.List;
@@ -13,11 +11,11 @@ import java.util.List;
  * @description:
  * @version:
  */
-public class LogicalHint extends LogicalPlan {
+public class XPCHint extends XPCPlan {
     private final List<HintExpression> values;
-    private final List<LogicalPlan> children;
+    private final List<XPCPlan> children;
 
-    public LogicalHint(List<HintExpression> values, List<LogicalPlan> children) {
+    public XPCHint(List<HintExpression> values, List<XPCPlan> children) {
         this.values = values;
         this.children = children;
     }
@@ -28,7 +26,7 @@ public class LogicalHint extends LogicalPlan {
     }
 
     @Override
-    public List<LogicalPlan> getChildren() {
+    public List<XPCPlan> getChildren() {
         return children;
     }
 

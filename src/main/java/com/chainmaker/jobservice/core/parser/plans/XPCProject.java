@@ -1,10 +1,8 @@
 package com.chainmaker.jobservice.core.parser.plans;
 
 import com.chainmaker.jobservice.core.parser.tree.FaderatedQueryExpression;
-import com.chainmaker.jobservice.core.parser.tree.NamedExpression;
 import org.apache.calcite.rel.RelNode;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -12,16 +10,16 @@ import java.util.List;
  * 如果添加SUM、MAX等UDAF，可作为Projrct的父节点，执行顺序最后
  * 目前SELECT只支持表达式，子节点为Filter
  */
-public class LogicalProject extends LogicalPlan {
+public class XPCProject extends XPCPlan {
     private final FaderatedQueryExpression projectList;
-    private final List<LogicalPlan> children;
+    private final List<XPCPlan> children;
 
-    public LogicalProject(FaderatedQueryExpression projectList, List<LogicalPlan> children) {
+    public XPCProject(FaderatedQueryExpression projectList, List<XPCPlan> children) {
         this.projectList = projectList;
         this.children = children;
     }
 
-    public LogicalProject(List<LogicalPlan> children) {
+    public XPCProject(List<XPCPlan> children) {
         this.children = children;
         this.projectList = null;
     }
@@ -31,7 +29,7 @@ public class LogicalProject extends LogicalPlan {
     }
 
     @Override
-    public List<LogicalPlan> getChildren() {
+    public List<XPCPlan> getChildren() {
         return children;
     }
 

@@ -9,15 +9,15 @@ import org.apache.calcite.rel.RelNode;
  * @version:
  */
 public abstract class LogicalPlanRelVisitor {
-    public RelNode visit(LogicalPlan node) {
+    public RelNode visit(XPCPlan node) {
         return null;
     }
 
-    public RelNode visit(LogicalHint node) {
+    public RelNode visit(XPCHint node) {
         return null;
     }
 
-    public RelNode visit(LogicalProject node) {
+    public RelNode visit(XPCProject node) {
         return null;
     }
 
@@ -25,19 +25,19 @@ public abstract class LogicalPlanRelVisitor {
         return null;
     }
 
-    public RelNode visit(LogicalFilter node) {
+    public RelNode visit(XPCFilter node) {
         return null;
     }
 
-    public RelNode visit(LogicalJoin node) {
+    public RelNode visit(XPCJoin node) {
         return null;
     }
 
-    public RelNode visit(SubQuery node) {
+    public RelNode visit(XPCSubQuery node) {
         return null;
     }
 
-    public RelNode visit(LogicalTable node) {
+    public RelNode visit(XPCTable node) {
         return null;
     }
 
@@ -45,7 +45,7 @@ public abstract class LogicalPlanRelVisitor {
         return null;
     }
 
-    public RelNode visit(LogicalSort node) { return null; }
+    public RelNode visit(XPCSort node) { return null; }
 
-    public RelNode visit(LogicalAggregate node) { return null; }
+    public RelNode visit(XPCAggregate node) { return null; }
 }

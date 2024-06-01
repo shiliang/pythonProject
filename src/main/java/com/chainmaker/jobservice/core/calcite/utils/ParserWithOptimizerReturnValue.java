@@ -1,15 +1,15 @@
 package com.chainmaker.jobservice.core.calcite.utils;
 
-import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
+import com.chainmaker.jobservice.core.parser.plans.XPCPlan;
 import org.apache.calcite.rel.RelNode;
 
 public class ParserWithOptimizerReturnValue {
 
     private RelNode phyPlan;            // 优化后的物理计划
 
-    private LogicalPlan OriginPlan;      // 无法参与优化的联邦查询&TEE相关计划
+    private XPCPlan OriginPlan;      // 无法参与优化的联邦查询&TEE相关计划
 
-    public ParserWithOptimizerReturnValue(RelNode plan, LogicalPlan OriPlan) {
+    public ParserWithOptimizerReturnValue(RelNode plan, XPCPlan OriPlan) {
         this.phyPlan = plan;
         this.OriginPlan = OriPlan;
     }
@@ -22,11 +22,11 @@ public class ParserWithOptimizerReturnValue {
         this.phyPlan = phyPlan;
     }
 
-    public LogicalPlan getOriginPlan() {
+    public XPCPlan getOriginPlan() {
         return OriginPlan;
     }
 
-    public void setOriginPlan(LogicalPlan originPlan) {
+    public void setOriginPlan(XPCPlan originPlan) {
         OriginPlan = originPlan;
     }
 }

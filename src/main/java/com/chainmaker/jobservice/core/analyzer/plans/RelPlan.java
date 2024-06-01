@@ -1,6 +1,6 @@
 package com.chainmaker.jobservice.core.analyzer.plans;
 
-import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
+import com.chainmaker.jobservice.core.parser.plans.XPCPlan;
 
 /**
  * @author gaokang
@@ -9,7 +9,7 @@ import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
  * @version: 1.0.0
  */
 
-public abstract class RelPlan extends LogicalPlan {
+public abstract class RelPlan extends XPCPlan {
     public void accept(RelPlanVisitor visitor) {
         visitor.visit(this);
     }

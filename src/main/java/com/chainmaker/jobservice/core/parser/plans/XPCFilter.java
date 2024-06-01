@@ -3,7 +3,6 @@ package com.chainmaker.jobservice.core.parser.plans;
 import com.chainmaker.jobservice.core.parser.tree.Expression;
 import org.apache.calcite.rel.RelNode;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -12,11 +11,11 @@ import java.util.List;
  * FROM后面有两个表时，子节点为Join
  * Filter的值为一个条件表达式，可接受子查询sunQuery
  */
-public class LogicalFilter extends LogicalPlan {
+public class XPCFilter extends XPCPlan {
     private final Expression condition;
-    private final List<LogicalPlan> children;
+    private final List<XPCPlan> children;
 
-    public LogicalFilter(Expression condition, List<LogicalPlan> children) {
+    public XPCFilter(Expression condition, List<XPCPlan> children) {
         this.condition = condition;
         this.children = children;
     }
@@ -27,7 +26,7 @@ public class LogicalFilter extends LogicalPlan {
 
 
     @Override
-    public List<LogicalPlan> getChildren() {
+    public List<XPCPlan> getChildren() {
         return children;
     }
 

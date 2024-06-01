@@ -6,7 +6,6 @@ import com.chainmaker.jobservice.api.model.bo.job.Job;
 import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
 import com.chainmaker.jobservice.api.model.bo.job.task.*;
 import com.chainmaker.jobservice.api.model.bo.job.task.Module;
-import com.chainmaker.jobservice.api.model.vo.ServiceVo;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.FieldInfo;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
@@ -17,9 +16,9 @@ import com.chainmaker.jobservice.core.calcite.relnode.MPCProject;
 import com.chainmaker.jobservice.core.calcite.utils.ParserWithOptimizerReturnValue;
 import com.chainmaker.jobservice.core.optimizer.plans.*;
 import com.chainmaker.jobservice.core.parser.plans.FederatedLearning;
-import com.chainmaker.jobservice.core.parser.plans.LogicalHint;
-import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
-import com.chainmaker.jobservice.core.parser.plans.LogicalProject;
+import com.chainmaker.jobservice.core.parser.plans.XPCHint;
+import com.chainmaker.jobservice.core.parser.plans.XPCPlan;
+import com.chainmaker.jobservice.core.parser.plans.XPCProject;
 import com.chainmaker.jobservice.core.parser.tree.*;
 import com.google.gson.Gson;
 import org.apache.calcite.plan.RelOptUtil;
@@ -33,7 +32,6 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.commons.lang3.StringUtils;
-import org.aspectj.apache.bcel.classfile.ModulePackages;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -85,8 +83,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private List<Task> mergedTasks = new ArrayList<>();
     private List<Task> taskcp = new ArrayList<>();
     private LinkedHashSet<String> jobParties = new LinkedHashSet<>();
-    private LogicalPlan OriginPlan;
-    private LogicalHint hint;
+    private XPCPlan OriginPlan;
+    private XPCHint hint;
     private HashMap<String, String> columnInfoMap;
     private String orgID;
     private String sql;
@@ -99,9 +97,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         this.createTime = String.valueOf(System.currentTimeMillis());
         this.jobID = UUID.randomUUID().toString().replace("-", "").toLowerCase();
         this.metadata = MPCMetadata.getInstance();
-        if (OriginPlan instanceof LogicalHint) {
-            hint = (LogicalHint) OriginPlan;
-            OriginPlan = (LogicalPlan) OriginPlan.getChildren().get(0);
+        if (OriginPlan instanceof XPCHint) {
+            hint = (XPCHint) OriginPlan;
+            OriginPlan = (XPCPlan) OriginPlan.getChildren().get(0);
         } else {
             hint = null;
         }
@@ -844,7 +842,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * 生成FL和TEE相关的Task
      * @param node
      */
-    public void generateFLTasks(LogicalPlan node) {
+    public void generateFLTasks(XPCPlan node) {
         if (node instanceof FederatedLearning) {
             tasks.add(parseFederatedLearning((FederatedLearning) node));
             /*
@@ -864,11 +862,11 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                         REVEAL_EVERY_ITER=TRUE],
                     eval=[EVAL_TYPE=BINARY]}
              */
-        } else if (node instanceof LogicalProject) {
+        } else if (node instanceof XPCProject) {
             /*
                 "select adata.a1, testt(adata.a1, bdata.b1) from adata, bdata";
              */
-            List<NamedExpression> namedExpressionList = ((LogicalProject) node).getProjectList().getValues();
+            List<NamedExpression> namedExpressionList = ((XPCProject) node).getProjectList().getValues();
             for (NamedExpression ne : namedExpressionList) {
                 Expression expr = ne.getExpression();
                 boolean funcTee = false;

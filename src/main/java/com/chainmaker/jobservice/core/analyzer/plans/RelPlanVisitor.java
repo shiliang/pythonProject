@@ -1,7 +1,5 @@
 package com.chainmaker.jobservice.core.analyzer.plans;
 
-import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
-
 /**
  * @author gaokang
  * @date 2022-08-30 19:54

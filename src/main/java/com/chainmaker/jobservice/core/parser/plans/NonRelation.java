@@ -4,13 +4,13 @@ import org.apache.calcite.rel.RelNode;
 
 import java.util.List;
 
-public class NonRelation extends LogicalPlan {
+public class NonRelation extends XPCPlan {
 
     public NonRelation() {}
 
 
     @Override
-    public List<LogicalPlan> getChildren() {
+    public List<XPCPlan> getChildren() {
         return null;
     }
 

@@ -1,8 +1,8 @@
 package com.chainmaker.jobservice.core.optimizer;
 
-import com.chainmaker.jobservice.core.parser.plans.LogicalPlan;
+import com.chainmaker.jobservice.core.parser.plans.XPCPlan;
 import com.chainmaker.jobservice.core.parser.plans.LogicalPlanVisitor;
-import com.chainmaker.jobservice.core.parser.plans.LogicalProject;
+import com.chainmaker.jobservice.core.parser.plans.XPCProject;
 
 /**
  * @author gaokang
@@ -12,12 +12,12 @@ import com.chainmaker.jobservice.core.parser.plans.LogicalProject;
  */
 
 public class RuleBasedOptimizer extends LogicalPlanVisitor {
-    public void visit(LogicalPlan plan) {
+    public void visit(XPCPlan plan) {
         plan.accept(this);
     }
 
-    public void visit(LogicalProject node) {
-        for (LogicalPlan child: node.getChildren()) {
+    public void visit(XPCProject node) {
+        for (XPCPlan child: node.getChildren()) {
             child.accept(this);
         }
     }

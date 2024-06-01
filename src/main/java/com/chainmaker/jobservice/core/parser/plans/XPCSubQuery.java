@@ -5,24 +5,24 @@ import org.apache.calcite.rel.RelNode;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SubQuery extends LogicalPlan {
+public class XPCSubQuery extends XPCPlan {
     private final String alias;
-    private final LogicalPlan child;
+    private final XPCPlan child;
     private final boolean isAlias;
 
-    public SubQuery(String alias, LogicalPlan child) {
+    public XPCSubQuery(String alias, XPCPlan child) {
         this.alias = alias;
         this.child = child;
         this.isAlias = true;
     }
 
-    public SubQuery(LogicalPlan child) {
+    public XPCSubQuery(XPCPlan child) {
         this.alias = "default_name";
         this.child = child;
         this.isAlias = false;
     }
 
-    public LogicalPlan getChild() {
+    public XPCPlan getChild() {
         return child;
     }
 
@@ -37,8 +37,8 @@ public class SubQuery extends LogicalPlan {
 
 
     @Override
-    public List<LogicalPlan> getChildren() {
-        List<LogicalPlan> children = new ArrayList<>();
+    public List<XPCPlan> getChildren() {
+        List<XPCPlan> children = new ArrayList<>();
         children.add(child);
         return children;
     }

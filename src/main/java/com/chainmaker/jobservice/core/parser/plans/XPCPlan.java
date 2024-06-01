@@ -9,7 +9,7 @@ import org.apache.calcite.rel.RelNode;
  * Filter
  * Join
  */
-public abstract class LogicalPlan extends Node {
+public abstract class XPCPlan extends Node {
 
     public void accept(LogicalPlanVisitor visitor) {
         visitor.visit(this);

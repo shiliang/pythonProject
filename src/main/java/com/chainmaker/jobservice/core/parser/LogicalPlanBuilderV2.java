@@ -32,15 +32,15 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     private HashMap<String, String> tableNameMap = new HashMap<>();
     public List<String> modelNameList = new ArrayList<>();
     private static final String DEFAULT_ERROR = "SQL语法暂不支持";
-    private LogicalPlan logicalPlan;
-    private HashMap<String, LogicalPlan> joinCache = new HashMap<>();
-    private LogicalJoin rootJoin;
+    private XPCPlan logicalPlan;
+    private HashMap<String, XPCPlan> joinCache = new HashMap<>();
+    private XPCJoin rootJoin;
     private Expression rootFilterExpression;
     private LogicalExpression.Operator currentOp = LogicalExpression.Operator.AND;
 
     private Set<String> assetAndColumnList = new HashSet<>();
 
-    private HashMap<String,LogicalPlan> subQueryTables = Maps.newHashMap();
+    private HashMap<String, XPCPlan> subQueryTables = Maps.newHashMap();
 
     public  List<String> getColumnList() {
         final String regexStr = "\\d+.\\d*";
@@ -71,19 +71,19 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     /**
      * 回填group by中空缺的需要聚合的列信息
      */
-    public void backFillGroupBy(LogicalPlan root) {
-        if (root instanceof LogicalAggregate) {
+    public void backFillGroupBy(XPCPlan root) {
+        if (root instanceof XPCAggregate) {
 //            ((LogicalAggregate) root).addAggCallAll(aggCallList);
             return;
         } else {
             for (Node child : root.getChildren()) {
-                backFillGroupBy((LogicalPlan) child);
+                backFillGroupBy((XPCPlan) child);
             }
         }
     }
 
     @Override
-    public LogicalPlan visitSingleStatement(SingleStatementContext context) {
+    public XPCPlan visitSingleStatement(SingleStatementContext context) {
         if (context.statement() instanceof StatementDefaultContext) {
             return visitStatementDefault((StatementDefaultContext) context.statement());
         } else {
@@ -92,12 +92,12 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     }
 
     @Override
-    public LogicalPlan visitStatementDefault(StatementDefaultContext context) {
+    public XPCPlan visitStatementDefault(StatementDefaultContext context) {
         return visitQuery(context.query());
     }
 
     @Override
-    public LogicalPlan visitQuery(QueryContext context) {
+    public XPCPlan visitQuery(QueryContext context) {
         if (context.queryTerm() instanceof QueryTermDefaultContext) {
             return visitQueryTermDefault((QueryTermDefaultContext) context.queryTerm());
         } else {
@@ -106,7 +106,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     }
 
     @Override
-    public LogicalPlan visitQueryTermDefault(QueryTermDefaultContext context) {
+    public XPCPlan visitQueryTermDefault(QueryTermDefaultContext context) {
         if (context.queryPrimary() instanceof QueryPrimaryDefaultContext) {
             return visitQueryPrimaryDefault((QueryPrimaryDefaultContext)context.queryPrimary());
         } else {
@@ -114,12 +114,12 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         }
     }
     @Override
-    public LogicalPlan visitQueryPrimaryDefault(QueryPrimaryDefaultContext context) {
+    public XPCPlan visitQueryPrimaryDefault(QueryPrimaryDefaultContext context) {
         if (context.querySpecification() instanceof RegularQuerySpecificationContext) {
             if (((RegularQuerySpecificationContext) context.querySpecification()).selectClause().hints.isEmpty()) {
                 return visitRegularQuerySpecification((RegularQuerySpecificationContext) context.querySpecification());
             } else {
-                LogicalPlan child = visitRegularQuerySpecification((RegularQuerySpecificationContext) context.querySpecification());
+                XPCPlan child = visitRegularQuerySpecification((RegularQuerySpecificationContext) context.querySpecification());
                 List<HintExpression> hintExpressions = new ArrayList<>();
                 for (HintStatementContext hintStatementContext: ((RegularQuerySpecificationContext) context.querySpecification()).selectClause().hint(0).hintStatement()) {
                     List<String> values = new ArrayList<>();
@@ -130,9 +130,9 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
                     HintExpression hintExpression = new HintExpression(key, values);
                     hintExpressions.add(hintExpression);
                 };
-                List<LogicalPlan> children = new ArrayList<>();
+                List<XPCPlan> children = new ArrayList<>();
                 children.add(child);
-                return new LogicalHint(hintExpressions, children);
+                return new XPCHint(hintExpressions, children);
             }
 
         } else {
@@ -141,14 +141,14 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     }
 
     @Override
-    public LogicalPlan visitRegularQuerySpecification(RegularQuerySpecificationContext context) {
+    public XPCPlan visitRegularQuerySpecification(RegularQuerySpecificationContext context) {
 
-        List<LogicalPlan> children = new ArrayList<>();
+        List<XPCPlan> children = new ArrayList<>();
 
         if (context.fromClause() == null) {
             throw new ParserException(DEFAULT_ERROR + ": " + "缺少From");
         } else if (context.whereClause() == null) {
-            List<LogicalPlan> fromList = visitFrom(context.fromClause());
+            List<XPCPlan> fromList = visitFrom(context.fromClause());
             children.addAll(fromList);
         } else {
             visitFrom(context.fromClause());
@@ -162,13 +162,14 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             FaderatedQueryExpression projectList = visitFederatedQueryExpression((FederatedQueryExpressionContext) context.selectClause().namedExpressionSeq());
 
             if (context.aggregationClause() == null) {
-                if (projectList.getValues().get(0).toString().equals("*")) {
-                    return children.get(0);
-                } else {
-                    return new LogicalProject(projectList, children);
-                }
+//                if (projectList.getValues().get(0).toString().equals("*")) {
+//                    return children.get(0);
+//                } else {
+//                    return new LogicalProject(projectList, children);
+//                }
+                return new XPCProject(projectList, children);
             } else {
-                LogicalProject child = new LogicalProject(projectList, children);
+                XPCProject child = new XPCProject(projectList, children);
                 if (context.havingClause() == null) {
                     return visitAggregate(context, List.of(child));
                 } else {
@@ -178,7 +179,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         }
     }
 
-    private LogicalPlan visitHaving(RegularQuerySpecificationContext context, List<LogicalPlan> children) {
+    private XPCPlan visitHaving(RegularQuerySpecificationContext context, List<XPCPlan> children) {
         Expression havingCond = visitBooleanExpression(context.havingClause().booleanExpression());
 //        System.out.println(havingCond);
 //        String[] sp = havingCond.toString().split(" |=|\\(|\\)|>|<|\\+|-|\\*|/|!=|,|\\[|]");
@@ -187,11 +188,11 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
 //                System.out.println(s);
 //            }
 //        }
-        LogicalPlan child = visitAggregate(context, children);
-        return new LogicalFilter(havingCond, List.of(child));
+        XPCPlan child = visitAggregate(context, children);
+        return new XPCFilter(havingCond, List.of(child));
     }
 
-    public LogicalPlan visitAggregate(RegularQuerySpecificationContext context, List<LogicalPlan> children) {
+    public XPCPlan visitAggregate(RegularQuerySpecificationContext context, List<XPCPlan> children) {
 
         List<Expression> groupKeys = new ArrayList<>();
 //        System.out.println(context.aggregationClause().groupByClause());
@@ -199,7 +200,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             groupKeys.add(visitExpression(ctx.expression()));
         }
         List<Expression> aggCallList = new ArrayList<>();
-        return new LogicalAggregate(groupKeys, aggCallList, children);
+        return new XPCAggregate(groupKeys, aggCallList, children);
     }
 //    public LogicalPlan visitWhere(RegularQuerySpecificationContext context) {
 //        Expression expression = visitBooleanExpression(context.whereClause().booleanExpression());
@@ -207,7 +208,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
 //        return new LogicalFilter(expression, children);
 //    }
 
-    public LogicalPlan visitWhere(RegularQuerySpecificationContext context) {
+    public XPCPlan visitWhere(RegularQuerySpecificationContext context) {
         Expression expression = visitBooleanExpression(context.whereClause().booleanExpression());
         if (expression instanceof ComparisonExpression) {
             dealWithComparisonExpression((ComparisonExpression) expression);
@@ -217,16 +218,16 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             throw new ParserException("暂不支持的where语法");
         }
         if (rootJoin == null) {
-            List<LogicalPlan> children = visitFrom(context.fromClause());
-            return new LogicalFilter(rootFilterExpression, children);
+            List<XPCPlan> children = visitFrom(context.fromClause());
+            return new XPCFilter(rootFilterExpression, children);
         } else if (rootFilterExpression == null) {
             visitFrom(context.fromClause());
             return rootJoin;
         } else {
             visitFrom(context.fromClause());
-            List<LogicalPlan> children = new ArrayList<>();
+            List<XPCPlan> children = new ArrayList<>();
             children.add(rootJoin);
-            return new LogicalFilter(rootFilterExpression, children);
+            return new XPCFilter(rootFilterExpression, children);
         }
 
     }
@@ -251,23 +252,23 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         if (expression.getLeft() instanceof DereferenceExpression && expression.getRight() instanceof DereferenceExpression) {
             String leftTable = ((DereferenceExpression) expression.getLeft()).getBase().toString();
             String rightTable = ((DereferenceExpression) expression.getRight()).getBase().toString();
-            LogicalPlan left, right;
+            XPCPlan left, right;
             if (joinCache.containsKey(leftTable)) {
                 left = joinCache.get(leftTable);
             } else if(subQueryTables.containsKey(leftTable)) {
                 left = subQueryTables.get(leftTable);
             } else{
-                left = new LogicalTable(((DereferenceExpression) expression.getLeft()).getBase().toString());
+                left = new XPCTable(((DereferenceExpression) expression.getLeft()).getBase().toString());
             }
             if (joinCache.containsKey(rightTable)) {
                 right = joinCache.get(rightTable);
             } else if(subQueryTables.containsKey(rightTable)) {
                 right = subQueryTables.get(rightTable);
             }else {
-                right = new LogicalTable(((DereferenceExpression) expression.getRight()).getBase().toString());
+                right = new XPCTable(((DereferenceExpression) expression.getRight()).getBase().toString());
             }
-            LogicalJoin.Type joinType = LogicalJoin.Type.INNER;
-            LogicalJoin node = new LogicalJoin(expression, joinType, left, right);
+            XPCJoin.Type joinType = XPCJoin.Type.INNER;
+            XPCJoin node = new XPCJoin(expression, joinType, left, right);
             rootJoin = node;
             joinCache.put(((DereferenceExpression) expression.getLeft()).getBase().toString(), node);
             joinCache.put(((DereferenceExpression) expression.getRight()).getBase().toString(), node);
@@ -437,8 +438,8 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         return new FaderatedQueryExpression(namedExpressions);
     }
 
-    public List<LogicalPlan> visitFrom(FromClauseContext context) {
-        List<LogicalPlan> logicalPlans = new ArrayList<>();
+    public List<XPCPlan> visitFrom(FromClauseContext context) {
+        List<XPCPlan> logicalPlans = new ArrayList<>();
         for (int i=0; i<context.relation().size(); i++) {
             logicalPlans.add(visitRelation(context.relation(i)));
         }
@@ -446,25 +447,25 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     }
 
     @Override
-    public LogicalPlan visitRelation(RelationContext context) {
+    public XPCPlan visitRelation(RelationContext context) {
         if (context.relationExtension().isEmpty()) {
             return visitRelationPrimary(context.relationPrimary());
         } else {
             if (context.relationExtension(0).joinRelation().NATURAL() == null && context.relationExtension(0).joinRelation().joinCriteria() != null) {
-                LogicalJoin.Type joinType;
+                XPCJoin.Type joinType;
                 if (context.relationExtension(0).joinRelation().joinType().LEFT() != null) {
-                    joinType = LogicalJoin.Type.LEFT;
+                    joinType = XPCJoin.Type.LEFT;
                 } else if (context.relationExtension(0).joinRelation().joinType().RIGHT() != null) {
-                    joinType = LogicalJoin.Type.RIGHT;
+                    joinType = XPCJoin.Type.RIGHT;
                 } else if (context.relationExtension(0).joinRelation().joinType().FULL() != null) {
-                    joinType = LogicalJoin.Type.FULL;
+                    joinType = XPCJoin.Type.FULL;
                 } else {
-                    joinType = LogicalJoin.Type.INNER;
+                    joinType = XPCJoin.Type.INNER;
                 }
-                LogicalPlan left = visitRelationPrimary(context.relationPrimary());
-                LogicalPlan right = visitRelationPrimary(context.relationExtension(0).joinRelation().relationPrimary());
+                XPCPlan left = visitRelationPrimary(context.relationPrimary());
+                XPCPlan right = visitRelationPrimary(context.relationExtension(0).joinRelation().relationPrimary());
                 Expression expression = visitPredicated((PredicatedContext) context.relationExtension(0).joinRelation().joinCriteria().booleanExpression());
-                return new LogicalJoin(expression, joinType, left, right);
+                return new XPCJoin(expression, joinType, left, right);
             } else {
                 throw new ParserException(DEFAULT_ERROR + ": " + context.getText());
             }
@@ -472,7 +473,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     }
 
 
-    public LogicalPlan visitRelationPrimary(RelationPrimaryContext context) {
+    public XPCPlan visitRelationPrimary(RelationPrimaryContext context) {
         if (context instanceof TableNameContext) {
             return visitTableName((TableNameContext) context);
         } else if (context instanceof AliasedQueryContext) {
@@ -481,11 +482,11 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             if (queryTermContext instanceof QueryTermDefaultContext) {
                 QueryTermDefaultContext termCtx = (QueryTermDefaultContext) queryTermContext;
 //                LogicalPlan child = visitQueryTermDefault(termCtx);
-                LogicalPlan child = visitAliasedQuery(aliaseCtx);
+                XPCPlan child = visitAliasedQuery(aliaseCtx);
                 String tableAlias = aliaseCtx.tableAlias().getText();
-                SubQuery subQuery = new SubQuery(tableAlias, child);
+                XPCSubQuery subQuery = new XPCSubQuery(tableAlias, child);
                 subQueryTables.put(tableAlias, subQuery);
-                return new SubQuery(tableAlias, child);
+                return new XPCSubQuery(tableAlias, child);
             } else {
                 throw new ParserException(DEFAULT_ERROR + ": " + context.getText());
             }
@@ -493,7 +494,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             if (((AliasedRelationContext) context).relation().relationExtension().isEmpty()) {
                 throw new ParserException(DEFAULT_ERROR + ": " + context.getText());
             } else {
-                LogicalJoin logicalJoin = (LogicalJoin) visitRelation(((AliasedRelationContext) context).relation());
+                XPCJoin logicalJoin = (XPCJoin) visitRelation(((AliasedRelationContext) context).relation());
                 if (((AliasedRelationContext) context).tableAlias().strictIdentifier() != null) {
                     logicalJoin.setAlias(((AliasedRelationContext) context).tableAlias().strictIdentifier().getText());
                 }
@@ -505,15 +506,15 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     }
 
     // tableName或者db.tableName
-    public LogicalPlan visitTableName(TableNameContext context) {
+    public XPCPlan visitTableName(TableNameContext context) {
         String tableName = context.multipartIdentifier().errorCapturingIdentifier.identifier().getText();
         if (context.tableAlias().strictIdentifier() != null) {
             String alias = context.tableAlias().strictIdentifier().getText();
             tableNameMap.put(alias, tableName);
-            return new LogicalTable(tableName, alias);
+            return new XPCTable(tableName, alias);
         }
         tableNameMap.put(tableName, tableName);
-        return new LogicalTable(tableName);
+        return new XPCTable(tableName);
     }
 
 //    public LogicalPlan visitJoinRelation(JoinRelationContext context) {
@@ -684,7 +685,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     }
 
     @Override
-    public LogicalPlan visitAliasedQuery(AliasedQueryContext ctx) {
+    public XPCPlan visitAliasedQuery(AliasedQueryContext ctx) {
 //        QueryTermContext queryTermContext = ctx.query().queryTerm();
 //        if (queryTermContext instanceof QueryTermDefaultContext) {
 //            QueryTermDefaultContext termCtx = (QueryTermDefaultContext) queryTermContext;
