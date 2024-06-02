@@ -163,11 +163,32 @@ public class SqlParser {
         LogicalPlanPrinter printer = new LogicalPlanPrinter();
         printer.visitTree(logicalPlan, 0);
         log.info(String.valueOf(printer.logicalPlanString));
-        HashMap<String, String> tableOwnerMap = buildMetaData(assetInfoList);
+
         List<String> columnList = logicalPlanBuilder.getColumnList();
+        HashMap<String, TableInfo> metadata = getMetadata(columnList);
+        //检查sql是否可执行？
+        // 之前的sqlparser约用时1500ms
+        // 接入Calcite    3000ms
+        LogicPlanAdapter planAdapter = new LogicPlanAdapter(this.sql.toUpperCase(), logicalPlan, metadata, modelType);
+        try {
+            planAdapter.CastToRelNode(); //核心步骤，将LogicalPlan转换为Calcite的RelNode
+        }catch (Exception e){
+            log.error(e.getMessage(), e);
+//            System.exit(-1);
+        }
 
+        // 查询优化部分   300ms
+        RelNode root = planAdapter.getRoot();
+        log.info("calcite reltree: " + RelOptUtil.toString(root, SqlExplainLevel.ALL_ATTRIBUTES));
+
+        OptimizerPlanner planner = new OptimizerPlanner(root, true);
+        RelNode phyPlan = planner.optimize();
+
+        return new ParserWithOptimizerReturnValue(phyPlan, logicalPlan);
+    }
+
+    private HashMap<String, TableInfo> getMetadata(List<String> columnList) {
         HashMap<String, TableInfo> metadata = new HashMap<>();
-
         // 获取所需的元数据，即HashMap<String, TableInfo>
         for (AssetInfo assetInfo : assetInfoList) {
             HashMap<String, FieldInfo> fields = new HashMap<>();
@@ -196,25 +217,6 @@ public class SqlParser {
             TableInfo tableInfo = new TableInfo(fields, rowCount, tableName, assetInfo.getHolderCompany(), domainId, assetName);
             metadata.put(assetInfo.getAssetEnName(), tableInfo);
         }
-        //检查sql是否可执行？
-
-        // 之前的sqlparser约用时1500ms
-        // 接入Calcite    3000ms
-        LogicPlanAdapter planAdapter = new LogicPlanAdapter(this.sql.toUpperCase(), logicalPlan, metadata, modelType);
-        try {
-            planAdapter.CastToRelNode(); //核心步骤，将LogicalPlan转换为Calcite的RelNode
-        }catch (Exception e){
-            log.error(e.getMessage(), e);
-//            System.exit(-1);
-        }
-
-        // 查询优化部分   300ms
-        RelNode root = planAdapter.getRoot();
-        log.info("calcite reltree: " + RelOptUtil.toString(root, SqlExplainLevel.ALL_ATTRIBUTES));
-
-        OptimizerPlanner planner = new OptimizerPlanner(root, true);
-        RelNode phyPlan = planner.optimize();
-
-        return new ParserWithOptimizerReturnValue(phyPlan, logicalPlan);
+        return metadata;
     }
 }

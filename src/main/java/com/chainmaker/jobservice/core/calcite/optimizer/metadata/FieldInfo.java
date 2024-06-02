@@ -1,7 +1,11 @@
 package com.chainmaker.jobservice.core.calcite.optimizer.metadata;
 
+import com.alibaba.fastjson.JSON;
 import lombok.Data;
 import org.apache.calcite.sql.type.SqlTypeName;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 表中某项属性的相关元数据类
@@ -24,8 +28,10 @@ public class FieldInfo {
     public FieldInfo(String name, String type, Object maxValue, Object minValue, DistributionType disType, String tableName, int dataLength, String domainID, String domainName, String comments, String databaseName, String assetName) {
         fieldName = name;
         uniqueName = assetName+"."+name;
-        if (type.equalsIgnoreCase("INT")){
+        if (!type.equalsIgnoreCase("BIGINT") && type.toUpperCase().contains("INT")){
             type = "INTEGER";
+        }else if(type.toUpperCase().contains("TEXT")){
+            type = "VARCHAR";
         }
         fieldType = SqlTypeName.get(type.toUpperCase());
         this.maxValue = maxValue;
@@ -42,5 +48,53 @@ public class FieldInfo {
     public enum DistributionType {
         Uniform,
         Normal,
+    }
+
+    public static void main(String[] args) {
+        List<String> mysqlDataTypes = new ArrayList<>();
+        // 整数类型
+        mysqlDataTypes.add("TINYINT");
+        mysqlDataTypes.add("SMALLINT");
+        mysqlDataTypes.add("MEDIUMINT");
+        mysqlDataTypes.add("INT");
+        mysqlDataTypes.add("INT UNSIGNED");
+        mysqlDataTypes.add("INTEGER");
+        mysqlDataTypes.add("BIGINT");
+
+        // 浮点数类型
+        mysqlDataTypes.add("FLOAT");
+        mysqlDataTypes.add("DOUBLE");
+        mysqlDataTypes.add("DECIMAL");
+        mysqlDataTypes.add("NUMERIC");
+
+        // 字符串类型
+        mysqlDataTypes.add("CHAR");
+        mysqlDataTypes.add("VARCHAR");
+        mysqlDataTypes.add("TEXT");
+        mysqlDataTypes.add("BINARY");
+        mysqlDataTypes.add("VARBINARY");
+        mysqlDataTypes.add("TINYTEXT");
+        mysqlDataTypes.add("TEXT");
+        mysqlDataTypes.add("MEDIUMTEXT");
+        mysqlDataTypes.add("LONGTEXT");
+        mysqlDataTypes.add("TINYBLOB");
+        mysqlDataTypes.add("BLOB");
+        mysqlDataTypes.add("MEDIUMBLOB");
+        mysqlDataTypes.add("LONGBLOB");
+
+        // 其他类型
+        mysqlDataTypes.add("TEXT");
+        mysqlDataTypes.add("DATE");
+        mysqlDataTypes.add("TIME");
+        mysqlDataTypes.add("DATETIME");
+        mysqlDataTypes.add("TIMESTAMP");
+        mysqlDataTypes.add("YEAR");
+
+        // 打印存储的类型
+        for (String dataType : mysqlDataTypes) {
+            FieldInfo fieldType = new FieldInfo("test", dataType, null, null, null, null, 0, null, null, null, null, null);
+            System.out.println("dataType: " + dataType + "   convert to: " + JSON.toJSONString(fieldType));
+        }
+
     }
 }
