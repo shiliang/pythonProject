@@ -70,8 +70,16 @@ public class TestCalcite {
         RelNode ans1 = builder.push(ans0).project(projections, projectionNames).build();
 
         List<String> fieldNames = ans1.getRowType().getFieldNames();
+        int cnt = ans1.getRowType().getFieldCount();
         builder.push(ans1);
-        List<RexNode> newProjects = fieldNames.stream().map(x -> builder.alias(builder.field(x), "tmp_inner." + x)).collect(Collectors.toList());
+//        List<RexNode> newProjects = fieldNames.stream().map(x -> builder.alias(builder.field(x), "tmp_inner." + x)).collect(Collectors.toList());
+        List<RexNode> newProjects = Lists.newArrayList();
+        for(int i = 0; i < cnt; i++) {
+            RexNode node = builder.getRexBuilder().makeInputRef(ans1, i);
+            newProjects.add(node);
+        }
+        newProjects.clear();
+        newProjects.add(builder.getRexBuilder().makeRangeReference(ans1));
         RelNode ans2 = builder.push(ans1).project(newProjects).as("test1").build();
         builder.build();
 

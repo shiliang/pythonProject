@@ -6,6 +6,7 @@ import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
 import com.chainmaker.jobservice.core.parser.plans.*;
 import com.chainmaker.jobservice.core.parser.tree.*;
+import com.google.common.collect.Lists;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.Enumerable;
@@ -238,9 +239,11 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
             relChilds[i] = xpcPlan.accept(this);
             builder.push(relChilds[i]);
             if(xpcPlan instanceof XPCSubQuery){
-                builder.as(((XPCSubQuery) xpcPlan).getAlias());
+                List<String> newFields = relChilds[i].getRowType().getFieldNames().stream().map(x -> ((XPCSubQuery) xpcPlan).getAlias() + "." + x).collect(Collectors.toList());
+                multiTableList.addAll(newFields);
+            }else {
+                multiTableList.addAll(relChilds[i].getRowType().getFieldNames());
             }
-            multiTableList.addAll(relChilds[i].getRowType().getFieldNames());
             if (i != childNum-1) {
                 multiTableList.add("::");
             }
@@ -257,6 +260,9 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
             RexNode proj = dealWithExpression(expr);
             String name = StringUtils.isNotEmpty(alias)? alias : expr.toString();
             projectionNames.add(name);
+            if(expr instanceof Identifier){
+
+            }
             if (alias != null) {
                 projections.add(builder.alias(proj, alias));
             } else {
@@ -424,7 +430,11 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
     public RelNode visit(XPCSubQuery subQuery){
         XPCPlan child = subQuery.getChildren().get(0);
         RelNode node = child.accept(this);
-        return node;
+        String alias = subQuery.getAlias();
+        List<String> newNames = node.getRowType().getFieldNames().stream().map(x -> alias + "." + x).collect(Collectors.toList());
+        List<RexNode> projections = Lists.newArrayList();
+        newNames.forEach(x -> projections.add(builder.getRexBuilder().makeInputRef(node, newNames.indexOf(x))));
+        return builder.push(node).project(projections, newNames).build();
     }
 
     /**
