@@ -5,11 +5,14 @@ import com.chainmaker.jobservice.core.antlr4.gen.SqlBaseLexer;
 import com.chainmaker.jobservice.core.antlr4.gen.SqlBaseParser;
 import com.chainmaker.jobservice.core.antlr4.gen.SqlBaseParser.*;
 import com.chainmaker.jobservice.core.antlr4.gen.SqlBaseParserBaseVisitor;
+import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import com.chainmaker.jobservice.core.parser.plans.*;
 import com.chainmaker.jobservice.core.parser.tree.*;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
@@ -26,6 +29,7 @@ import java.util.stream.Collectors;
  * @description:
  * @version:
  */
+@Slf4j
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
@@ -142,38 +146,41 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
 
     @Override
     public XPCPlan visitRegularQuerySpecification(RegularQuerySpecificationContext context) {
+        log.info(context.getText());
+        List<XPCPlan> children = Lists.newArrayList();
 
-        List<XPCPlan> children = new ArrayList<>();
+        NamedExpressionSeqContext namedExpressionSeqCtx = context.selectClause().namedExpressionSeq();
+        FromClauseContext fromClauseCtx = context.fromClause();
+        WhereClauseContext whereClauseCtx = context.whereClause();
+        AggregationClauseContext aggregationClauseCtx = context.aggregationClause();
+        HavingClauseContext havingClauseCtx = context.havingClause();
 
-        if (context.fromClause() == null) {
+        if (fromClauseCtx == null) {
             throw new ParserException(DEFAULT_ERROR + ": " + "缺少From");
-        } else if (context.whereClause() == null) {
-            List<XPCPlan> fromList = visitFrom(context.fromClause());
-            children.addAll(fromList);
         } else {
-            visitFrom(context.fromClause());
-            children.add(visitWhere(context));
+            if (whereClauseCtx == null) {
+                List<XPCPlan> fromList = visitFrom(fromClauseCtx);
+                children.addAll(fromList);
+            } else {
+                visitFrom(fromClauseCtx); //搜索出同级别的所有的临时表。因此同样的内部嵌套可能会遍历2遍。
+                children.add(visitWhere(context));
+            }
         }
 
-        if (context.selectClause().namedExpressionSeq() instanceof FederatedLearningExpressionContext) {
-            FederatedLearningExpression expression = visitFederatedLearningExpression((FederatedLearningExpressionContext) context.selectClause().namedExpressionSeq());
+        if (namedExpressionSeqCtx instanceof FederatedLearningExpressionContext) {
+            FederatedLearningExpression expression = visitFederatedLearningExpression((FederatedLearningExpressionContext) namedExpressionSeqCtx);
             return new FederatedLearning(expression, children);
         } else {
-            FaderatedQueryExpression projectList = visitFederatedQueryExpression((FederatedQueryExpressionContext) context.selectClause().namedExpressionSeq());
-
-            if (context.aggregationClause() == null) {
-//                if (projectList.getValues().get(0).toString().equals("*")) {
-//                    return children.get(0);
-//                } else {
-//                    return new LogicalProject(projectList, children);
-//                }
+            FederatedQueryExpressionContext expressionCtx = (FederatedQueryExpressionContext) namedExpressionSeqCtx;
+            SelectQueryExpression projectList = visitFederatedQueryExpression(expressionCtx);
+            if (aggregationClauseCtx == null) {
                 return new XPCProject(projectList, children);
             } else {
-                XPCProject child = new XPCProject(projectList, children);
-                if (context.havingClause() == null) {
-                    return visitAggregate(context, List.of(child));
+//                XPCProject child = new XPCProject(projectList, children);
+                if (havingClauseCtx == null) {
+                    return visitAggregate(context, children);
                 } else {
-                    return visitHaving(context, List.of(child));
+                    return visitHaving(context, children);
                 }
             }
         }
@@ -195,20 +202,24 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     public XPCPlan visitAggregate(RegularQuerySpecificationContext context, List<XPCPlan> children) {
 
         List<Expression> groupKeys = new ArrayList<>();
-//        System.out.println(context.aggregationClause().groupByClause());
         for (GroupByClauseContext ctx : context.aggregationClause().groupByClause()) {
             groupKeys.add(visitExpression(ctx.expression()));
         }
-        List<Expression> aggCallList = new ArrayList<>();
+        List<NamedExpression> aggCallList = new ArrayList<>();
+        NamedExpressionSeqContext ctx = context.selectClause().namedExpressionSeq();
+        List<NamedExpression> expressions = visitFederatedQueryExpression((FederatedQueryExpressionContext)ctx).getValues();
+        for (NamedExpression namedExpression : expressions) {
+            Expression expression = namedExpression.getExpression();
+            if (expression instanceof FunctionCallExpression) {
+                aggCallList.add(namedExpression);
+            }
+        }
         return new XPCAggregate(groupKeys, aggCallList, children);
     }
-//    public LogicalPlan visitWhere(RegularQuerySpecificationContext context) {
-//        Expression expression = visitBooleanExpression(context.whereClause().booleanExpression());
-//        List<LogicalPlan> children = visitFrom(context.fromClause());
-//        return new LogicalFilter(expression, children);
-//    }
+
 
     public XPCPlan visitWhere(RegularQuerySpecificationContext context) {
+        String text = context.getText();
         Expression expression = visitBooleanExpression(context.whereClause().booleanExpression());
         if (expression instanceof ComparisonExpression) {
             dealWithComparisonExpression((ComparisonExpression) expression);
@@ -429,13 +440,13 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     }
 
     @Override
-    public FaderatedQueryExpression visitFederatedQueryExpression(FederatedQueryExpressionContext context) {
+    public SelectQueryExpression visitFederatedQueryExpression(FederatedQueryExpressionContext context) {
         List<NamedExpression> namedExpressions = new ArrayList<>();
         for (int i=0; i<context.namedExpression().size(); i++) {
             NamedExpression namedExpression = visitNamedExpression(context.namedExpression(i));
             namedExpressions.add(namedExpression);
         }
-        return new FaderatedQueryExpression(namedExpressions);
+        return new SelectQueryExpression(namedExpressions);
     }
 
     public List<XPCPlan> visitFrom(FromClauseContext context) {
@@ -691,7 +702,9 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
 //            QueryTermDefaultContext termCtx = (QueryTermDefaultContext) queryTermContext;
 //            return visitQuery(ctx.query());
 //        }
-        subQueryTables.put(ctx.tableAlias().getText(), visitQuery(ctx.query()));
-        return visitQuery(ctx.query());
+        XPCPlan plan = visitQuery(ctx.query());
+        String tableName = ctx.tableAlias().getText();
+        subQueryTables.put(tableName, plan);
+        return plan;
     }
 }

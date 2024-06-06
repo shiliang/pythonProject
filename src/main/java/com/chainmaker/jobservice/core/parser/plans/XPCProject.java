@@ -1,6 +1,6 @@
 package com.chainmaker.jobservice.core.parser.plans;
 
-import com.chainmaker.jobservice.core.parser.tree.FaderatedQueryExpression;
+import com.chainmaker.jobservice.core.parser.tree.SelectQueryExpression;
 import org.apache.calcite.rel.RelNode;
 
 import java.util.List;
@@ -11,10 +11,10 @@ import java.util.List;
  * 目前SELECT只支持表达式，子节点为Filter
  */
 public class XPCProject extends XPCPlan {
-    private final FaderatedQueryExpression projectList;
+    private final SelectQueryExpression projectList;
     private final List<XPCPlan> children;
 
-    public XPCProject(FaderatedQueryExpression projectList, List<XPCPlan> children) {
+    public XPCProject(SelectQueryExpression projectList, List<XPCPlan> children) {
         this.projectList = projectList;
         this.children = children;
     }
@@ -24,7 +24,7 @@ public class XPCProject extends XPCPlan {
         this.projectList = null;
     }
 
-    public FaderatedQueryExpression getProjectList() {
+    public SelectQueryExpression getProjectList() {
         return projectList;
     }
 

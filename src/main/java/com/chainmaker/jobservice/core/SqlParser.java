@@ -162,7 +162,7 @@ public class SqlParser {
 
         LogicalPlanPrinter printer = new LogicalPlanPrinter();
         printer.visitTree(logicalPlan, 0);
-        log.info(String.valueOf(printer.logicalPlanString));
+        log.info("\n" + printer.logicalPlanString);
 
         List<String> columnList = logicalPlanBuilder.getColumnList();
         HashMap<String, TableInfo> metadata = getMetadata(columnList);

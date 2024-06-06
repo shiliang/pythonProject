@@ -85,7 +85,7 @@ public class OptimizerPlanner {
             planner.addRule(CoreRules.FILTER_INTO_JOIN);
             planner.addRule(CoreRules.FILTER_REDUCE_EXPRESSIONS);
             planner.addRule(CoreRules.CALC_REDUCE_EXPRESSIONS);
-            planner.addRule(CoreRules.PROJECT_REDUCE_EXPRESSIONS);
+//            planner.addRule(CoreRules.PROJECT_REDUCE_EXPRESSIONS);
             planner.addRule(CoreRules.JOIN_CONDITION_PUSH);
             planner.addRule(CoreRules.JOIN_PUSH_TRANSITIVE_PREDICATES);
             planner.addRule(CoreRules.JOIN_COMMUTE_OUTER);

@@ -14,10 +14,11 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.*;
@@ -29,7 +30,6 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.tools.RuleSet;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
@@ -178,13 +178,13 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
     @Override
     public RelNode visit(XPCAggregate node) {
         RelNode ans = null;
-        int childNum = node.getChildren().size();
+        int childNum = node.getChildren().size();//agg的子节点只有一个。
         RelNode[] childs = new RelNode[childNum];
         for (int i = 0; i < childNum; i++) {
             childs[i] = node.getChildren().get(i).accept(this);
             builder.push(childs[i]);
         }
-
+        RelNode child = childs[0];
         // 解析groupKey
         List<RexNode> rexkeys = new ArrayList<>();
         for (Expression e : node.getGroupKeys()) {
@@ -195,13 +195,46 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         // 解析AggCalls
         List<RelBuilder.AggCall> aggregateCalls = new ArrayList<>();
 
-        RelBuilder.AggCall sumB1 = builder.sum(builder.field("BDATA.B1"));
-
-        builder.aggregate(groupKeys, sumB1);
-
+        //field 全部按照full qualified来处理，因为这样的信息是最全的。
+//        RelBuilder.AggCall sumB1 = builder.sum(builder.field(""));
+//        aggregateCalls.add(sumB1);
+        for (NamedExpression e : node.getAggCallList()){
+            FunctionCallExpression expr = (FunctionCallExpression)e.getExpression();
+            String func = expr.getFunction().toUpperCase();
+            String field = ((Identifier)expr.getExpressions().get(0)).getIdentifier();
+            String fullQualifiedName = fullQualify(child, field);
+            String alias = e.getIdentifier().getIdentifier();
+            RelBuilder.AggCall aggCall = null;
+            RexInputRef ref = builder.getRexBuilder().makeInputRef(child, child.getRowType().getFieldNames().indexOf(fullQualifiedName));
+            switch (func){
+                case "SUM":
+                    aggCall= builder.sum(ref);
+                    break;
+                case "COUNT":
+                    aggCall = builder.count(ref);
+                    break;
+                case "MAX":
+                    aggCall = builder.max(ref);
+                    break;
+                case "MIN":
+                    aggCall = builder.min(ref);
+                    break;
+            }
+            assert aggCall != null;
+            aggregateCalls.add(aggCall.as(alias));
+        }
+//        builder.aggregate()
         builder.aggregate(groupKeys, aggregateCalls);
         ans = builder.build();
         return ans;
+    }
+
+    public String fullQualify(RelNode relNode, String field){
+        List<String> childOutputNames = relNode.getRowType().getFieldNames();
+        String tableName = StringUtils.split(childOutputNames.get(0), ".")[0];
+        String fullQualifiedName = tableName + "." + field;
+        assert childOutputNames.contains(fullQualifiedName);
+        return fullQualifiedName;
     }
 
     /**
@@ -431,6 +464,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         XPCPlan child = subQuery.getChildren().get(0);
         RelNode node = child.accept(this);
         String alias = subQuery.getAlias();
+
         List<String> newNames = node.getRowType().getFieldNames().stream().map(x -> alias + "." + x).collect(Collectors.toList());
         List<RexNode> projections = Lists.newArrayList();
         newNames.forEach(x -> projections.add(builder.getRexBuilder().makeInputRef(node, newNames.indexOf(x))));
@@ -461,9 +495,9 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         } else if (expr instanceof DereferenceExpression) {
             // 属性表达式（TA.ID， TB.B等）
             return dealWithDereferenceExpression((DereferenceExpression) expr);
-        } else if (expr instanceof FaderatedQueryExpression) {
+        } else if (expr instanceof SelectQueryExpression) {
             // 联邦查询相关
-            return dealWithFaderatedQueryExpression((FaderatedQueryExpression) expr);
+            return dealWithFaderatedQueryExpression((SelectQueryExpression) expr);
         } else if (expr instanceof FederatedLearningExpression) {
             // 联邦学习相关
             return dealWithFederatedLearningExpression((FederatedLearningExpression) expr);
@@ -512,7 +546,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         return null;
     }
 
-    private RexNode dealWithFaderatedQueryExpression(FaderatedQueryExpression expr) {
+    private RexNode dealWithFaderatedQueryExpression(SelectQueryExpression expr) {
         return null;
     }
 
