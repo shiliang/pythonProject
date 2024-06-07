@@ -118,7 +118,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     }
 
     public void build() {
-        String jobStatus = "WAITING";
+//        String jobStatus = "WAITING";
+        Integer jobStatus = 10;
         String taskDAG = "taskDAG";
         String jobType = "";
         if (modelType == 0 && isStream == 0) {
@@ -2152,7 +2153,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     public Task basicTask(String taskName) {
         Task task = new Task();
         String taskVersion = "1.0.0";
-        String taskStatus = "WAITING";
+//        String taskStatus = "WAITING";
+        Integer taskStatus = 0;
         task.setVersion(taskVersion);
         task.setCreateTime(createTime);
         task.setUpdateTime(createTime);

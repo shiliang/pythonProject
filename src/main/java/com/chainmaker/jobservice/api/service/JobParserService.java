@@ -44,7 +44,7 @@ public interface JobParserService {
      * @author gaokang
      * @date 2022/9/20 19:28
      */
-    Dag taskToDag(List<Task> tasks, String dataStatus);
+    Dag taskToDag(List<Task> tasks, Integer dataStatus);
 
 
     /***

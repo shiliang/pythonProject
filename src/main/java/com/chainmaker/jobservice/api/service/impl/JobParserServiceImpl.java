@@ -247,7 +247,7 @@ public class JobParserServiceImpl implements JobParserService {
 
 
     @Override
-    public Dag taskToDag(List<Task> tasks, String dataStatus) {
+    public Dag taskToDag(List<Task> tasks, Integer dataStatus) {
         Dag dag = new Dag();
         List<DagNode> nodes = new ArrayList<>();
         List<DagEdge> edges = new ArrayList<>();

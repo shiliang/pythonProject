@@ -2,6 +2,7 @@ package com.chainmaker.jobservice.core.calcite.adapter;
 
 import com.chainmaker.jobservice.core.calcite.cost.MPCCost;
 import com.chainmaker.jobservice.core.calcite.cost.MPCRelMetaDataProvider;
+import com.chainmaker.jobservice.core.calcite.optimizer.metadata.FieldInfo;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
 import com.chainmaker.jobservice.core.parser.plans.*;
@@ -14,9 +15,12 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.*;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.logical.LogicalAggregate;
+import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
@@ -464,11 +468,56 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         XPCPlan child = subQuery.getChildren().get(0);
         RelNode node = child.accept(this);
         String alias = subQuery.getAlias();
-
+        inheritTableInfo(alias, node);
         List<String> newNames = node.getRowType().getFieldNames().stream().map(x -> alias + "." + x).collect(Collectors.toList());
         List<RexNode> projections = Lists.newArrayList();
         newNames.forEach(x -> projections.add(builder.getRexBuilder().makeInputRef(node, newNames.indexOf(x))));
         return builder.push(node).project(projections, newNames).build();
+    }
+
+    public String getNodeTableName(RelNode node){
+        if(node instanceof LogicalTableScan){
+            LogicalTableScan scan = (LogicalTableScan) node;
+            return scan.getTable().getQualifiedName().get(0);
+        }else if(node instanceof LogicalProject){
+            LogicalProject project = (LogicalProject) node;
+            return getNodeTableName(project.getInput());
+        }else if(node instanceof LogicalAggregate){
+            LogicalAggregate aggregate = (LogicalAggregate) node;
+            return getNodeTableName(aggregate.getInput());
+        }else {
+            return getNodeTableName(node.getInput(0));
+        }
+    }
+
+    public void recognizeNodeFields(RelNode node){
+        List<String> fieldNames =node.getRowType().getFieldNames();
+        List<RelDataTypeField> fieldList = node.getRowType().getFieldList();
+        for(RelDataTypeField field: fieldList){
+            FieldInfo fieldInfo = FieldInfo.defaultValueField();
+            fieldInfo.setFieldName(field.getName());
+            fieldInfo.setFieldType(field.getType().getSqlTypeName());
+            fieldInfo.setDataLength(field.getType().getScale());
+            fieldInfo.setDomainID("1");
+            fieldInfo.setDomainName("org");
+            MPCMetadata.getInstance().getFieldNameInfoMap().put(field.getName(), fieldInfo);
+        }
+    }
+
+    public void inheritTableInfo(String table, RelNode node){
+        String inputTable = getNodeTableName(node);
+        MPCMetadata instance = MPCMetadata.getInstance();
+        TableInfo info = instance.getTable(inputTable);
+        TableInfo info2 = new TableInfo();
+        info2.setName(table);
+        info2.setAssetName(table);
+        info2.setFields(info.getFields());
+        info2.setRowCount(-1);
+        info2.setOrgDId(info.getOrgDId());
+        info2.setOrgName(info.getOrgName());
+        instance.getTables().put(table, info2);
+
+        recognizeNodeFields(node);
     }
 
     /**

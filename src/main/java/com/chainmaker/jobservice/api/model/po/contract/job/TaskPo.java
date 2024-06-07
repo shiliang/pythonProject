@@ -17,7 +17,7 @@ public class TaskPo {
     private String jobID;
     private String taskName;
     private String taskLabel;
-    private String status;
+    private Integer status;
     private String updateTime;
     private String createTime;
 

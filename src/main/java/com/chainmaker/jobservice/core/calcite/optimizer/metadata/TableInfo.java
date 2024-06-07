@@ -19,6 +19,10 @@ public class TableInfo {
     private String orgName;
 
 
+    public TableInfo() {
+
+    }
+
     public TableInfo(HashMap<String, FieldInfo> fields, double rowCount, String name, String belongsTo, String orgId, String assetName) {
         this.fields = fields;
         this.rowCount = rowCount;

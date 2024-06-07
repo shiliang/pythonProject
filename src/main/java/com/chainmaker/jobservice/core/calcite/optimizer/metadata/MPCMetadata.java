@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.core.calcite.optimizer.metadata;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexInputRef;
@@ -15,6 +16,8 @@ import java.util.List;
 /**
  * 单例类，全局共享一个MPCMetadata
  */
+
+@Data
 @Slf4j
 public class MPCMetadata {
     private HashMap<String, TableInfo> tables;

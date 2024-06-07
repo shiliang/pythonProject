@@ -45,6 +45,23 @@ public class FieldInfo {
         this.domainName = domainName;
     }
 
+    public static FieldInfo defaultValueField() {
+        return new FieldInfo(
+                "defaultValue",
+                "VARCHAR",
+                null,
+                null,
+                DistributionType.Uniform,
+                null,
+                0,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
     public enum DistributionType {
         Uniform,
         Normal,

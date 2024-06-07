@@ -77,7 +77,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
     }
 
     public void build() {
-        String jobStatus = "WAITING";
+//        String jobStatus = "WAITING";
+        Integer jobStatus = 10;
         String taskDAG = "taskDAG";
         String jobType = "";
         if (modelType == 0 && isStream == 0) {
@@ -486,7 +487,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
         Task task = new Task();
         String taskName = String.valueOf(plan.getId());
         String taskVersion = "1.0.0";
-        String taskStatus = "WAITING";
+//        String taskStatus = "WAITING";
+        Integer taskStatus = 0;
         task.setVersion(taskVersion);
         task.setCreateTime(createTime);
         task.setUpdateTime(createTime);

@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.model.po.contract.job.TaskInputDataPo;
 import com.chainmaker.jobservice.api.model.po.contract.job.TaskPo;
+import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,12 +16,13 @@ import java.util.List;
  * @version: 1.0.0
  */
 
+@Data
 public class Task {
     private String version;
     private String jobID;
     private String taskName;
     private String taskLabel;
-    private String status;
+    private Integer status;
     private String updateTime;
     private String createTime;
 
@@ -61,94 +63,6 @@ public class Task {
         input.setData(data);
         task.setInput(input);
         return task;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public void setVersion(String version) {
-        this.version = version;
-    }
-
-    public String getJobID() {
-        return jobID;
-    }
-
-    public void setJobID(String jobID) {
-        this.jobID = jobID;
-    }
-
-    public String getTaskName() {
-        return taskName;
-    }
-
-    public void setTaskName(String taskName) {
-        this.taskName = taskName;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getUpdateTime() {
-        return updateTime;
-    }
-
-    public void setUpdateTime(String updateTime) {
-        this.updateTime = updateTime;
-    }
-
-    public String getCreateTime() {
-        return createTime;
-    }
-
-    public void setCreateTime(String createTime) {
-        this.createTime = createTime;
-    }
-
-    public Module getModule() {
-        return module;
-    }
-
-    public void setModule(Module module) {
-        this.module = module;
-    }
-
-    public Input getInput() {
-        return input;
-    }
-
-    public void setInput(Input input) {
-        this.input = input;
-    }
-
-    public Output getOutput() {
-        return output;
-    }
-
-    public void setOutput(Output output) {
-        this.output = output;
-    }
-
-    public List<Party> getParties() {
-        return parties;
-    }
-
-    public void setParties(List<Party> parties) {
-        this.parties = parties;
-    }
-
-    public String getTaskLabel() {
-        return taskLabel;
-    }
-
-    public void setTaskLabel(String taskLabel) {
-        this.taskLabel = taskLabel;
     }
 
     @Override

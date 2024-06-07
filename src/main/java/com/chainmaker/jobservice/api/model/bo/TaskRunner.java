@@ -21,7 +21,7 @@ public class TaskRunner {
     private String version;
     private String jobID;
     private String taskName;
-    private String status;
+    private Integer status;
     private String updateTime;
     private String createTime;
 
