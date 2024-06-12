@@ -17,7 +17,7 @@ public class Task {
     private String taskName;
     private String taskId;
     private String taskLabel;
-    private String status;
+    private Integer status;
     private String updateTime;
     private String createTime;
 

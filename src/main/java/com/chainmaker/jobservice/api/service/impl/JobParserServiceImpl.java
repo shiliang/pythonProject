@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.api.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.chainmaker.jobservice.api.Constant;
 import com.chainmaker.jobservice.api.builder.JobBuilder;
 import com.chainmaker.jobservice.api.builder.JobBuilderWithOptimizer;
 import com.chainmaker.jobservice.api.model.*;
@@ -107,7 +108,7 @@ public class JobParserServiceImpl implements JobParserService {
 
 
     @Override
-    public Dag taskToDag(List<Task> tasks, String dataStatus) {
+    public Dag taskToDag(List<Task> tasks, Integer dataStatus) {
         Dag dag = new Dag();
         List<DagNode> nodes = new ArrayList<>();
         List<DagEdge> edges = new ArrayList<>();
@@ -173,7 +174,8 @@ public class JobParserServiceImpl implements JobParserService {
             for (Service service : services) {
                 TopologyNode node = new TopologyNode();
                 node.setId(service.getServiceId());
-                node.setStatus("WAITING");
+//                node.setStatus("WAITING");
+                node.setStatus(Constant.SERVICE_STATUS);
                 node.setServiceType(service.getServiceClass());
                 node.setNodeError(true);
                 node.setAverageTime("-");

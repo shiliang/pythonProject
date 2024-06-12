@@ -26,7 +26,7 @@ public class Job {
     private String modelType;
 
     private String projectID;
-    private String status;
+    private Integer status;
     private String requestData;
     private String tasksDAG;
     private List<Party> partyList;

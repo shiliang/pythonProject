@@ -2,6 +2,7 @@ package com.chainmaker.jobservice.api.model.vo;
 
 
 import com.alibaba.fastjson.JSONObject;
+import lombok.Data;
 import org.antlr.v4.runtime.CharStreams;
 import org.apache.commons.codec.Charsets;
 import org.springframework.core.io.ClassPathResource;
@@ -17,6 +18,7 @@ import java.util.List;
  * @version: 1.0.0
  */
 
+@Data
 public class ServiceVo {
     /** 不可为空，service id */
     private String serviceId;
@@ -29,7 +31,7 @@ public class ServiceVo {
      */
     private Boolean manual;
     /** service状态 */
-    private String status;
+    private Integer status;
     /** service创建日期时间戳 */
     private String createTime;
     /** service更新日期时间戳 */
@@ -76,173 +78,7 @@ public class ServiceVo {
         return JSONObject.parseObject(serviceVoStr, ServiceVo.class);
     }
 
-//    public static ServiceVo serviceToServiceVo(Service service, String templateId) {
-//        ServiceVo serviceVo = ServiceVo.templateToServiceVo(templateId, service.getServiceClass());
-//        serviceVo.setId(service.getId());
-//        serviceVo.setVersion(service.getVersion());
-//        serviceVo.setManual(service.getManual());
-//        serviceVo.setStatus(service.getStatus());
-//        serviceVo.setCreateTime(service.getCreateTime());
-//        serviceVo.setUpdateTime(service.getUpdateTime());
-//        serviceVo.setOrgDID(service.getOrgId());
-//        serviceVo.setServiceClass(service.getServiceClass());
-//        serviceVo.setServiceName(service.getServiceName());
-//        serviceVo.setNodePort(service.getNodePort());
-//
-//        for (ExposeEndpointVo exposeEndpointVo : serviceVo.getExposeEndpoints()) {
-//            for (String key : service.getExposeEndpoints().keySet()) {
-//                if (Objects.equals(exposeEndpointVo.getName(), key)) {
-//                    for (ExposeFormVo exposeFormVo : exposeEndpointVo.getForm()) {
-//                        if (service.getExposeEndpoints().get(key).get(exposeFormVo.getKey()) == null) {
-//                            exposeFormVo.setValues("");
-//                        } else {
-//                            exposeFormVo.setValues(service.getExposeEndpoints().get(key).get(exposeFormVo.getKey()));
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//
-//
-//
-//        List<ReferEndpoint> referEndpoints = new ArrayList<>(service.getReferEndpoints());
-//        serviceVo.setReferEndpoints(referEndpoints);
-//
-//        List<ValueVo> valueVos = new ArrayList<>();
-//        for (String key : service.getValues().keySet()) {
-//            ValueVo valueVo = new ValueVo();
-//            valueVo.setKey(key);
-//            valueVo.setValue(service.getValues().get(key));
-//            valueVos.add(valueVo);
-//        }
-//        serviceVo.setValues(valueVos);
-//
-//        List<ReferValueVo> referValueVos = new ArrayList<>();
-//        for (String key : service.getReferValues().keySet()) {
-//            ReferValueVo referValueVo = new ReferValueVo();
-//            referValueVo.setKey(key);
-//            referValueVos.add(referValueVo);
-//
-//        }
-//        serviceVo.setReferValues(referValreueVos);
-//        return serviceVo;
-//
-//    }
 
-
-
-    public String getOrgDID() {
-        return orgDID;
-    }
-
-    public void setOrgDID(String orgDID) {
-        this.orgDID = orgDID;
-    }
-
-    public String getServiceName() {
-        return serviceName;
-    }
-
-    public void setServiceName(String serviceName) {
-        this.serviceName = serviceName;
-    }
-
-    public String getServiceClass() {
-        return serviceClass;
-    }
-
-    public void setServiceClass(String serviceClass) {
-        this.serviceClass = serviceClass;
-    }
-
-    public String getServiceId() {
-        return serviceId;
-    }
-
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getCreateTime() {
-        return createTime;
-    }
-
-    public void setCreateTime(String createTime) {
-        this.createTime = createTime;
-    }
-
-    public String getUpdateTime() {
-        return updateTime;
-    }
-
-    public void setUpdateTime(String updateTime) {
-        this.updateTime = updateTime;
-    }
-
-    public void setServiceId(String serviceId) {
-        this.serviceId = serviceId;
-    }
-
-    public List<ExposeEndpointVo> getExposeEndpoints() {
-        return exposeEndpoints;
-    }
-
-    public void setExposeEndpoints(List<ExposeEndpointVo> exposeEndpoints) {
-        this.exposeEndpoints = exposeEndpoints;
-    }
-
-    public List<ReferEndpoint> getReferEndpoints() {
-        return referEndpoints;
-    }
-
-    public void setReferEndpoints(List<ReferEndpoint> referEndpoints) {
-        this.referEndpoints = referEndpoints;
-    }
-
-    public List<ValueVo> getValues() {
-        return values;
-    }
-
-    public void setValues(List<ValueVo> values) {
-        this.values = values;
-    }
-
-    public List<ReferValueVo> getReferValues() {
-        return referValues;
-    }
-
-    public void setReferValues(List<ReferValueVo> referValues) {
-        this.referValues = referValues;
-    }
-
-    public Integer getNodePort() {
-        return nodePort;
-    }
-
-    public void setNodePort(Integer nodePort) {
-        this.nodePort = nodePort;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public void setVersion(String version) {
-        this.version = version;
-    }
-
-    public Boolean getManual() {
-        return manual;
-    }
-
-    public void setManual(Boolean manual) {
-        this.manual = manual;
-    }
 
     @Override
     public String toString() {

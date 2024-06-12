@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.chainmaker.jobservice.api.Constant;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCFilter;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCJoin;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCProject;
@@ -240,7 +241,8 @@ public class PhysicalPlanPrinter {
         value.put("version", "");
         value.put("jobID", "");
         value.put("taskName", String.valueOf(curTaskName));
-        value.put("status", "WAITING");
+//        value.put("status", "WAITING");
+        value.put("status", Constant.TASK_STATUS);
         Date date = new Date();
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd :hh:mm:ss");
         value.put("updateTime", dateFormat.format(date).toString());

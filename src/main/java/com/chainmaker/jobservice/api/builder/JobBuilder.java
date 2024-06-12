@@ -2,6 +2,7 @@ package com.chainmaker.jobservice.api.builder;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.chainmaker.jobservice.api.Constant;
 import com.chainmaker.jobservice.api.model.*;
 import com.chainmaker.jobservice.api.model.job.Job;
 import com.chainmaker.jobservice.api.model.job.service.*;
@@ -102,7 +103,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
         job.setJobId(jobID);
         job.setModelType(jobType);
-        job.setStatus(jobStatus);
+//        job.setStatus(jobStatus);
+        job.setStatus(Constant.JOB_STATUS);
         job.setCreateTime(createTime);
         job.setUpdateTime(createTime);
         job.setTasksDAG(taskDAG);
@@ -499,7 +501,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
         task.setVersion(taskVersion);
         task.setCreateTime(createTime);
         task.setUpdateTime(createTime);
-        task.setStatus(taskStatus);
+//        task.setStatus(taskStatus);
+        task.setStatus(Constant.TASK_STATUS);
         task.setJobId(jobID);
         task.setTaskName(taskName);
         task.setTaskId(taskName);
@@ -573,7 +576,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
         String serviceStatus = "WAITING";
         serviceTee.setServiceId(String.valueOf(id));
         serviceTee.setVersion(serviceVersion);
-        serviceTee.setStatus(serviceStatus);
+//        serviceTee.setStatus(serviceStatus);
+        serviceTee.setStatus(Constant.SERVICE_STATUS);
         serviceTee.setCreateTime(createTime);
         serviceTee.setUpdateTime(createTime);
         return serviceTee;

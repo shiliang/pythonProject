@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.api.builder;
 
 import com.alibaba.fastjson.JSONObject;
+import com.chainmaker.jobservice.api.Constant;
 import com.chainmaker.jobservice.api.model.OrgInfo;
 import com.chainmaker.jobservice.api.model.job.Job;
 import com.chainmaker.jobservice.api.model.job.service.Service;
@@ -190,7 +191,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         job.setJobId(jobID);
         job.setJobName(jobID);
         job.setModelType(jobType);
-        job.setStatus(jobStatus);
+//        job.setStatus(jobStatus);
+        job.setStatus(Constant.JOB_STATUS);
         job.setCreateTime(createTime);
         job.setUpdateTime(createTime);
         job.setSubmitter(orgID);
@@ -2191,7 +2193,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         task.setVersion(taskVersion);
         task.setCreateTime(createTime);
         task.setUpdateTime(createTime);
-        task.setStatus(taskStatus);
+//        task.setStatus(taskStatus);
+        task.setStatus(Constant.TASK_STATUS);
         task.setJobId(jobID);
         task.setTaskName(taskName);
         task.setTaskId(taskName);
