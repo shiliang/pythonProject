@@ -1242,7 +1242,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         outputdata.setFinalResult("Y");
         outputdata.setDomainId(inputDatas.get(0).getDomainId());
         outputdata.setDomainName(inputDatas.get(0).getDomainName());
-        outputdata.setDataName(inputDatas.get(0).getDomainName());
         outputdata.setDataId("");
 
 //        output.setData(List.of(outputdata));
