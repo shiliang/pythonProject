@@ -2,6 +2,7 @@ package com.chainmaker.jobservice.api.builder;
 
 import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.Constant;
+import com.chainmaker.jobservice.api.enums.JobType;
 import com.chainmaker.jobservice.api.model.OrgInfo;
 import com.chainmaker.jobservice.api.model.job.Job;
 import com.chainmaker.jobservice.api.model.job.service.Service;
@@ -40,9 +41,11 @@ import java.util.stream.Collectors;
 import static com.chainmaker.jobservice.core.calcite.utils.ConstExprJudgement.isNumeric;
 
 public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
-    private enum JobType {
-        FQ, FQS, FL, FLS, CC, CCS, TEE, MPC
-    }
+//    private enum JobType {
+//        FQ(), FQS(), FL(), FLS(), CC(), CCS(), TEE(), MPC
+//    }
+
+
     private enum TaskType {
         QUERY, LOCALFILTER, LOCALJOIN, OTPSI, PSIRSA, TEEPSI, TEEAVG, MPC, MPCEXP, FL, TEE, LOCALMERGE, LOCALEXP, LOCALAGG, NOTIFY
     }
@@ -122,29 +125,29 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     public void build() {
         String jobStatus = "WAITING";
         String taskDAG = "taskDAG";
-        String jobType = "";
-        if (modelType == 0 && isStream == 0) {
-            jobType = JobType.FQ.name();
-        } else if (modelType == 0 && isStream == 1) {
-            jobType = JobType.CCS.name();
-        } else if (modelType == 1 && isStream == 0) {
-            jobType = JobType.FL.name();
-        } else if (modelType == 1 && isStream == 1) {
-            jobType = JobType.FLS.name();
-        } else if (modelType == 2 && isStream == 0) {
-            jobType = JobType.CC.name();
-        } else if (modelType == 2 && isStream == 1) {
-            jobType = JobType.CCS.name();
-        } else {
-            throw new ParserException("暂不支持的任务类型");
-        }
+        Integer jobType = null;
+//        if (modelType == 0 && isStream == 0) {
+//            jobType = JobType.FQ.name();
+//        } else if (modelType == 0 && isStream == 1) {
+//            jobType = JobType.CCS.name();
+//        } else if (modelType == 1 && isStream == 0) {
+//            jobType = JobType.FL.name();
+//        } else if (modelType == 1 && isStream == 1) {
+//            jobType = JobType.FLS.name();
+//        } else if (modelType == 2 && isStream == 0) {
+//            jobType = JobType.CC.name();
+//        } else if (modelType == 2 && isStream == 1) {
+//            jobType = JobType.CCS.name();
+//        } else {
+//            throw new ParserException("暂不支持的任务类型");
+//        }
 
         if (this.sql.contains("FL")) {
-            jobType = JobType.FL.name();
+            jobType = JobType.FL.getValue();
         }else if (this.sql.contains("TEE")) {
-            jobType = JobType.TEE.name();
+            jobType = JobType.TEE.getValue();
         }else {
-            jobType = JobType.MPC.name();
+            jobType = JobType.MPC.getValue();
         }
 
         System.out.println(

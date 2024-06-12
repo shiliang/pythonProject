@@ -23,7 +23,7 @@ public class Job {
     private String createUserId;
     private String createPartyName;
     private String createPartyId;
-    private String modelType;
+    private Integer modelType;
 
     private String projectID;
     private Integer status;
