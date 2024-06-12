@@ -62,6 +62,7 @@ public class OptimizerPlanner {
             planner.addRule(MPCJoinConverter.INSTANCE);
             planner.addRule(MPCUnionConverter.INSTANCE);
             planner.addRule(MPCSortConverter.INSTANCE);
+            planner.addRule(MPCAggregateConverter.INSTANCE);
 
 //            planner.removeRule(EnumerableRules.ENUMERABLE_PROJECT_RULE);
 //            planner.removeRule(EnumerableRules.ENUMERABLE_FILTER_RULE);

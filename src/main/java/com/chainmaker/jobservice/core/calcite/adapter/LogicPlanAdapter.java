@@ -8,6 +8,7 @@ import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
 import com.chainmaker.jobservice.core.parser.plans.*;
 import com.chainmaker.jobservice.core.parser.tree.*;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.linq4j.Enumerable;
@@ -62,6 +63,8 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
     private XPCHint hints;                   // 替换modelType，识别TEE
 
     private  Stack<String> subQueryTable = new Stack<>();
+
+    private Map<String, String> deriveTableMap = Maps.newHashMap();
 
     List<String> multiTableList = new ArrayList<>(); // 用于存储参加join的属性名
 
@@ -210,6 +213,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
             String alias = e.getIdentifier().getIdentifier();
             RelBuilder.AggCall aggCall = null;
             RexInputRef ref = builder.getRexBuilder().makeInputRef(child, child.getRowType().getFieldNames().indexOf(fullQualifiedName));
+
             switch (func){
                 case "SUM":
                     aggCall= builder.sum(ref);
@@ -475,37 +479,45 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         return builder.push(node).project(projections, newNames).build();
     }
 
-    public String getNodeTableName(RelNode node){
+    public String getReferenceTableName(RelNode node){
         if(node instanceof LogicalTableScan){
             LogicalTableScan scan = (LogicalTableScan) node;
             return scan.getTable().getQualifiedName().get(0);
         }else if(node instanceof LogicalProject){
             LogicalProject project = (LogicalProject) node;
-            return getNodeTableName(project.getInput());
+            return getReferenceTableName(project.getInput());
         }else if(node instanceof LogicalAggregate){
             LogicalAggregate aggregate = (LogicalAggregate) node;
-            return getNodeTableName(aggregate.getInput());
+            return getReferenceTableName(aggregate.getInput());
         }else {
-            return getNodeTableName(node.getInput(0));
+            return getReferenceTableName(node.getInput(0));
         }
     }
 
-    public void recognizeNodeFields(RelNode node){
+    public void recognizeNodeFields(String alias, RelNode node){
         List<String> fieldNames =node.getRowType().getFieldNames();
+//        String tableName = StringUtils.split(fieldNames.get(0), ".")[0];
+//        if(deriveTableMap.containsKey(tableName)){
+//            tableName = deriveTableMap.get(tableName);
+//        }
+        String tableName = getReferenceTableName(node);
+        TableInfo tableInfo = MPCMetadata.getInstance().getTable(tableName);
+        //转换为FieldInfo
         List<RelDataTypeField> fieldList = node.getRowType().getFieldList();
         for(RelDataTypeField field: fieldList){
             FieldInfo fieldInfo = FieldInfo.defaultValueField();
             fieldInfo.setFieldName(field.getName());
             fieldInfo.setFieldType(field.getType().getSqlTypeName());
             fieldInfo.setDataLength(field.getType().getScale());
-            fieldInfo.setDomainID("1");
-            fieldInfo.setDomainName("org");
-            MPCMetadata.getInstance().getFieldNameInfoMap().put(field.getName(), fieldInfo);
+            fieldInfo.setDomainID(tableInfo.getOrgDId());
+            fieldInfo.setDomainName(tableInfo.getOrgName());
+            String fullName = alias + "." + field.getName();
+            MPCMetadata.getInstance().getFieldNameInfoMap().put(fullName, fieldInfo);
         }
     }
 
     public void inheritTableInfo(String table, RelNode node){
-        String inputTable = getNodeTableName(node);
+        String inputTable = getReferenceTableName(node);
         MPCMetadata instance = MPCMetadata.getInstance();
         TableInfo info = instance.getTable(inputTable);
         TableInfo info2 = new TableInfo();
@@ -516,8 +528,8 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         info2.setOrgDId(info.getOrgDId());
         info2.setOrgName(info.getOrgName());
         instance.getTables().put(table, info2);
-
-        recognizeNodeFields(node);
+        deriveTableMap.put(table, inputTable);
+        recognizeNodeFields(table, node);
     }
 
     /**

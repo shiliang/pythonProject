@@ -1078,7 +1078,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                         }
                     }
                     System.out.println();
-                    tasks.add(generateProjectTask((MPCProject) phyPlan, phyTaskMap, (RexCall) node, inputList));
+                    tasks.add(generateProjectTask((MPCProject) phyPlan, phyTaskMap, node, inputList));
                 }
                 break;
             case "MPCJoin":
@@ -1118,12 +1118,16 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         return tasks;
     }
 
-    public Task generateProjectTask(MPCProject phyPlan, HashMap<RelNode, Task> phyTaskMap, RexCall node, List<String> inputList) {
+    public Task generateProjectTask(MPCProject phyPlan, HashMap<RelNode, Task> phyTaskMap, RexNode rexNode, List<String> inputList) {
         System.out.println("inputList:" + inputList);
         Task task = basicTask(String.valueOf(cnt++));
 
         // [AS(+($8, $7), ''), AS(SUM($4), ''), AS($0, '')]
         // 所有 project 默认最上层都是 AS 的 RexCall, 所以去掉一层之后才是真的 proj 的内容
+        if(!(rexNode instanceof RexCall)){
+            return null;
+        }
+        RexCall node = (RexCall)rexNode;
         RexNode proj = node.getOperands().get(0);
         // module信息（即进行什么操作）
         Module module = new Module();
