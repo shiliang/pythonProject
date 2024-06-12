@@ -1234,13 +1234,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 //        Output output = new Output();
         Output outputdata = new Output();
         outputdata.setDataName(inputDatas.get(0).getDomainId() + "-" + cnt);
-        outputdata.setColumnName(inputDatas.get(0).getColumnName());
+//        outputdata.setColumnName(inputDatas.get(0).getColumnName());
         outputdata.setLength(inputDatas.get(0).getLength());
         outputdata.setType(inputDatas.get(0).getType());
         outputdata.setFinalResult("Y");
         outputdata.setDomainId(inputDatas.get(0).getDomainId());
         outputdata.setDomainName(inputDatas.get(0).getDomainName());
-        outputdata.setDataName(inputDatas.get(0).getDomainName());
         outputdata.setDataId("");
 
 //        output.setData(List.of(outputdata));
