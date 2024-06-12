@@ -3,20 +3,7 @@ server:
   port: 5005
 
 catalog:
-  address: "java-backendservice"
-  port: "8008"
-#  address: "192.168.40.243"
-#  port: "31008"
-
-#net.devh.boot.grpc.server.config.GrpcServerProperties
-grpc:
-  client:
-    assetGrpcClient:
-      negotiationType: PLAINTEXT
-      address: static://192.168.1.134:8082
-    keyGrpcClient :
-      negotiationType: PLAINTEXT
-      address: static://192.168.1.134:8083
-    idaGrpcClient:
-      negotiationType: PLAINTEXT
-      address: static://192.168.1.134:8083
+#  address: "java-backendservice"
+#  port: "8008"
+  address: "192.168.40.243"
+  port: "31008"
