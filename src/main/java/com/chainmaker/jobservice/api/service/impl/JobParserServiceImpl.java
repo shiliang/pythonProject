@@ -117,7 +117,7 @@ public class JobParserServiceImpl implements JobParserService {
         int id = dataCount;
         for (Task task : tasks) {
             DagNode dagNode = new DagNode();
-            dagNode.setId(id);
+            dagNode.setId(String.valueOf(id));
             id += 1;
             String label = task.getModule().getModuleName() + "(" + task.getStatus() + ")";
             dagNode.setLabel(label);
@@ -130,13 +130,13 @@ public class JobParserServiceImpl implements JobParserService {
             for (InputDetail taskInputData : task.getInput().getInputDataDetailList()) {
                 if (!Objects.equals(taskInputData.getTaskSrc(), "")) {
                     DagEdge dagEdge = new DagEdge();
-                    dagEdge.setFrom(Integer.parseInt(taskInputData.getTaskSrc()));
-                    dagEdge.setTo(Integer.parseInt(taskName));
+                    dagEdge.setFrom(taskInputData.getTaskSrc());
+                    dagEdge.setTo(taskName);
                     dagEdge.setLabel(taskInputData.getDataName());
                     edges.add(dagEdge);
                 } else {
                     DagNode dataNode = new DagNode();
-                    dataNode.setId(capacity);
+                    dataNode.setId(String.valueOf(capacity));
 
                     String dataLabel = taskInputData.getDataName() + "(" + dataStatus + ")";
                     dataNode.setLabel(dataLabel);
@@ -146,8 +146,8 @@ public class JobParserServiceImpl implements JobParserService {
                     nodes.add(dataNode);
 
                     DagEdge dataEdge = new DagEdge();
-                    dataEdge.setFrom(capacity);
-                    dataEdge.setTo(Integer.parseInt(taskName));
+                    dataEdge.setFrom(String.valueOf(capacity));
+                    dataEdge.setTo(taskName);
                     dataEdge.setLabel(taskInputData.getDataName());
                     edges.add(dataEdge);
                     capacity += 1;
@@ -174,8 +174,8 @@ public class JobParserServiceImpl implements JobParserService {
             for (Service service : services) {
                 TopologyNode node = new TopologyNode();
                 node.setId(service.getServiceId());
-//                node.setStatus("WAITING");
-                node.setStatus(Constant.SERVICE_STATUS);
+                node.setStatus("WAITING");
+//                node.setStatus(Constant.SERVICE_STATUS);
                 node.setServiceType(service.getServiceClass());
                 node.setNodeError(true);
                 node.setAverageTime("-");

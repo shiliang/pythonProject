@@ -1,11 +1,15 @@
 package com.chainmaker.jobservice.api.model.graph;
 
+
+import lombok.Data;
+
+@Data
 public class DagNode {
 
     /**
      * 节点ID
      */
-    private int id;
+    private String id;
     /**
      * 任务名称
      */
@@ -22,46 +26,6 @@ public class DagNode {
      * 关联任务
      */
     private String findLabel;
-
-    public String getFindLabel() {
-        return findLabel;
-    }
-
-    public void setFindLabel(String findLabel) {
-        this.findLabel = findLabel;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
-    public String getShape() {
-        return shape;
-    }
-
-    public String getImage() {
-        return image;
-    }
-
-    public void setShape(String shape) {
-        this.shape = shape;
-    }
-
-    public void setImage(String image) {
-        this.image = image;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public String getLabel() {
-        return label;
-    }
 
     @Override
     public String toString() {

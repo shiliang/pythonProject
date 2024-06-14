@@ -12,13 +12,21 @@ import lombok.Data;
 @Data
 public class TopologyNode {
     private String name;
-    private Integer status;
+
+    private String status;
+
     private boolean nodeError;
+
     private String dataType;
+
     private String totalQueries;
+
     private String successRate;
+
     private String averageTime;
+
     private String id;
+
     private String serviceType;
 
 
