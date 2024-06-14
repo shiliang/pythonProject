@@ -1,7 +1,5 @@
 package com.chainmaker.jobservice.api.builder;
 
-import cn.hutool.core.util.ReUtil;
-import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.model.Service;
 import com.chainmaker.jobservice.api.model.bo.job.Job;
@@ -27,29 +25,24 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.*;
-import org.apache.calcite.sql.SqlExplainFormat;
-import org.apache.calcite.sql.SqlExplainLevel;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.NlsString;
 import org.apache.calcite.util.Pair;
 import org.apache.commons.lang3.StringUtils;
-import org.checkerframework.checker.index.qual.SameLen;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.chainmaker.jobservice.api.builder.CalciteUtil.fromNumericName2FieldName;
+import static com.chainmaker.jobservice.api.builder.CalciteUtil.getTableNameAndColumnName;
 import static com.chainmaker.jobservice.core.calcite.utils.ConstExprJudgement.isNumeric;
 
 
@@ -1078,22 +1071,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 //                notifyPSIOthers(tasks);
                 for (int i = 0; i < phyPlan.getRowType().getFieldNames().size(); i++) {
                     RexNode node = ((MPCProject) phyPlan).getProjects().get(i);
-                    List<String> inputList = new ArrayList<String>(List.of(phyPlan.getRowType().getFieldNames().get(i).split("\\+|-|\\*|/|%|\\[|]|\\(|\\)|,")));
-                    // 删除如 SUM[ADATA.A1] 这种split出来剩余 SUM 的情况
-                    for (int j = 0; j < inputList.size(); j++) {
-                        inputList.set(j,inputList.get(j).strip());
-                        if (!(inputList.get(j).contains("."))) {
-                            inputList.remove(j);
-                            j--;
-                            continue;
-                        }
-                        if (inputList.get(j).matches("[-+]?\\d*\\.?\\d+")) {
-                            inputList.remove(j);
-                            j--;
-                            continue;
-                        }
-                    }
-                    System.out.println();
+                    List<String> inputList = getInputList(phyPlan, i);
                     tasks.add(generateProjectTask((MPCProject) phyPlan, phyTaskMap, node, inputList));
                 }
                 break;
@@ -1134,6 +1112,29 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
 
         return tasks;
+    }
+
+    private List<String> getInputList(RelNode phyPlan, int i) {
+        List<String> fieldNames = phyPlan.getRowType().getFieldNames();
+        List<String> fullQualifiedNames = fieldNames.stream()
+                .map(x -> fromNumericName2FieldName(phyPlan, x)).collect(Collectors.toList());
+
+        List<String> inputList = new ArrayList<String>(List.of(fullQualifiedNames.get(i).split("\\+|-|\\*|/|%|\\[|]|\\(|\\)|,")));
+        // 删除如 SUM[ADATA.A1] 这种split出来剩余 SUM 的情况
+        for (int j = 0; j < inputList.size(); j++) {
+            inputList.set(j,inputList.get(j).strip());
+            if (!(inputList.get(j).contains("."))) {
+                inputList.remove(j);
+                j--;
+                continue;
+            }
+            if (inputList.get(j).matches("[-+]?\\d*\\.?\\d+")) {
+                inputList.remove(j);
+                j--;
+                continue;
+            }
+        }
+        return inputList;
     }
 
     public Task generateAggregateTask(MPCAggregate phyPlan, HashMap<RelNode, Task> phyTaskMap){
@@ -1177,6 +1178,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             inputData.setColumnName(pair.right);
             inputData.setType(field.getType().getFullTypeString());
             TableInfo inputTable = mpcMetadata.getTable(pair.left);
+
+            inputData.setDataName(inputTable.getOrgName());
+            inputData.setDataID(inputTable.getOrgDId());
+
             inputData.setDomainID(inputTable.getOrgDId());
             inputData.setDomainName(inputTable.getOrgName());
             inputData.setTaskSrc(childTask.getTaskName());
@@ -1191,6 +1196,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             outputData.setColumnName(pair.right);
             outputData.setType(field.getType().getFullTypeString());
             TableInfo inputTable = mpcMetadata.getTable(pair.left);
+
+            outputData.setDataName(inputTable.getOrgName());
+            outputData.setDataID(inputTable.getOrgDId());
+
             outputData.setDomainID(inputTable.getOrgDId());
             outputData.setDomainName(inputTable.getOrgName());
             outputDataList.add(outputData);
@@ -1206,40 +1215,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         return task;
     }
 
-    public Pair<String, String> getTableNameAndColumnName(String fieldName){
-        if (fieldName.contains(".")){
-            String[] split = StringUtils.split(fieldName , ".");
-            return Pair.of(split[0], split[1]);
-        }else{
-            return Pair.of(null, fieldName);
-        }
-    }
 
-    public String fromNumericName2FieldName(RelNode relNode, String numericalName){
-        String pattern1 = "\\{(\\d+)\\}";
-        String pattern2 = "\\$f(\\d+)";
-        String pattern3 = "(\\d+)";
-        Integer fieldRef = null;
-        if(ReUtil.isMatch(pattern1, numericalName)) {
-            fieldRef= Integer.valueOf(ReUtil.get(pattern1, numericalName, 1));
-        }else if(ReUtil.isMatch(pattern2, numericalName)){
-            fieldRef = Integer.valueOf(ReUtil.get(pattern2, numericalName, 1)) - 1;
-        }else if(ReUtil.isMatch(pattern3, numericalName)){
-            fieldRef = Integer.valueOf(numericalName);
-        }else{
-            return numericalName;
-        }
 
-        if (relNode instanceof TableScan){
-            List<String> fieldNames =relNode.getRowType().getFieldNames();
-            return fieldNames.get(fieldRef);
-        }else if(relNode instanceof RelSubset) {
-            relNode = ((RelSubset) relNode).getBest();
-        }else {
-            relNode = relNode.getInputs().get(0);
-        }
-        return fromNumericName2FieldName(relNode, numericalName);
-    }
+
 
     public Task generateProjectTask(MPCProject phyPlan, HashMap<RelNode, Task> phyTaskMap, RexNode rexNode, List<String> inputList) {
         log.info("inputList:" + inputList);
@@ -1248,8 +1226,18 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         // [AS(+($8, $7), ''), AS(SUM($4), ''), AS($0, '')]
         // 所有 project 默认最上层都是 AS 的 RexCall, 所以去掉一层之后才是真的 proj 的内容
         if(rexNode instanceof RexInputRef){
-            RexBuilder builder = phyPlan.getCluster().getRexBuilder();
-//            rexNode = builder.makeCall(SqlKind.AS, rexNode, builder.makeCharLiteral());
+            RexBuilder rexBuilder = phyPlan.getCluster().getRexBuilder();
+            RexNode stringLiteral = rexBuilder.makeLiteral("",
+                    rexBuilder.getTypeFactory().createSqlType(SqlTypeName.VARCHAR),
+                    false);
+            rexNode = rexBuilder.makeCall(new SqlAsOperator(), rexNode, stringLiteral);
+        }else if(rexNode instanceof RexLiteral){
+            RexLiteral rexLiteral = (RexLiteral)rexNode;
+            RexBuilder rexBuilder = phyPlan.getCluster().getRexBuilder();
+            RexNode stringLiteral = rexBuilder.makeLiteral(rexLiteral.getValue(),
+                    rexBuilder.getTypeFactory().createSqlType(SqlTypeName.VARCHAR),
+                    false);
+            rexNode = rexBuilder.makeCall(new SqlAsOperator(), rexNode, stringLiteral);
         }
         RexCall node = (RexCall)rexNode;
         RexNode proj = node.getOperands().get(0);
@@ -1275,8 +1263,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             }
         } else if (proj instanceof RexInputRef){
             module.setModuleName(TaskType.QUERY.name());
-        } else {
-            // System.out.println("RexElse" + proj);
+        } else if(proj instanceof RexLiteral){
+            module.setModuleName(TaskType.QUERY.name());
         }
         if (!constantList.isEmpty()) {
             String constants = "";
@@ -1298,7 +1286,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             String tableField = inputList.get(i);
             inputdata.setTaskSrc(childTask.getTaskName());
             inputdata.setDomainID(getFieldDomainID(tableField));
-            if (childTask.getTaskName().equals("") || childTask.getOutput().getData().get(0).getDataName().startsWith(inputdata.getDomainID())) {
+            if (childTask.getTaskName().equals("") ||
+                    childTask.getOutput().getData().get(0).getDataName().startsWith(inputdata.getDomainID())) {
                 inputdata.setDataName(childTask.getOutput().getData().get(0).getDataName());
                 inputdata.setDataID(childTask.getOutput().getData().get(0).getDataID());
             } else {
@@ -1323,7 +1312,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             }
             inputdata.setParams(inputParam);
             inputdata.setType(columnInfoMap.get(tableField.toUpperCase()));
-            TableInfo tableInfo = metadata.getTables().get(table);
+            TableInfo tableInfo = metadata.getTableInfoMap().get(table);
             inputdata.setTableName(tableInfo.getName());
             FieldInfo fieldInfo = tableInfo.getFields().get(tableField);
             inputdata.setColumnName(fieldInfo.getFieldName());
@@ -1469,7 +1458,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         inputData1Params.put("table", leftTable);
         inputData1Params.put("field", leftTableField);
         inputdata1.setType(columnInfoMap.get(leftField.toUpperCase()));
-        TableInfo leftTableInfo = metadata.getTables().get(leftTable);
+        TableInfo leftTableInfo = metadata.getTableInfoMap().get(leftTable);
         inputdata1.setTableName(leftTableInfo.getName());
         inputdata1.setAssetName(leftTableInfo.getAssetName());
         FieldInfo leftFieldInfo = leftTableInfo.getFields().get(leftField);
@@ -1500,7 +1489,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         inputData2Params.put("table", rightTable);
         inputData2Params.put("field", rightTableField);
         inputdata2.setType(columnInfoMap.get(rightField.toUpperCase()));
-        TableInfo rightTableInfo = metadata.getTables().get(rightTable);
+        TableInfo rightTableInfo = metadata.getTableInfoMap().get(rightTable);
         inputdata2.setTableName(rightTableInfo.getName());
         inputdata2.setAssetName(rightTableInfo.getAssetName());
         FieldInfo rightFieldInfo = rightTableInfo.getFields().get(rightField);
@@ -1613,7 +1602,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         inputdata.setDomainID(getFieldDomainID(tableField));
         inputdata.setType(columnInfoMap.get(tableField.toUpperCase()));
 
-        TableInfo tableInfo = metadata.getTables().get(table);
+        TableInfo tableInfo = metadata.getTableInfoMap().get(table);
         inputdata.setAssetName(tableInfo.getAssetName());
         FieldInfo fieldInfo = tableInfo.getFields().get(tableField);
         inputdata.setTableName(tableInfo.getName());

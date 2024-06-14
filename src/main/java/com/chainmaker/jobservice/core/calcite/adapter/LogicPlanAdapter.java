@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.core.calcite.adapter;
 
+import static com.chainmaker.jobservice.api.builder.CalciteUtil.*;
 import com.chainmaker.jobservice.core.calcite.cost.MPCCost;
 import com.chainmaker.jobservice.core.calcite.cost.MPCRelMetaDataProvider;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.FieldInfo;
@@ -488,57 +489,61 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         return builder.push(node).project(projections, newNames).build();
     }
 
-    public String getReferenceTableName(RelNode node){
+    public String getDerivedTableName(RelNode node){
         if(node instanceof LogicalTableScan){
             LogicalTableScan scan = (LogicalTableScan) node;
             return scan.getTable().getQualifiedName().get(0);
         }else if(node instanceof LogicalProject){
             LogicalProject project = (LogicalProject) node;
-            return getReferenceTableName(project.getInput());
+            return getDerivedTableName(project.getInput());
         }else if(node instanceof LogicalAggregate){
             LogicalAggregate aggregate = (LogicalAggregate) node;
-            return getReferenceTableName(aggregate.getInput());
+            return getDerivedTableName(aggregate.getInput());
         }else {
-            return getReferenceTableName(node.getInput(0));
+            return getDerivedTableName(node.getInput(0));
         }
     }
 
-    public void recognizeNodeFields(String alias, RelNode node){
-        List<String> fieldNames =node.getRowType().getFieldNames();
-//        String tableName = StringUtils.split(fieldNames.get(0), ".")[0];
-//        if(deriveTableMap.containsKey(tableName)){
-//            tableName = deriveTableMap.get(tableName);
-//        }
-        String tableName = getReferenceTableName(node);
+    public HashMap<String, FieldInfo> recognizeNodeFields(String tableOrAlias, RelNode node){
+        String tableName = getDerivedTableName(node);
         TableInfo tableInfo = MPCMetadata.getInstance().getTable(tableName);
         //转换为FieldInfo
         List<RelDataTypeField> fieldList = node.getRowType().getFieldList();
-        for(RelDataTypeField field: fieldList){
+
+        List<FieldInfo> fieldInfos= Lists.newArrayList();
+        for(RelDataTypeField field: fieldList) {
             FieldInfo fieldInfo = FieldInfo.defaultValueField();
-            fieldInfo.setFieldName(field.getName());
+            String fieldName = num2qualifiedFieldName(node, tableOrAlias, field.getName());
+            fieldInfo.setFieldName(getColumnName(fieldName));
             fieldInfo.setFieldType(field.getType().getSqlTypeName());
             fieldInfo.setDataLength(field.getType().getScale());
             fieldInfo.setDomainID(tableInfo.getOrgDId());
             fieldInfo.setDomainName(tableInfo.getOrgName());
-            String fullName = alias + "." + field.getName();
-            MPCMetadata.getInstance().getFieldNameInfoMap().put(fullName, fieldInfo);
+            fieldInfos.add(fieldInfo);
+            MPCMetadata.getInstance().getFieldNameInfoMap().put(fieldName, fieldInfo);
         }
+        MPCMetadata.getInstance().getTableFieldsMap().put(tableOrAlias, fieldInfos);
+        HashMap<String, FieldInfo> fieldInfoMap = Maps.newHashMap();
+        fieldInfos.forEach(x -> fieldInfoMap.put(getQualifiedFieldName(tableOrAlias , x.getFieldName()), x));
+        return fieldInfoMap;
     }
 
     public void inheritTableInfo(String table, RelNode node){
-        String inputTable = getReferenceTableName(node);
         MPCMetadata instance = MPCMetadata.getInstance();
-        TableInfo info = instance.getTable(inputTable);
+        String derivedTable = getDerivedTableName(node);
+        TableInfo derivedTableInfo = instance.getTable(derivedTable);
+
         TableInfo info2 = new TableInfo();
         info2.setName(table);
         info2.setAssetName(table);
-        info2.setFields(info.getFields());
+        HashMap<String, FieldInfo> fieldInfos = recognizeNodeFields(table, node);
+        info2.setFields(fieldInfos);
         info2.setRowCount(-1);
-        info2.setOrgDId(info.getOrgDId());
-        info2.setOrgName(info.getOrgName());
-        instance.getTables().put(table, info2);
-        deriveTableMap.put(table, inputTable);
-        recognizeNodeFields(table, node);
+        info2.setOrgDId(derivedTableInfo.getOrgDId());
+        info2.setOrgName(derivedTableInfo.getOrgName());
+        instance.getTableInfoMap().put(table, info2);
+        deriveTableMap.put(table, derivedTable);
+
     }
 
     /**
