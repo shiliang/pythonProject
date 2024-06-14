@@ -1491,7 +1491,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         if (constant.getType().getSqlTypeName().equals(SqlTypeName.CHAR)) {
             moduleParams.add(new ModuleParam("constant", RexLiteral.stringValue(constant)));
         }else {
-            moduleParams.add(new ModuleParam("constant", constant.getValue()));
+            moduleParams.add(new ModuleParam("constant", String.valueOf(constant.getValue())));
         }
 
         String tableField = phyPlan.getRowType().getFieldNames().get(field.getIndex());
