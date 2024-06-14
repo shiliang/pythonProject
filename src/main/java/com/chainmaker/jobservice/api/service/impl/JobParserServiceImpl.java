@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.api.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.builder.JobBuilder;
 import com.chainmaker.jobservice.api.builder.JobBuilderWithOptimizer;
 import com.chainmaker.jobservice.api.model.*;
@@ -20,10 +21,6 @@ import com.chainmaker.jobservice.core.SqlParser;
 import com.chainmaker.jobservice.core.calcite.utils.ParserWithOptimizerReturnValue;
 import com.chainmaker.jobservice.core.parser.LogicalPlanBuilderV2;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.http.*;
-import org.springframework.web.client.RestTemplate;
-
 import java.util.*;
 
 
@@ -36,104 +33,26 @@ import java.util.*;
 @Slf4j
 @org.springframework.stereotype.Service
 public class JobParserServiceImpl implements JobParserService {
-    private CatalogConfig catalogConfig;
-    private HashMap<String, JobGraph> jobGraphHashMap = new HashMap<>();
-    private HashMap<String, CatalogCache> catalogCacheHashMap = new HashMap<>();
-
-    private PlatformInfo platformInfo;
-
-
-    public void setCatalogConfig(CatalogConfig catalogConfig) {
-        this.catalogConfig = catalogConfig;
-    }
 
     @Override
-    public String getOrgId() {
-        return String.valueOf(getPlatformInfo().getRegisterId());
-    }
-
-    @Override
-    public String getOrgName() {
-        return getPlatformInfo().getAccountName();
-    }
-
-    public OrgInfo getOrgInfo() {
-        return  new OrgInfo(getOrgId(), getOrgName());
-    }
-
-    public void setPlatformInfo(PlatformInfo platformInfo) {
-        this.platformInfo = platformInfo;
-    }
-    @Override
-    public PlatformInfo getPlatformInfo() {
-        if (this.platformInfo != null) {
-            return this.platformInfo;
-        }
-        this.platformInfo = getPlatformInfoFromBackend();
-        return this.platformInfo;
-    }
-
-    @Override
-    public void put(String key, JobGraph value) {
-        jobGraphHashMap.put(key, value);
-    }
-
-    @Override
-    public JobGraph getJobGraph(String key) {
-        if (jobGraphHashMap.containsKey(key)) {
-            return jobGraphHashMap.get(key);
-        } else {
-            throw new ParserException("jobID查询失败");
-        }
-    }
-
-    @Override
-    public void put(String key, CatalogCache value) {
-        catalogCacheHashMap.put(key, value);
-    }
-
-    @Override
-    public CatalogCache getCatalogCache(String key) {
-        if (catalogCacheHashMap.containsKey(key)) {
-            return catalogCacheHashMap.get(key);
-        } else {
-            throw new ParserException("jobID查询失败");
-        }
-    }
-
-
-    @Override
-    public void delete(String key) {
-        jobGraphHashMap.remove(key);
-        catalogCacheHashMap.remove(key);
-    }
-
-    @Override
-    public JobGraphVo jobPreview(SqlVo sqlVo) throws Exception {
+    public Job jobPreview(SqlVo sqlVo) {
         JobMissionDetail jobMissionDetail = parserSql(sqlVo);
-        JobTemplate jobTemplate = jobMissionDetail.getJobTemplate();
+        Job jobInfo = jobMissionDetail.getJob();
         List<AssetDetail> assetDetailList = jobMissionDetail.getAssetDetailList();
-        JobInfoVo jobInfoVo = JobInfoVo.converterToJobInfoVo(jobTemplate);
-        JobInfo jobInfo = JobInfo.jobTemplateToJobInfo(jobTemplate);
         assetDetailList.forEach(assetDetail -> {
             String[] split = assetDetail.getAssetName().split("_");
             assetDetail.setOrgId(split[split.length - 1]);
         });
         jobInfo.setAssetDetailList(assetDetailList);
-        jobInfoVo.setAssetDetailList(assetDetailList);
 
 
-        JobGraphVo jobGraphVo = new JobGraphVo();
-        JobGraph jobGraph = new JobGraph();
-        if (jobInfo.getTasks() != null) {
-            Dag dag = taskToDag(jobInfo.getTasks(), jobTemplate.getJob().getStatus());
-            jobGraphVo.setDag(dag);
-            jobGraph.setDag(dag);
+        if (jobInfo.getTaskList() != null) {
+            Dag dag = taskToDag(jobInfo.getTaskList(), jobInfo.getStatus());
+            jobInfo.setDag(dag);
         }
-        if (jobInfo.getServices() != null) {
-            Topology topology = serviceToTopology(jobInfo.getServices(), 1);
-            jobGraphVo.setTopology(topology);
-            jobGraph.setTopology(topology);
+        if (jobInfo.getServiceList() != null) {
+            Topology topology = serviceToTopology(jobInfo.getServiceList(), 1);
+            jobInfo.setTopology(topology);
         }
 //        if (jobInfoVo.getServices() != null) {
 //            for (Service service : jobInfoVo.getServices()) {
@@ -142,56 +61,13 @@ public class JobParserServiceImpl implements JobParserService {
 //                }
 //            }
 //        }
-        jobGraphVo.setJobInfo(jobInfoVo);
-        jobGraph.setJobInfo(jobInfo);
 
 
-        String jobID = jobInfo.getJob().getJobID();
-        put(jobID, jobGraph);
-        CatalogCache catalogCache = new CatalogCache();
-        System.out.println(jobMissionDetail.getMissionDetailVOList());
-        catalogCache.setMissionDetailVOList(jobMissionDetail.getMissionDetailVOList());
-        catalogCache.setModelParamsVoList(jobMissionDetail.getModelParamsVoList());
-        put(jobID, catalogCache);
-        return jobGraphVo;
+
+//        put(jobID, jobGraph);
+        return jobInfo;
     }
 
-    @Override
-    public MissionInfoVo jobCommit(JobGraphVo jobGraphVo) {
-        String jobID = jobGraphVo.getJobInfo().getJob().getJobID();
-        JobGraph jobGraph = JobGraph.updateFromJobGraphVo(jobGraphVo, getJobGraph(jobID).getJobInfo().getJob());
-        put(jobID, jobGraph);
-        MissionInfoVo missionInfoVo = new MissionInfoVo();
-        missionInfoVo.setJobID(jobID);
-        missionInfoVo.setMissionDetailVOs(getCatalogCache(jobID).getMissionDetailVOList());
-        missionInfoVo.setModelParams(getCatalogCache(jobID).getModelParamsVoList());
-        System.out.println(missionInfoVo.getJobID());
-
-        List<ServiceParamsVo> serviceParamsVos = new ArrayList<>();
-        for (Service service : jobGraph.getJobInfo().getServices()) {
-            ServiceParamsVo serviceParamsVo = new ServiceParamsVo();
-            serviceParamsVo.setServiceName(service.getServiceName());
-            serviceParamsVo.setServiceClass(service.getServiceClass());
-            serviceParamsVo.setServiceID(service.getServiceId());
-            serviceParamsVo.setOrgDID(service.getOrgId());
-            serviceParamsVos.add(serviceParamsVo);
-
-        }
-        missionInfoVo.setServiceParams(serviceParamsVos);
-        return missionInfoVo;
-    }
-
-    @Override
-    public JobRunner getJobRunner(JobInfoPo jobInfoPo) {
-        OrgInfo orgInfo = getOrgInfo();
-        JobRunnerInfo jobInfo = JobRunnerInfo.converterToJobInfo(jobInfoPo, orgInfo.getOrgId());
-        JobRunner jobRunner = new JobRunner();
-        jobRunner.setJob(jobInfo.getJob());
-        jobRunner.setTaskList(jobInfo.getTasks());
-        List<ServiceRunner> serviceRunners = converterToServiceRunner(jobInfo.getServices(), orgInfo.getOrgId());
-        jobRunner.setServiceList(serviceRunners);
-        return jobRunner;
-    }
 
 
     public JSONObject analyzeSql(String sql) {
@@ -204,30 +80,25 @@ public class JobParserServiceImpl implements JobParserService {
         return json;
     }
 
-
     @Override
-    public JobMissionDetail parserSql(SqlVo sqlVo) throws Exception {
+    public JobMissionDetail parserSql(SqlVo sqlVo) {
         String sqltext = sqlVo.getSqltext().replace("\"", "");
         if (sqltext.contains("/*+ FILTER(TEE) */".replace("\\s", ""))){
             sqlVo.setModelType(2);
         }
         sqltext = sqltext.replace("/*+ FILTER(TEE) */".replace("\\s", ""), "");
         SqlParser sqlParser = new SqlParser(sqltext, sqlVo.getIsStream(), sqlVo.getModelType(), sqlVo.getAssetInfoList(), sqlVo.getModelParams());
-        sqlParser.setCatalogConfig(catalogConfig);
         if (sqlVo.getIsStream() == 1) {
-//            OrgInfo orgInfo = getOrgInfo(); //从mira backendservice 获取orgId
-            OrgInfo orgInfo = new OrgInfo("org_id1","org_name1");
-            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(),
-                    sqlParser.parser(), orgInfo,
-                    sqlParser.getSql());
+            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser(), sqlVo.getOrgInfo(), sqlParser.getSql());
             jobBuilder.build();
             JobMissionDetail jobMissionDetail = new JobMissionDetail();
-            jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
+            jobMissionDetail.setJob(jobBuilder.getJob());
             jobMissionDetail.setMissionDetailVOList(sqlParser.getMissionDetailVOs());
             jobMissionDetail.setModelParamsVoList(sqlParser.getModelParamsVos());
             jobMissionDetail.setAssetDetailList(sqlParser.getAssetDetailList());
             return jobMissionDetail;
         } else {
+            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parserWithOptimizer(), sqlParser.getColumnInfoMap(), sqlVo.getOrgInfo(), sqlParser.getSql());
             ParserWithOptimizerReturnValue optimizer = sqlParser.parserWithOptimizer();
 //            String orgId = getOrgId(); //从mira backendservice 获取orgId
             String orgId = "org1";
@@ -237,7 +108,7 @@ public class JobParserServiceImpl implements JobParserService {
             );
             jobBuilder.build();
             JobMissionDetail jobMissionDetail = new JobMissionDetail();
-            jobMissionDetail.setJobTemplate(jobBuilder.getJobTemplate());
+            jobMissionDetail.setJob(jobBuilder.getJob());
             jobMissionDetail.setMissionDetailVOList(sqlParser.getMissionDetailVOs());
             jobMissionDetail.setModelParamsVoList(sqlParser.getModelParamsVos());
             jobMissionDetail.setAssetDetailList(sqlParser.getAssetDetailList());
@@ -256,7 +127,7 @@ public class JobParserServiceImpl implements JobParserService {
         int id = dataCount;
         for (Task task : tasks) {
             DagNode dagNode = new DagNode();
-            dagNode.setId(id);
+            dagNode.setId(String.valueOf(id));
             id += 1;
             String label = task.getModule().getModuleName() + "(" + task.getStatus() + ")";
             dagNode.setLabel(label);
@@ -266,16 +137,16 @@ public class JobParserServiceImpl implements JobParserService {
             nodes.add(dagNode);
 
             String taskName = task.getTaskName();
-            for (TaskInputData taskInputData : task.getInput().getData()) {
+            for (InputDetail taskInputData : task.getInput().getInputDataDetailList()) {
                 if (!Objects.equals(taskInputData.getTaskSrc(), "")) {
                     DagEdge dagEdge = new DagEdge();
-                    dagEdge.setFrom(Integer.parseInt(taskInputData.getTaskSrc()));
-                    dagEdge.setTo(Integer.parseInt(taskName));
+                    dagEdge.setFrom(taskInputData.getTaskSrc());
+                    dagEdge.setTo(taskName);
                     dagEdge.setLabel(taskInputData.getDataName());
                     edges.add(dagEdge);
                 } else {
                     DagNode dataNode = new DagNode();
-                    dataNode.setId(capacity);
+                    dataNode.setId(String.valueOf(capacity));
 
                     String dataLabel = taskInputData.getDataName() + "(" + dataStatus + ")";
                     dataNode.setLabel(dataLabel);
@@ -285,8 +156,8 @@ public class JobParserServiceImpl implements JobParserService {
                     nodes.add(dataNode);
 
                     DagEdge dataEdge = new DagEdge();
-                    dataEdge.setFrom(capacity);
-                    dataEdge.setTo(Integer.parseInt(taskName));
+                    dataEdge.setFrom(String.valueOf(capacity));
+                    dataEdge.setTo(taskName);
                     dataEdge.setLabel(taskInputData.getDataName());
                     edges.add(dataEdge);
                     capacity += 1;
@@ -314,6 +185,7 @@ public class JobParserServiceImpl implements JobParserService {
                 TopologyNode node = new TopologyNode();
                 node.setId(service.getServiceId());
                 node.setStatus("WAITING");
+//                node.setStatus(Constant.SERVICE_STATUS);
                 node.setServiceType(service.getServiceClass());
                 node.setNodeError(true);
                 node.setAverageTime("-");
@@ -350,80 +222,8 @@ public class JobParserServiceImpl implements JobParserService {
         return null;
     }
 
-    @Override
-    public List<ServiceRunner> converterToServiceRunner(List<ServiceRunner> services, String orgDID) {
-        List<ServiceRunner> serviceRunners = new ArrayList<>();
 
-        HashMap<String, ExposeEndpoint> exposeEndpointMap = new HashMap<>();
-        HashMap<String, String> clientIdMap = new HashMap<>();
-        if (services != null) {
-            for (ServiceRunner service : services) {
-                clientIdMap.put(service.getId(), "");
-            }
-            for (ServiceRunner service : services) {
-                for (ExposeEndpoint exposeEndpoint : service.getExposeEndpointList()) {
-                    exposeEndpointMap.put(service.getId(), exposeEndpoint);
-                }
-                for (ReferExposeEndpoint referEndpoint : service.getReferExposeEndpointList()) {
-                    if (!Objects.equals(referEndpoint.getReferServiceId(), "") && referEndpoint.getReferServiceId() != null) {
-                        clientIdMap.put(referEndpoint.getReferServiceId(), service.getId());
-                    }
-                }
-            }
-            log.info("exposeEndpointMap {}", JSONObject.toJSONString(exposeEndpointMap));
-            for (ServiceRunner service : services) {
-                if (StringUtils.equals(service.getOrgId(), orgDID)) {
-                    String path = service.getExposeEndpointList().get(0).getAddress();
-                    String[] split = path.split(":");
-                    if (split.length == 2) {
-                        Integer port = Integer.valueOf(split[1]);
-                        service.setNodePort((port));
-                    }
-                    if (null != service.getReferExposeEndpointList() && service.getReferExposeEndpointList().size() > 0) {
-                        for (ReferExposeEndpoint referExposeEndpoint : service.getReferExposeEndpointList()) {
-                            if (referExposeEndpoint != null) {
-                                if (!Objects.equals(referExposeEndpoint.getName(), "")) {
-                                    ExposeEndpoint referExposeEndpointRunner = exposeEndpointMap.get(referExposeEndpoint.getReferServiceId());
-                                    if (referExposeEndpointRunner == null)
-                                        continue;
-                                    referExposeEndpoint.setAddress(referExposeEndpointRunner.getAddress());
-//                                referExposeEndpoint.setPath(referExposeEndpoint.get("path"));
-//                                referExposeEndpoint.setMethod(referExposeEndpoint.get("method"));
-                                    referExposeEndpoint.setServiceCa(referExposeEndpointRunner.getServiceCa());
-                                    referExposeEndpoint.setServiceCert(referExposeEndpointRunner.getServiceCert());
-                                }
-                            }
-                        }
-                    }
-
-
-                    log.info("serviceRunner {}", JSONObject.toJSONString(service));
-                    serviceRunners.add(service);
-                }
-            }
-        }
-        return serviceRunners;
-    }
-
-    private PlatformInfo getPlatformInfoFromBackend() {
-        String url = "http://" + catalogConfig.getAddress() + ":" + catalogConfig.getPort() + "/v1/mira/configuration/GetPlatformInfo";
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        HttpEntity<String> request = new HttpEntity<>(headers);
-
-        // 发送POST请求
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
-        if (response == null && HttpStatus.OK.value() != response.getStatusCodeValue()) {
-            throw new ParserException("获取组织信息失败");
-        }
-        HttpResponse<PlatformInfo> httpResponse = JSONObject.parseObject(response.getBody(), HttpResponse.class);
-        if (httpResponse == null
-                && HttpStatus.OK.value() != httpResponse.getCode()
-                && httpResponse.getData() == null) {
-            throw new ParserException("获取组织信息失败");
-        }
-        return JSONObject.parseObject(JSONObject.toJSONString(httpResponse.getData()), PlatformInfo.class);
-    }
 }
+
+
+

@@ -4,7 +4,6 @@ import com.chainmaker.jobservice.api.model.AssetDetail;
 import com.chainmaker.jobservice.api.model.AssetInfo;
 import com.chainmaker.jobservice.api.model.DataInfo;
 import com.chainmaker.jobservice.api.model.SaveTableColumnItem;
-import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
 import com.chainmaker.jobservice.api.model.vo.ModelParamsVo;
 import com.chainmaker.jobservice.core.analyzer.catalog.MissionDetailVO;
 import com.chainmaker.jobservice.core.calcite.adapter.LogicPlanAdapter;
@@ -54,7 +53,6 @@ public class SqlParser {
 
     private HashMap<String, String> columnInfoMap = Maps.newHashMap();
 
-    private CatalogConfig catalogConfig;
 
     private List<AssetDetail> assetDetailList = new ArrayList<>();
 

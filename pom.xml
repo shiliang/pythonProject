@@ -9,8 +9,8 @@
     <relativePath/> <!-- lookup parent from repository -->
 </parent>
 <groupId>com.chainmaker</groupId>
-<artifactId>job-service</artifactId>
-<version>0.0.1-SNAPSHOT</version>
+<artifactId>mira-job-service</artifactId>
+<version>1.1.0-SNAPSHOT</version>
 <name>parser</name>
 <description>SQL parser</description>
 <properties>
@@ -123,7 +123,7 @@
     <dependency>
         <groupId>com.google.protobuf</groupId>
         <artifactId>protobuf-java</artifactId>
-        <version>3.14.0</version>
+        <version>3.19.4</version>
     </dependency>
     <dependency>
         <groupId>org.yaml</groupId>
@@ -132,13 +132,6 @@
         <scope>compile</scope>
     </dependency>
 
-    <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-tcnative-openssl-static</artifactId>
-        <version>2.0.39.Final</version>
-        <systemPath>${project.basedir}/lib/netty-tcnative-openssl-static-2.0.39.Final.jar</systemPath>
-        <scope>system</scope>
-    </dependency>
     <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-handler</artifactId>
@@ -167,7 +160,7 @@
     <dependency>
         <groupId>com.google.protobuf</groupId>
         <artifactId>protobuf-java-util</artifactId>
-        <version>3.2.0</version>
+        <version>${protoc.version}</version>
         <exclusions>
             <exclusion>
                 <groupId>com.google.guava</groupId>
@@ -193,6 +186,41 @@
         <artifactId>validation-api</artifactId>
         <version>${validation-api.version}</version>
     </dependency>
+    <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-bom</artifactId>
+        <version>${grpc.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+    </dependency>
+    <dependency>
+        <groupId>net.devh</groupId>
+        <artifactId>grpc-client-spring-boot-starter</artifactId>
+        <version>${grpc-spring-boot-starter.version}</version>
+        <exclusions>
+            <exclusion>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-core</artifactId>
+            </exclusion>
+            <exclusion>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter</artifactId>
+            </exclusion>
+        </exclusions>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/io.grpc/grpc-stub -->
+    <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-stub</artifactId>
+        <version>${grpc.version}</version>
+    </dependency>
+
+    <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-java-util</artifactId>
+        <version>${protoc.version}</version>
+    </dependency>
 
     <dependency>
         <groupId>cn.hutool</groupId>
@@ -203,6 +231,14 @@
 </dependencies>
 
 <build>
+    <!-- os系统信息插件, protobuf-maven-plugin需要获取系统信息下载相应的protobuf程序 -->
+    <extensions>
+        <extension>
+            <groupId>kr.motd.maven</groupId>
+            <artifactId>os-maven-plugin</artifactId>
+            <version>1.6.2</version>
+        </extension>
+    </extensions>
     <plugins>
         <plugin>
             <groupId>org.springframework.boot</groupId>
@@ -240,6 +276,28 @@
                 <visitor>true</visitor>
                 <!--<treatWarningsAsErrors>true</treatWarningsAsErrors>-->
             </configuration>
+        </plugin>
+
+        <!-- grpc代码生成插件 -->
+        <plugin>
+            <groupId>org.xolstice.maven.plugins</groupId>
+            <artifactId>protobuf-maven-plugin</artifactId>
+            <version>0.6.1</version>
+            <configuration>
+                <protocArtifact>com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}
+                </protocArtifact>
+                <pluginId>grpc-java</pluginId>
+                <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}
+                </pluginArtifact>
+            </configuration>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>compile</goal>
+                        <goal>compile-custom</goal>
+                    </goals>
+                </execution>
+            </executions>
         </plugin>
 
         <!-- Jacoco 插件配置 -->
