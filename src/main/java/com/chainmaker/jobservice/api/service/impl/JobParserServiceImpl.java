@@ -6,13 +6,12 @@ import com.chainmaker.jobservice.api.builder.JobBuilder;
 import com.chainmaker.jobservice.api.builder.JobBuilderWithOptimizer;
 import com.chainmaker.jobservice.api.model.*;
 import com.chainmaker.jobservice.api.model.bo.*;
-import com.chainmaker.jobservice.api.model.bo.config.CatalogConfig;
-import com.chainmaker.jobservice.api.model.bo.graph.*;
-import com.chainmaker.jobservice.api.model.bo.job.JobInfo;
-import com.chainmaker.jobservice.api.model.bo.job.JobTemplate;
-import com.chainmaker.jobservice.api.model.bo.job.task.Task;
-import com.chainmaker.jobservice.api.model.bo.job.task.TaskInputData;
-import com.chainmaker.jobservice.api.model.po.contract.JobInfoPo;
+import com.chainmaker.jobservice.api.model.graph.*;
+import com.chainmaker.jobservice.api.model.job.Job;
+import com.chainmaker.jobservice.api.model.job.service.ReferExposeEndpoint;
+import com.chainmaker.jobservice.api.model.job.service.Service;
+import com.chainmaker.jobservice.api.model.job.task.InputDetail;
+import com.chainmaker.jobservice.api.model.job.task.Task;
 import com.chainmaker.jobservice.api.model.vo.*;
 import com.chainmaker.jobservice.api.response.HttpResponse;
 import com.chainmaker.jobservice.api.response.ParserException;
@@ -98,12 +97,10 @@ public class JobParserServiceImpl implements JobParserService {
             jobMissionDetail.setAssetDetailList(sqlParser.getAssetDetailList());
             return jobMissionDetail;
         } else {
-            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parserWithOptimizer(), sqlParser.getColumnInfoMap(), sqlVo.getOrgInfo(), sqlParser.getSql());
             ParserWithOptimizerReturnValue optimizer = sqlParser.parserWithOptimizer();
-//            String orgId = getOrgId(); //从mira backendservice 获取orgId
-            String orgId = "org1";
+            OrgInfo orgInfo = new OrgInfo("orgId1", "orgName1");
             JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(),  sqlVo.getIsStream(),
-                    optimizer, sqlParser.getColumnInfoMap(), orgId,
+                    optimizer, sqlParser.getColumnInfoMap(), orgInfo,
                     sqlParser.getSql()
             );
             jobBuilder.build();
@@ -115,6 +112,7 @@ public class JobParserServiceImpl implements JobParserService {
             return jobMissionDetail;
         }
     }
+
 
 
     @Override

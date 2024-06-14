@@ -11,4 +11,8 @@ public class ModuleParam {
         Key = key;
         Value = value;
     }
+
+    public ModuleParam(){
+
+    }
 }

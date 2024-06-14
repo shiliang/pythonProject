@@ -96,8 +96,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private List<Task> mergedTasks = new ArrayList<>();
     private List<Task> taskcp = new ArrayList<>();
     private List<Party> jobPartyList = new ArrayList<>();
-    private LogicalPlan OriginPlan;
-    private LogicalHint hint;
     private LinkedHashSet<String> jobParties = new LinkedHashSet<>();
     private XPCPlan OriginPlan;
     private XPCHint hint;
@@ -106,8 +104,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private String orgName;
     private String sql;
 
-    public JobBuilderWithOptimizer(Integer modelType, Integer isStream, parserWithOptimizerReturnValue value, HashMap<String, String> columnInfoMap, OrgInfo orgInfo, String sql) {
-    public JobBuilderWithOptimizer(Integer modelType, Integer isStream, ParserWithOptimizerReturnValue value, HashMap<String, String> columnInfoMap, String orgID, String sql) {
+    public JobBuilderWithOptimizer(Integer modelType, Integer isStream, ParserWithOptimizerReturnValue value, HashMap<String, String> columnInfoMap, OrgInfo orgInfo, String sql) {
         this.modelType = modelType;
         this.isStream = isStream;
         this.phyPlan = value.getPhyPlan();
@@ -1167,12 +1164,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         MPCMetadata mpcMetadata = MPCMetadata.getInstance();
         Module module = new Module();
         module.setModuleName("Agg");
-        JSONObject params = new JSONObject(true);
+        List<ModuleParam> moduleparams = new ArrayList<ModuleParam>();
         ImmutableList<ImmutableBitSet> sets = phyPlan.getGroupSets();
         for(ImmutableBitSet set : sets){
             String fullQualifiedfield = fromNumericName2FieldName(phyPlan, set.toString());
             Pair<String,String> pair = getTableNameAndColumnName(fullQualifiedfield);
-            params.put("groupBy", pair.right);
+            moduleparams.add(new ModuleParam("groupBy", pair.right));
         }
         List<AggregateCall> calls = phyPlan.getAggCallList();
         List<String> funcList = Lists.newArrayList();
@@ -1186,18 +1183,17 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 funcList.add(funcLiteral.replace(ref, pair.right));
             }
         }
-        params.put("aggFunc", funcList);
-
+        moduleparams.add(new ModuleParam("aggFunc", funcList));
+        module.setParamList(moduleparams);
         Input input = new Input();
-        List<TaskInputData> inputDataList = new ArrayList<>();
-        Output output = new Output();
-        List<TaskOutputData> outputDataList = new ArrayList<>();
+        List<InputDetail> inputDataList = new ArrayList<>();
+        List<Output> outputDataList = new ArrayList<>();
 
         RelSubset relSubset = (RelSubset)(phyPlan.getInputs().get(0));
         List<RelDataTypeField> inFields =relSubset.getBest().getRowType().getFieldList();
         Task childTask = phyTaskMap.get(relSubset.getBest());
         for(RelDataTypeField field: inFields){
-            TaskInputData inputData = new TaskInputData();
+            InputDetail inputData = new InputDetail();
             String fullQualifiedfield = fromNumericName2FieldName(relSubset.getBest(),field.getName());
             Pair<String, String> pair = getTableNameAndColumnName(fullQualifiedfield);
             inputData.setColumnName(pair.right);
@@ -1205,9 +1201,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             TableInfo inputTable = mpcMetadata.getTable(pair.left);
 
             inputData.setDataName(inputTable.getOrgName());
-            inputData.setDataID(inputTable.getOrgDId());
+            inputData.setDataId(inputTable.getOrgDId());
 
-            inputData.setDomainID(inputTable.getOrgDId());
+            inputData.setDomainId(inputTable.getOrgDId());
             inputData.setDomainName(inputTable.getOrgName());
             inputData.setTaskSrc(childTask.getTaskName());
             inputDataList.add(inputData);
@@ -1215,7 +1211,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         List<RelDataTypeField> outFields = phyPlan.getRowType().getFieldList();
         for(RelDataTypeField field : outFields){
-            TaskOutputData outputData = new TaskOutputData();
+            Output outputData = new Output();
             String fullQualifiedfield = fromNumericName2FieldName(phyPlan,field.getName());
             Pair<String, String> pair = getTableNameAndColumnName(fullQualifiedfield);
             outputData.setColumnName(pair.right);
@@ -1223,19 +1219,17 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             TableInfo inputTable = mpcMetadata.getTable(pair.left);
 
             outputData.setDataName(inputTable.getOrgName());
-            outputData.setDataID(inputTable.getOrgDId());
+            outputData.setDataId(inputTable.getOrgDId());
 
-            outputData.setDomainID(inputTable.getOrgDId());
+            outputData.setDomainId(inputTable.getOrgDId());
             outputData.setDomainName(inputTable.getOrgName());
             outputDataList.add(outputData);
         }
-        module.setParams(params);
-        task.setModule(module);
 
-        input.setData(inputDataList);
-        output.setData(outputDataList);
+        task.setModule(module);
+        input.setInputDataDetailList(inputDataList);
         task.setInput(input);
-        task.setOutput(output);
+        task.setOutputList(outputDataList);
         phyTaskMap.put(phyPlan, task);
         return task;
     }
@@ -1269,7 +1263,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         // module信息（即进行什么操作）
         Module module = new Module();
 
-//        JSONObject moduleparams = new JSONObject(true);
         List<ModuleParam> moduleparams = new ArrayList<ModuleParam>();
         List<String> constantList = new ArrayList<>();
         if (proj instanceof RexCall) {
@@ -1311,11 +1304,11 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             InputDetail inputdata = new InputDetail();
             String tableField = inputList.get(i);
             inputdata.setTaskSrc(childTask.getTaskName());
-            inputdata.setDomainID(getFieldDomainID(tableField));
+            inputdata.setDomainId(getFieldDomainID(tableField));
             if (childTask.getTaskName().equals("") ||
-                    childTask.getOutput().getData().get(0).getDataName().startsWith(inputdata.getDomainID())) {
-                inputdata.setDataName(childTask.getOutput().getData().get(0).getDataName());
-                inputdata.setDataID(childTask.getOutput().getData().get(0).getDataID());
+                    childTask.getOutputList().get(0).getDataName().startsWith(inputdata.getDomainId())) {
+                inputdata.setDataName(childTask.getOutputList().get(0).getDataName());
+                inputdata.setDataId(childTask.getOutputList().get(0).getDataId());
             } else {
                 inputdata.setDataName(childTask.getOutputList().get(1).getDataName());
                 inputdata.setDataId(childTask.getOutputList().get(1).getDataId());

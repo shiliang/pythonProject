@@ -154,7 +154,7 @@ public class SqlParser {
      * 带查询优化的parser
      * @return
      */
-    public ParserWithOptimizerReturnValue parserWithOptimizer() throws Exception {
+    public ParserWithOptimizerReturnValue parserWithOptimizer(){
         LogicalPlanBuilderV2 logicalPlanBuilder = new LogicalPlanBuilderV2(this.sql);
         XPCPlan logicalPlan = logicalPlanBuilder.getLogicalPlan();
 
