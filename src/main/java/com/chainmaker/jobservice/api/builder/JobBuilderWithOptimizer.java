@@ -1,5 +1,7 @@
 package com.chainmaker.jobservice.api.builder;
 
+import cn.hutool.core.util.ReUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.model.Service;
 import com.chainmaker.jobservice.api.model.bo.job.Job;
@@ -10,6 +12,7 @@ import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.FieldInfo;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
+import com.chainmaker.jobservice.core.calcite.relnode.MPCAggregate;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCFilter;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCJoin;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCProject;
@@ -20,10 +23,17 @@ import com.chainmaker.jobservice.core.parser.plans.XPCHint;
 import com.chainmaker.jobservice.core.parser.plans.XPCPlan;
 import com.chainmaker.jobservice.core.parser.plans.XPCProject;
 import com.chainmaker.jobservice.core.parser.tree.*;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlExplainFormat;
 import org.apache.calcite.sql.SqlExplainLevel;
@@ -31,13 +41,19 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.NlsString;
+import org.apache.calcite.util.Pair;
 import org.apache.commons.lang3.StringUtils;
+import org.checkerframework.checker.index.qual.SameLen;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.chainmaker.jobservice.core.calcite.utils.ConstExprJudgement.isNumeric;
 
+
+@Slf4j
 public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private enum JobType {
         FQ, FQS, FL, FLS, CC, CCS, TEE, MPC
@@ -1095,6 +1111,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     tasks.add(generateFilterTask((MPCFilter) phyPlan, phyTaskMap, (RexCall) conds));
                 }
                 break;
+            case "MPCAggregate":
+                tasks.add(generateAggregateTask((MPCAggregate) phyPlan, phyTaskMap));
+                break;
             case "MPCTableScan":
                 Task task = basicTask("");
                 Output output = new Output();
@@ -1111,21 +1130,126 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 phyTaskMap.put(phyPlan, task);
                 break;
             default:
-
                 break;
         }
 
         return tasks;
     }
 
+    public Task generateAggregateTask(MPCAggregate phyPlan, HashMap<RelNode, Task> phyTaskMap){
+        Task task = basicTask(String.valueOf(cnt++));
+        MPCMetadata mpcMetadata = MPCMetadata.getInstance();
+        Module module = new Module();
+        module.setModuleName("Agg");
+        JSONObject params = new JSONObject(true);
+        ImmutableList<ImmutableBitSet> sets = phyPlan.getGroupSets();
+        for(ImmutableBitSet set : sets){
+            String fullQualifiedfield = fromNumericName2FieldName(phyPlan, set.toString());
+            Pair<String,String> pair = getTableNameAndColumnName(fullQualifiedfield);
+            params.put("groupBy", pair.right);
+        }
+        List<AggregateCall> calls = phyPlan.getAggCallList();
+        List<String> funcList = Lists.newArrayList();
+        for(AggregateCall call : calls){
+            String funcLiteral = call.toString();
+            if(call.getArgList().isEmpty()){
+                funcList.add(funcLiteral);
+            }else{
+                String ref = call.getArgList().get(0).toString();
+                Pair<String,String> pair = getTableNameAndColumnName(fromNumericName2FieldName(phyPlan, ref));
+                funcList.add(funcLiteral.replace(ref, pair.right));
+            }
+        }
+        params.put("aggFunc", funcList);
+
+        Input input = new Input();
+        List<TaskInputData> inputDataList = new ArrayList<>();
+        Output output = new Output();
+        List<TaskOutputData> outputDataList = new ArrayList<>();
+
+        RelSubset relSubset = (RelSubset)(phyPlan.getInputs().get(0));
+        List<RelDataTypeField> inFields =relSubset.getBest().getRowType().getFieldList();
+        Task childTask = phyTaskMap.get(relSubset.getBest());
+        for(RelDataTypeField field: inFields){
+            TaskInputData inputData = new TaskInputData();
+            String fullQualifiedfield = fromNumericName2FieldName(relSubset.getBest(),field.getName());
+            Pair<String, String> pair = getTableNameAndColumnName(fullQualifiedfield);
+            inputData.setColumnName(pair.right);
+            inputData.setType(field.getType().getFullTypeString());
+            TableInfo inputTable = mpcMetadata.getTable(pair.left);
+            inputData.setDomainID(inputTable.getOrgDId());
+            inputData.setDomainName(inputTable.getOrgName());
+            inputData.setTaskSrc(childTask.getTaskName());
+            inputDataList.add(inputData);
+        }
+
+        List<RelDataTypeField> outFields = phyPlan.getRowType().getFieldList();
+        for(RelDataTypeField field : outFields){
+            TaskOutputData outputData = new TaskOutputData();
+            String fullQualifiedfield = fromNumericName2FieldName(phyPlan,field.getName());
+            Pair<String, String> pair = getTableNameAndColumnName(fullQualifiedfield);
+            outputData.setColumnName(pair.right);
+            outputData.setType(field.getType().getFullTypeString());
+            TableInfo inputTable = mpcMetadata.getTable(pair.left);
+            outputData.setDomainID(inputTable.getOrgDId());
+            outputData.setDomainName(inputTable.getOrgName());
+            outputDataList.add(outputData);
+        }
+        module.setParams(params);
+        task.setModule(module);
+
+        input.setData(inputDataList);
+        output.setData(outputDataList);
+        task.setInput(input);
+        task.setOutput(output);
+        phyTaskMap.put(phyPlan, task);
+        return task;
+    }
+
+    public Pair<String, String> getTableNameAndColumnName(String fieldName){
+        if (fieldName.contains(".")){
+            String[] split = StringUtils.split(fieldName , ".");
+            return Pair.of(split[0], split[1]);
+        }else{
+            return Pair.of(null, fieldName);
+        }
+    }
+
+    public String fromNumericName2FieldName(RelNode relNode, String numericalName){
+        String pattern1 = "\\{(\\d+)\\}";
+        String pattern2 = "\\$f(\\d+)";
+        String pattern3 = "(\\d+)";
+        Integer fieldRef = null;
+        if(ReUtil.isMatch(pattern1, numericalName)) {
+            fieldRef= Integer.valueOf(ReUtil.get(pattern1, numericalName, 1));
+        }else if(ReUtil.isMatch(pattern2, numericalName)){
+            fieldRef = Integer.valueOf(ReUtil.get(pattern2, numericalName, 1)) - 1;
+        }else if(ReUtil.isMatch(pattern3, numericalName)){
+            fieldRef = Integer.valueOf(numericalName);
+        }else{
+            return numericalName;
+        }
+
+        if (relNode instanceof TableScan){
+            List<String> fieldNames =relNode.getRowType().getFieldNames();
+            return fieldNames.get(fieldRef);
+        }else if(relNode instanceof RelSubset) {
+            relNode = ((RelSubset) relNode).getBest();
+        }else {
+            relNode = relNode.getInputs().get(0);
+        }
+        return fromNumericName2FieldName(relNode, numericalName);
+    }
+
     public Task generateProjectTask(MPCProject phyPlan, HashMap<RelNode, Task> phyTaskMap, RexNode rexNode, List<String> inputList) {
-        System.out.println("inputList:" + inputList);
+        log.info("inputList:" + inputList);
         Task task = basicTask(String.valueOf(cnt++));
 
         // [AS(+($8, $7), ''), AS(SUM($4), ''), AS($0, '')]
         // 所有 project 默认最上层都是 AS 的 RexCall, 所以去掉一层之后才是真的 proj 的内容
-        if(!(rexNode instanceof RexCall)){
-            return null;
+        if(rexNode instanceof RexInputRef){
+            RexBuilder builder = phyPlan.getCluster().getRexBuilder();
+//            rexNode = builder.makeCall(SqlKind.AS, rexNode, builder.makeCharLiteral());
         }
         RexCall node = (RexCall)rexNode;
         RexNode proj = node.getOperands().get(0);
@@ -1601,6 +1725,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * @param str
      * @return
      */
+    @Deprecated
     public Task str2Task(String str, int curTaskName, String moduleName, List<String> inputTables, boolean isFinalResult) {
         // 生成具有基本信息的Task对象
         Task task = basicTask(String.valueOf(curTaskName));

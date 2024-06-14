@@ -62,7 +62,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
 
     private XPCHint hints;                   // 替换modelType，识别TEE
 
-    private  Stack<String> subQueryTable = new Stack<>();
+    private  Stack<XPCPlan> subQueryTable = new Stack<>();
 
     private Map<String, String> deriveTableMap = Maps.newHashMap();
 
@@ -205,12 +205,20 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         //field 全部按照full qualified来处理，因为这样的信息是最全的。
 //        RelBuilder.AggCall sumB1 = builder.sum(builder.field(""));
 //        aggregateCalls.add(sumB1);
+        XPCPlan parentNode = subQueryTable.pop();
+        String tmpTable = null;
+        if(parentNode instanceof XPCSubQuery){
+            tmpTable = ((XPCSubQuery) parentNode).getAlias();
+        }
         for (NamedExpression e : node.getAggCallList()){
             FunctionCallExpression expr = (FunctionCallExpression)e.getExpression();
             String func = expr.getFunction().toUpperCase();
             String field = ((Identifier)expr.getExpressions().get(0)).getIdentifier();
             String fullQualifiedName = fullQualify(child, field);
             String alias = e.getIdentifier().getIdentifier();
+            if(tmpTable != null){
+                alias = tmpTable + "." + alias;
+            }
             RelBuilder.AggCall aggCall = null;
             RexInputRef ref = builder.getRexBuilder().makeInputRef(child, child.getRowType().getFieldNames().indexOf(fullQualifiedName));
 
@@ -469,6 +477,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
     }
 
     public RelNode visit(XPCSubQuery subQuery){
+        subQueryTable.push(subQuery);
         XPCPlan child = subQuery.getChildren().get(0);
         RelNode node = child.accept(this);
         String alias = subQuery.getAlias();
