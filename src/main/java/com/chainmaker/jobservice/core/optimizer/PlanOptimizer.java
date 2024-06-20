@@ -160,6 +160,32 @@ public class PlanOptimizer extends LogicalPlanVisitor {
 
     }
 
+    public void visit(XPCSubQuery node) {
+        TableScan tableScan = new TableScan();
+//        tableScan.setId(count);
+//        count += 1;
+        String tableName = node.getAlias();
+        tableScan.setTableName(tableName);
+        TableInfo tableInfo = metaData.get(tableName);
+        if (tableOwnerMap.containsKey(tableName)) {
+            tableScan.setDomainID(tableOwnerMap.get(tableName));
+            tableScan.setDomainName(tableInfo.getOrgName());
+        } else {
+            throw new ParserException("验证失败");
+        }
+        OutputData outputData = new OutputData();
+//        outputData.setTableName(node.getTableName());
+//        outputData.setDomainID(tableOwnerMap.get(node.getTableName()));
+        outputData.setDomainName(tableInfo.getOrgName());
+        outputData.setOutputSymbol(node.getAlias());
+        List<OutputData> outputDataList = new ArrayList<>();
+        outputDataList.add(outputData);
+        tableScan.setOutputDataList(outputDataList);
+        dag.createNode(tableScan);
+        tableLastMap.put(tableScan.getTableName(), tableScan);
+
+    }
+
     public void visit(XPCFilter node) {
         for (XPCPlan child: node.getChildren()) {
             child.accept(this);

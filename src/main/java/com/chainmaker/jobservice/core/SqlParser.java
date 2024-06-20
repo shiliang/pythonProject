@@ -197,9 +197,9 @@ public class SqlParser {
             String[] splits = assetName.split("_");
             String domainId = splits[splits.length -1];
             for (SaveTableColumnItem detailInfo : dataInfo.getItemList()) {
-                if  (!columnList.contains(assetName + "." + detailInfo.getName())) {
-                    continue;
-                }
+//                if  (!columnList.contains(assetName + "." + detailInfo.getName())) {
+//                    continue;
+//                }
                 String dataType = detailInfo.getDataType();
                 SqlTypeName sqlDataType = SqlTypeName.get(dataType.toUpperCase());
                 if(sqlDataType == null){

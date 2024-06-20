@@ -8,6 +8,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CalciteUtil {
 
@@ -19,7 +20,7 @@ public class CalciteUtil {
         if(ReUtil.isMatch(pattern1, numericalName)) {
             fieldRef= Integer.valueOf(ReUtil.get(pattern1, numericalName, 1));
         }else if(ReUtil.isMatch(pattern2, numericalName)){
-            fieldRef = Integer.valueOf(ReUtil.get(pattern2, numericalName, 1)) - 1;
+            fieldRef = Integer.valueOf(ReUtil.get(pattern2, numericalName, 1));
         }else if(ReUtil.isMatch(pattern3, numericalName)){
             fieldRef = Integer.valueOf(numericalName);
         }else{
@@ -55,11 +56,24 @@ public class CalciteUtil {
     }
 
     public static String getQualifiedFieldName(String tableOrAlias, String fieldName){
+        if(fieldName.contains(".")){
+            return fieldName;
+        }
         return tableOrAlias + "." + fieldName;
     }
 
     public static String num2qualifiedFieldName(RelNode node, String table, String numericalName){
         Pair<String, String> pair = getTableNameAndColumnName(fromNumericName2FieldName(node, numericalName));
         return table + "." + pair.right;
+    }
+
+    public static List<String> qualifiedFields(RelNode node, String table){
+        List<String> rowTypeNames = node.getRowType().getFieldNames();
+        List<String> qualifiedNames = rowTypeNames.stream().map(x -> num2qualifiedFieldName(node, table, x)).collect(Collectors.toList());
+        return qualifiedNames;
+    }
+
+    public static Integer fieldIdx(RelNode node, String field){
+        return node.getRowType().getFieldNames().indexOf(field);
     }
 }

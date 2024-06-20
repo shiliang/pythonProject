@@ -1,6 +1,8 @@
 package com.chainmaker.jobservice.core.calcite.adapter;
 
 import static com.chainmaker.jobservice.api.builder.CalciteUtil.*;
+
+import com.chainmaker.jobservice.api.builder.CalciteUtil;
 import com.chainmaker.jobservice.core.calcite.cost.MPCCost;
 import com.chainmaker.jobservice.core.calcite.cost.MPCRelMetaDataProvider;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.FieldInfo;
@@ -66,6 +68,9 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
     private  Stack<XPCPlan> subQueryTable = new Stack<>();
 
     private Map<String, String> deriveTableMap = Maps.newHashMap();
+
+
+    private Map<String, RelNode> relNodeTable = Maps.newHashMap();
 
     List<String> multiTableList = new ArrayList<>(); // 用于存储参加join的属性名
 
@@ -193,10 +198,19 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
             builder.push(childs[i]);
         }
         RelNode child = childs[0];
+        String tableName = getRelNodeTable(child);
         // 解析groupKey
         List<RexNode> rexkeys = new ArrayList<>();
         for (Expression e : node.getGroupKeys()) {
-            rexkeys.add(dealWithExpression(e));
+            if(e instanceof Identifier) {
+                String name =  ((Identifier) e).getIdentifier();
+                String qualifiedName = getQualifiedFieldName(tableName, name);
+                RexInputRef rexInputRef = rexBuilder.makeInputRef(child, fieldIdx(child, qualifiedName));
+                rexkeys.add(rexInputRef);
+            }else{
+                RexNode rexNode = dealWithExpression(e);
+                rexkeys.add(rexNode);
+            }
         }
         RelBuilder.GroupKey groupKeys = builder.groupKey(rexkeys);
 
@@ -243,6 +257,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
 //        builder.aggregate()
         builder.aggregate(groupKeys, aggregateCalls);
         ans = builder.build();
+
         return ans;
     }
 
@@ -435,10 +450,13 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         }
 
         // 用于取属性时区分builder中是否存在多个表，执行的操作会不同
+//        String leftTable = getRelNodeTable(left);
+//        multiTableList.addAll(qualifiedFields(left, leftTable));
         multiTableList.addAll(left.getRowType().getFieldNames());
         multiTableList.add("::");
+//        String rightTable = getRelNodeTable(right);
+//        multiTableList.addAll(qualifiedFields(right, rightTable));
         multiTableList.addAll(right.getRowType().getFieldNames());
-
         // 处理join条件并参加join
         RexNode joinCond = dealWithExpression(node.getCondition());
 
@@ -469,11 +487,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
             builder.as(alias);      // 别名
         }
         RelNode ans = builder.build();
-        long end = System.currentTimeMillis();
-//        System.out.println(
-//                RelOptUtil.dumpPlan("[Logical plan]", ans, SqlExplainFormat.TEXT,
-//                        SqlExplainLevel.EXPPLAN_ATTRIBUTES));
-
+        relNodeTable.put(tableName, ans);
         return ans;
     }
 
@@ -483,10 +497,15 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         RelNode node = child.accept(this);
         String alias = subQuery.getAlias();
         inheritTableInfo(alias, node);
-        List<String> newNames = node.getRowType().getFieldNames().stream().map(x -> alias + "." + x).collect(Collectors.toList());
-        List<RexNode> projections = Lists.newArrayList();
-        newNames.forEach(x -> projections.add(builder.getRexBuilder().makeInputRef(node, newNames.indexOf(x))));
-        return builder.push(node).project(projections, newNames).build();
+        List<String> filedNames = node.getRowType().getFieldNames().stream()
+                .map(CalciteUtil::getColumnName)
+                .map(x -> CalciteUtil.getQualifiedFieldName(alias, x)).collect(Collectors.toList());
+//        List<RexNode> projections = Lists.newArrayList();
+//        newNames.forEach(x -> projections.add(builder.getRexBuilder().makeInputRef(node, newNames.indexOf(x))));
+//        RelNode ans = builder.push(node).project(projections, newNames).build();
+        RelNode ans = builder.push(node).rename(filedNames).build();
+        relNodeTable.put(alias, ans);
+        return ans;
     }
 
     public String getDerivedTableName(RelNode node){
@@ -835,8 +854,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
      * @return
      */
     private RexNode dealWithDereferenceExpression(DereferenceExpression expr) {
-//        System.out.println("enter dealDereferenceExpression function");
-        RexNode ans = null;
+        RexNode ans;
         String tableName = ((Identifier) expr.getBase()).getIdentifier();
         String fieldName = expr.getFieldName();
 
@@ -849,15 +867,15 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
             int inputOrdinal = 0;
             int inputCount = 1;
             for (int i = 0; i < multiTableList.size(); i++) {
-                if (multiTableList.get(i) == "::") {
+                if (Objects.equals(multiTableList.get(i), "::")) {
                     inputCount++;
                     if (i < pos) {
                         inputOrdinal++;
                     }
                 }
             }
-
-            ans = builder.field(inputCount, inputOrdinal, tableName+"."+fieldName);
+            String fullQualifiedName = tableName+"."+fieldName;
+            ans = builder.field(inputCount, inputOrdinal, fullQualifiedName);
         }
 
 //        System.out.println(ans.toString() + " : [" + tableName+"."+fieldName+"]");
@@ -952,6 +970,11 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         return root;
     }
 
+    private String getRelNodeTable(RelNode node){
+        return relNodeTable.entrySet().stream().filter(x -> x.getValue().equals(node)).findAny().get().getKey();
+    }
+
+
     /**
      * 配置config和schema的时候用到，没什么意义
      */
@@ -973,4 +996,6 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         }
 
     }
+
+
 }

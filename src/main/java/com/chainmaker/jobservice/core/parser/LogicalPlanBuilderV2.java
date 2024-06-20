@@ -146,7 +146,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
 
     @Override
     public XPCPlan visitRegularQuerySpecification(RegularQuerySpecificationContext context) {
-        log.info(context.getText());
+        String text = context.getText();
         List<XPCPlan> children = Lists.newArrayList();
 
         NamedExpressionSeqContext namedExpressionSeqCtx = context.selectClause().namedExpressionSeq();
@@ -162,8 +162,9 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
                 List<XPCPlan> fromList = visitFrom(fromClauseCtx);
                 children.addAll(fromList);
             } else {
-                visitFrom(fromClauseCtx); //搜索出同级别的所有的临时表。因此同样的内部嵌套可能会遍历2遍。
-                children.add(visitWhere(context));
+                List<XPCPlan> fromList = visitFrom(fromClauseCtx); //搜索出同级别的所有的临时表。因此同样的内部嵌套可能会遍历2遍。
+                XPCPlan node = visitWhere(context);
+                children.add(node);
             }
         }
 
@@ -228,14 +229,19 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         } else {
             throw new ParserException("暂不支持的where语法");
         }
+
+        /**
+         * 在读whereClause解析后，获取到rootJoin和rootFilterExpression。
+         *
+         */
         if (rootJoin == null) {
             List<XPCPlan> children = visitFrom(context.fromClause());
             return new XPCFilter(rootFilterExpression, children);
         } else if (rootFilterExpression == null) {
-            visitFrom(context.fromClause());
+            List<XPCPlan> froms = visitFrom(context.fromClause());
             return rootJoin;
         } else {
-            visitFrom(context.fromClause());
+            List<XPCPlan> froms = visitFrom(context.fromClause());
             List<XPCPlan> children = new ArrayList<>();
             children.add(rootJoin);
             return new XPCFilter(rootFilterExpression, children);
