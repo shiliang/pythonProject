@@ -12,7 +12,7 @@ import lombok.Data;
 public class Output {
     private String dataName;
     private String finalResult = "N";
-    private Boolean isFinalResult;
+    private Boolean isFinalResult = false;
     private String domainId;
     private String domainName;
     private String dataId = "";
