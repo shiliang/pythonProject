@@ -98,7 +98,8 @@ public class JobParserServiceImpl implements JobParserService {
             return jobMissionDetail;
         } else {
             ParserWithOptimizerReturnValue optimizer = sqlParser.parserWithOptimizer();
-            OrgInfo orgInfo = new OrgInfo("orgId1", "orgName1");
+//            OrgInfo orgInfo = new OrgInfo("orgId1", "orgName1");
+            OrgInfo orgInfo = sqlVo.getOrgInfo();
             JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(),  sqlVo.getIsStream(),
                     optimizer, sqlParser.getColumnInfoMap(), orgInfo,
                     sqlParser.getSql()

@@ -1200,8 +1200,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             inputData.setType(field.getType().getFullTypeString());
             TableInfo inputTable = mpcMetadata.getTable(pair.left);
 
-            inputData.setDataName(inputTable.getOrgName());
-            inputData.setDataId(inputTable.getOrgDId());
+            inputData.setDataName(inputTable.getAssetName());
+            inputData.setDataId(inputTable.getAssetName());
 
             inputData.setDomainId(inputTable.getOrgDId());
             inputData.setDomainName(inputTable.getOrgName());
@@ -1217,10 +1217,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             outputData.setColumnName(pair.right);
             outputData.setType(field.getType().getFullTypeString());
             TableInfo inputTable = mpcMetadata.getTable(pair.left);
-
-            outputData.setDataName(inputTable.getOrgName());
-            outputData.setDataId(inputTable.getOrgDId());
-
+            outputData.setDataName("");  //不能去除，后面有代码依赖这个做判断
+            outputData.setDataId("");
             outputData.setDomainId(inputTable.getOrgDId());
             outputData.setDomainName(inputTable.getOrgName());
             outputDataList.add(outputData);
