@@ -162,19 +162,15 @@ public class SqlParser {
         printer.visitTree(logicalPlan, 0);
         log.info("\n" + printer.logicalPlanString);
 
+        HashMap<String, String> tableOwnerMap = buildMetaData(assetInfoList);
+
         List<String> columnList = logicalPlanBuilder.getColumnList();
         HashMap<String, TableInfo> metadata = getMetadata(columnList);
         //检查sql是否可执行？
         // 之前的sqlparser约用时1500ms
         // 接入Calcite    3000ms
         LogicPlanAdapter planAdapter = new LogicPlanAdapter(this.sql.toUpperCase(), logicalPlan, metadata, modelType);
-        try {
-            planAdapter.CastToRelNode(); //核心步骤，将LogicalPlan转换为Calcite的RelNode
-        }catch (Exception e){
-            log.error(e.getMessage(), e);
-//            System.exit(-1);
-        }
-
+        planAdapter.CastToRelNode(); //核心步骤，将LogicalPlan转换为Calcite的RelNode
         // 查询优化部分   300ms
         RelNode root = planAdapter.getRoot();
         log.info("calcite reltree: " + RelOptUtil.toString(root, SqlExplainLevel.ALL_ATTRIBUTES));

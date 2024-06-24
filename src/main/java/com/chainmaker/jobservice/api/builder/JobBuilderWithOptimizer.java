@@ -43,8 +43,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.chainmaker.jobservice.api.builder.CalciteUtil.fromNumericName2FieldName;
-import static com.chainmaker.jobservice.api.builder.CalciteUtil.getTableNameAndColumnName;
+import static com.chainmaker.jobservice.api.builder.CalciteUtil.*;
 import static com.chainmaker.jobservice.core.calcite.utils.ConstExprJudgement.isNumeric;
 
 
@@ -1176,13 +1175,14 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         List<AggregateCall> calls = phyPlan.getAggCallList();
         List<String> funcList = Lists.newArrayList();
         for(AggregateCall call : calls){
-            String funcLiteral = call.toString();
+            String funcLiteral = call.toString() + " as " + getColumnName(call.name);
             if(call.getArgList().isEmpty()){
                 funcList.add(funcLiteral);
             }else{
                 String ref = call.getArgList().get(0).toString();
                 Pair<String,String> pair = getTableNameAndColumnName(fromNumericName2FieldName(phyPlan, ref));
-                funcList.add(funcLiteral.replace(ref, pair.right));
+                String refLiteral = "$" + ref;
+                funcList.add(funcLiteral.replace(refLiteral, pair.right));
             }
         }
         moduleparams.add(new ModuleParam("aggFunc", funcList));
