@@ -13,7 +13,6 @@ import com.chainmaker.jobservice.api.model.job.service.Service;
 import com.chainmaker.jobservice.api.model.job.task.InputDetail;
 import com.chainmaker.jobservice.api.model.job.task.Task;
 import com.chainmaker.jobservice.api.model.vo.*;
-import com.chainmaker.jobservice.api.response.HttpResponse;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.api.service.JobParserService;
 import com.chainmaker.jobservice.core.SqlParser;

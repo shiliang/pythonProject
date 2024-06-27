@@ -20,7 +20,6 @@ import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.externalize.RelXmlWriter;
 import org.apache.calcite.sql.SqlExplainFormat;
 import org.apache.calcite.sql.SqlExplainLevel;
-import org.chainmaker.pb.config.LocalConfig;
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration;
 
 import javax.swing.*;

@@ -146,9 +146,9 @@ public class MPCMetadata {
             }
         }
 
-        log.info("MPCMetadata init..., tableInfoMap:" + tableInfoMap);
-        log.info("MPCMetadata init..., tableInfoMap:" + tableFieldsMap);
-        log.info("MPCMetadata init..., fieldNameInfoMap:" + fieldNameInfoMap);
+        log.debug("MPCMetadata init..., tableInfoMap:" + tableInfoMap);
+        log.debug("MPCMetadata init..., tableInfoMap:" + tableFieldsMap);
+        log.debug("MPCMetadata init..., fieldNameInfoMap:" + fieldNameInfoMap);
     }
 
     /**

@@ -25,7 +25,6 @@ import com.chainmaker.jobservice.core.parser.plans.XPCProject;
 import com.chainmaker.jobservice.core.parser.tree.*;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.RelSubset;
@@ -576,9 +575,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * 深拷贝tasks
      */
     private void makeTackCp() {
-        Gson gson = new Gson();
+//        Gson gson = new Gson();
         for (int i = 0; i < tasks.size(); i++) {
-            taskcp.add(gson.fromJson(gson.toJson(tasks.get(i)), Task.class));
+            taskcp.add(tasks.get(i));
+//            taskcp.add(gson.fromJson(gson.toJson(tasks.get(i)), Task.class));
             String moduleName = taskcp.get(i).getModule().getModuleName();
             if (moduleName.equals(TaskType.LOCALEXP.name()) || moduleName.equals(TaskType.LOCALAGG.name()) || moduleName.startsWith(TaskType.MPC.name())) {
                 for (InputDetail inputData : taskcp.get(i).getInput().getInputDataDetailList()) {

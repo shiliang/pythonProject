@@ -1,9 +1,8 @@
 package com.chainmaker.jobservice.api.aspect;
 
 import com.alibaba.fastjson.JSONObject;
-import com.chainmaker.jobservice.api.response.ContractException;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.chainmaker.jobservice.api.response.ParserException;
-import com.chainmaker.jobservice.api.response.RestException;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
@@ -81,7 +80,7 @@ public class WebLogAspect {
     @AfterReturning(pointcut = "webLog()", returning = "result")
     public void doAfterReturning(JoinPoint joinPoint, Object result) {
         // 打印出参
-        logger.info("Response Args  : {}", JSONObject.toJSONString(result));
+        logger.info("Response Args  : {}", JSONObject.toJSONString(result, SerializerFeature.DisableCircularReferenceDetect));
         // 执行耗时
         logger.info("Time-Consuming : {} ms", System.currentTimeMillis() - startTime);
         logger.info("=========================================== Success ===========================================" + LINE_SEPARATOR);
@@ -100,9 +99,7 @@ public class WebLogAspect {
             logger.error("SQL解析异常！原因是:", e);
         } else if (e instanceof NullPointerException) {
             logger.error("发生空指针异常！原因是:",e);
-        } else if (e instanceof ContractException) {
-            logger.error("调用合约失败！原因是:",e);
-        } else if (e instanceof RestClientException || e instanceof RestException) {
+        } else if (e instanceof RestClientException) {
             logger.error("请求后台数据异常！原因是:",e);
         } else {
             logger.error("未知异常！原因是:",e);

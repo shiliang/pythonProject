@@ -87,7 +87,7 @@ public class SqlParser {
 //            missionDetailVO.setVersion(Integer.parseInt(newVerArray.toString()));
             missionDetailVO.setDatacatalogId(dataCatalogInfo.getAssetId());
             missionDetailVOs.add(missionDetailVO);
-            log.info("dataCatalogInfo: " + dataCatalogInfo);
+            log.debug("dataCatalogInfo: " + dataCatalogInfo);
             DataInfo dataInfo = dataCatalogInfo.getDataInfo();
             for (SaveTableColumnItem dataCatalogDetailInfo : dataInfo.getItemList()) {
                 columnInfoMap.put(dataCatalogInfo.getAssetEnName().toUpperCase()+"."+dataCatalogDetailInfo.getName().toUpperCase(), String.valueOf(dataCatalogDetailInfo.getDataType()));

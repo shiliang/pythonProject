@@ -2,6 +2,7 @@ package com.chainmaker.jobservice.api.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.chainmaker.jobservice.api.aspect.WebLog;
 import com.chainmaker.jobservice.api.model.job.Job;
 import com.chainmaker.jobservice.api.model.vo.*;
