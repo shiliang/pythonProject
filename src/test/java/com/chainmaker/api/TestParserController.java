@@ -1,29 +1,19 @@
 package com.chainmaker.api;
 
-import com.alibaba.fastjson.JSON;
 import com.chainmaker.jobservice.api.ParserApplication;
 import com.chainmaker.jobservice.api.controller.ParserController;
-import com.chainmaker.jobservice.api.model.vo.SqlVo;
 import com.chainmaker.jobservice.api.response.Result;
 import com.chainmaker.jobservice.api.service.JobParserService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 
 @SpringBootTest(classes = ParserApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-public class TestParser {
+public class TestParserController {
 
     @Autowired
     private JobParserService jobParserService;
@@ -234,9 +224,10 @@ public class TestParser {
                 "                        \"orgName\": \"1-c\",\n" +
                 "                    },\n" +
                 "}";
-
-        Result result = testTemplate.postForObject("/v1/commit/dag", req, Result.class);
-        System.out.println(result);
+        Result result1 = testTemplate.postForObject("/v1/preview/dag", req, Result.class);
+        System.out.println(result1);
+        Result result2 = testTemplate.postForObject("/v1/commit/dag", req, Result.class);
+        System.out.println(result2);
     }
 
     @Test
@@ -437,9 +428,10 @@ public class TestParser {
                 "                        \"orgName\": \"1-c\",\n" +
                 "                    },\n" +
                 "}";
-
-        Result result = testTemplate.postForObject("/v1/commit/dag", req, Result.class);
-        System.out.println(result);
+        Result result1 = testTemplate.postForObject("/v1/preview/dag", req, Result.class);
+        System.out.println(result1);
+        Result result2 = testTemplate.postForObject("/v1/commit/dag", req, Result.class);
+        System.out.println(result2);
     }
 
     @Test
@@ -640,9 +632,10 @@ public class TestParser {
                 "                        \"orgName\": \"1-c\",\n" +
                 "                    },\n" +
                 "}";
-
-        Result result = testTemplate.postForObject("/v1/commit/dag", req, Result.class);
-        System.out.println(result);
+        Result result1 = testTemplate.postForObject("/v1/preview/dag", req, Result.class);
+        System.out.println(result1);
+        Result result2 = testTemplate.postForObject("/v1/commit/dag", req, Result.class);
+        System.out.println(result2);
     }
 
     @Test
@@ -843,8 +836,9 @@ public class TestParser {
                 "                        \"orgName\": \"1-c\",\n" +
                 "                    },\n" +
                 "}";
-
-        Result result = testTemplate.postForObject("/v1/commit/dag", req, Result.class);
-        System.out.println(result);
+        Result result1 = testTemplate.postForObject("/v1/preview/dag", req, Result.class);
+        System.out.println(result1);
+        Result result2 = testTemplate.postForObject("/v1/commit/dag", req, Result.class);
+        System.out.println(result2);
     }
 }
