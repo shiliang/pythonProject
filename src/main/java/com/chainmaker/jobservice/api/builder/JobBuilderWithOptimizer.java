@@ -1231,6 +1231,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         input.setInputDataDetailList(inputDataList);
         task.setInput(input);
         task.setOutputList(outputDataList);
+
+        genParties(input,task);
         phyTaskMap.put(phyPlan, task);
         return task;
     }
@@ -1367,21 +1369,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         task.setOutputList(List.of(outputdata));
 
         // parties信息
-        List<Party> parties = new ArrayList<>();
-        for (InputDetail inputData : input.getInputDataDetailList()) {
-            Party party = new Party();
-            party.setServerInfo(null);
-            party.setStatus(null);
-            party.setTimestamp(null);
-            party.setPartyId(inputData.getDomainId());
-            party.setPartyName(inputData.getDomainName());
-            parties.add(party);
-        }
-        parties = parties.stream().filter(StreamUtils.distinctByKey(Party::getPartyId)).collect(Collectors.toList());
-        task.setPartyList(parties);
-        for (Party party : parties) {
-            jobPartyList.add(party);
-        }
+        List<Party> parties = genParties(input, task);
 
         if (parties.size() == 1) {
             if (module.getModuleName().equals("EXP")) {
@@ -1529,22 +1517,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         task.setInput(input);
 
         // parties信息
-        List<Party> parties = new ArrayList<>();
-        for (InputDetail inputData : input.getInputDataDetailList()) {
-            Party party = new Party();
-            party.setServerInfo(null);
-            party.setStatus(null);
-            party.setTimestamp(null);
-            party.setPartyId(inputData.getDomainId());
-            party.setPartyName(inputData.getDomainName());
-            parties.add(party);
-        }
-        parties = parties.stream().filter(StreamUtils.distinctByKey(Party::getPartyId)).collect(Collectors.toList());
-        task.setPartyList(parties);
-
-        for (Party party : parties) {
-            jobPartyList.add(party);
-        }
+        genParties(input, task);
 
         // 输出信息
 //        Output output = new Output();
@@ -1569,6 +1542,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         outputdata2.setDomainId(inputdata2.getDomainId());
         outputdata2.setDomainName(inputdata2.getDomainName());
         outputdata2.setDataId("");
+
+        List<Party> parties = genParties(input,task);
 
         if (parties.size() == 1) {
 //            output.setData();
@@ -1668,6 +1643,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         task.setOutputList(List.of(outputdata));
 
         // parties信息
+        genParties(input, task);
+        phyTaskMap.put(phyPlan, task);
+        return task;
+    }
+
+    public List<Party> genParties(Input input, Task task){
         List<Party> parties = new ArrayList<>();
         for (InputDetail inputData : input.getInputDataDetailList()) {
             Party party = new Party();
@@ -1680,14 +1661,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
         parties = parties.stream().filter(StreamUtils.distinctByKey(Party::getPartyId)).collect(Collectors.toList());
         task.setPartyList(parties);
-
-        for (Party party : parties) {
-            jobPartyList.add(party);
-        }
-        phyTaskMap.put(phyPlan, task);
-        return task;
+        jobPartyList.addAll(parties);
+        return parties;
     }
-
     public Module checkPSIModule(MPCJoin phyPlan) {
         Module module = new Module();
         RexCall cond = (RexCall) phyPlan.getCondition();
