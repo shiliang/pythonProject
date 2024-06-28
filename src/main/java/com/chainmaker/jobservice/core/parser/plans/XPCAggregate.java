@@ -47,7 +47,7 @@ public class XPCAggregate extends XPCPlan {
         ans = new StringBuilder(ans.substring(0, ans.length() - 2));
         ans.append(" ] ");
 
-        ans.append("Agg = [");
+        ans.append("Local Agg = [");
         for (NamedExpression e : aggCallList) {
             ans.append(" ")
                     .append(e.getExpression())

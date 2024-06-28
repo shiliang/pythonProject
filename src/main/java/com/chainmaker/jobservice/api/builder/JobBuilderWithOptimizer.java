@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.api.builder;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.Constant;
 import com.chainmaker.jobservice.api.enums.JobType;
@@ -8,7 +9,6 @@ import com.chainmaker.jobservice.api.model.job.Job;
 import com.chainmaker.jobservice.api.model.job.service.Service;
 import com.chainmaker.jobservice.api.model.job.task.*;
 import com.chainmaker.jobservice.api.model.job.task.Module;
-import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.FieldInfo;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
@@ -17,6 +17,7 @@ import com.chainmaker.jobservice.core.calcite.relnode.MPCFilter;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCJoin;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCProject;
 import com.chainmaker.jobservice.core.calcite.utils.ParserWithOptimizerReturnValue;
+import com.chainmaker.jobservice.core.optimizer.model.InputData;
 import com.chainmaker.jobservice.core.optimizer.plans.*;
 import com.chainmaker.jobservice.core.parser.plans.FederatedLearning;
 import com.chainmaker.jobservice.core.parser.plans.XPCHint;
@@ -25,6 +26,7 @@ import com.chainmaker.jobservice.core.parser.plans.XPCProject;
 import com.chainmaker.jobservice.core.parser.tree.*;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.RelSubset;
@@ -43,7 +45,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.chainmaker.jobservice.api.builder.CalciteUtil.*;
-import static com.chainmaker.jobservice.core.calcite.utils.ConstExprJudgement.isNumeric;
 
 
 @Slf4j
@@ -93,7 +94,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private List<Task> tasks = new ArrayList<>();
     private List<Task> mergedTasks = new ArrayList<>();
     private List<Task> taskcp = new ArrayList<>();
-    private List<Party> jobPartyList = new ArrayList<>();
+    private Set<Party> jobPartySet = Sets.newHashSet();
     private LinkedHashSet<String> jobParties = new LinkedHashSet<>();
     private XPCPlan OriginPlan;
     private XPCHint hint;
@@ -212,7 +213,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         job.setCreatePartyName(orgName);
         job.setRequestData(sql);
         job.setTasksDAG(taskDAG);
-        job.setPartyList(new ArrayList<>(jobPartyList));
+        job.setPartyList(new ArrayList<>(jobPartySet));
     }
 
     public void updateTeePsi() {
@@ -983,22 +984,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         task.setOutputList(outputDataList);
 
         // party
-        List<Party> parties = new ArrayList<>();
-        for (InputDetail inputData : inputDataList) {
-            Party party = new Party();
-            party.setServerInfo(null);
-            party.setStatus(null);
-            party.setTimestamp(null);
-            party.setPartyId(inputData.getDomainId());
-            party.setPartyName(inputData.getDomainName());
-            parties.add(party);
-        }
-        parties = parties.stream().filter(StreamUtils.distinctByKey(Party::getPartyId)).collect(Collectors.toList());
-        task.setPartyList(parties);
-
-        for (Party p : parties) {
-            jobPartyList.add(p);
-        }
+        genParties(input, task);
 
         return task;
     }
@@ -1164,7 +1150,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         Task task = basicTask(String.valueOf(cnt++));
         MPCMetadata mpcMetadata = MPCMetadata.getInstance();
         Module module = new Module();
-        module.setModuleName("Agg");
+        module.setModuleName(TaskType.LOCALAGG.name());
         List<ModuleParam> moduleparams = new ArrayList<ModuleParam>();
         ImmutableList<ImmutableBitSet> sets = phyPlan.getGroupSets();
         for(ImmutableBitSet set : sets){
@@ -1385,6 +1371,17 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             }
         }
 
+        //以为project是一个字段一个任务，所以input比较简单。对于LocalAgg来说。做个转换就可以了。
+        if(parties.size() == 1 && module.getModuleName().equals(TaskType.LOCALAGG.name())) {
+            InputDetail inputData = input.getInputDataDetailList().get(0);
+            JSONObject json = inputData.getParams();
+            String field = json.getString("field");
+            String func = String.valueOf(moduleparams.stream()
+                    .filter(x -> x.getKey().equals("function"))
+                    .findAny().get().getValue()
+            );
+            moduleparams.add(new ModuleParam("aggFunc", StrUtil.format("{}({})",func, field)));
+        }
         phyTaskMap.put(phyPlan, task);
         return task;
     }
@@ -1661,7 +1658,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
         parties = parties.stream().filter(StreamUtils.distinctByKey(Party::getPartyId)).collect(Collectors.toList());
         task.setPartyList(parties);
-        jobPartyList.addAll(parties);
+        jobPartySet.addAll(parties);
         return parties;
     }
     public Module checkPSIModule(MPCJoin phyPlan) {
