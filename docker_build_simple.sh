@@ -14,9 +14,10 @@ if [ ! "$(docker images -q ${IMAGE_NAME}:${BASE_IMAGE_TAG} 2> /dev/null)" ]; the
 fi
 
 # build binary locally
-make build_local
+#make build_local
+source ~/.bashrc
+mvn11 clean package -DskipTests=true
 
-# build docker image from Dockerfile_simple
 docker build -f ./Dockerfile-simple -t ${IMAGE_NAME}:${IMAGE_TAG} .
 docker push ${IMAGE_NAME}:${IMAGE_TAG}
 
