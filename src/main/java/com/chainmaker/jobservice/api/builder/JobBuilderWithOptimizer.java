@@ -1149,14 +1149,18 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     public Task generateAggregateTask(MPCAggregate phyPlan, HashMap<RelNode, Task> phyTaskMap){
         Task task = basicTask(String.valueOf(cnt++));
         MPCMetadata mpcMetadata = MPCMetadata.getInstance();
+
         Module module = new Module();
         module.setModuleName(TaskType.LOCALAGG.name());
         List<ModuleParam> moduleparams = new ArrayList<ModuleParam>();
+
+        Set<String> usedFields = new HashSet<String>();
         ImmutableList<ImmutableBitSet> sets = phyPlan.getGroupSets();
         for(ImmutableBitSet set : sets){
             String fullQualifiedfield = fromNumericName2FieldName(phyPlan, set.toString());
             Pair<String,String> pair = getTableNameAndColumnName(fullQualifiedfield);
             moduleparams.add(new ModuleParam("groupBy", pair.right));
+            usedFields.add(fullQualifiedfield);
         }
         List<AggregateCall> calls = phyPlan.getAggCallList();
         List<String> funcList = Lists.newArrayList();
@@ -1166,9 +1170,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 funcList.add(funcLiteral);
             }else{
                 String ref = call.getArgList().get(0).toString();
-                Pair<String,String> pair = getTableNameAndColumnName(fromNumericName2FieldName(phyPlan, ref));
+                String qualifiedName = fromNumericName2FieldName(phyPlan, ref);
+                Pair<String,String> pair = getTableNameAndColumnName(qualifiedName);
                 String refLiteral = "$" + ref;
+                assert pair.right != null;
                 funcList.add(funcLiteral.replace(refLiteral, pair.right));
+                usedFields.add(qualifiedName);
             }
         }
         String funcStr = String.join(",", funcList);
@@ -1185,17 +1192,19 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             InputDetail inputData = new InputDetail();
             String fullQualifiedfield = fromNumericName2FieldName(relSubset.getBest(),field.getName());
             Pair<String, String> pair = getTableNameAndColumnName(fullQualifiedfield);
-            inputData.setColumnName(pair.right);
-            inputData.setType(field.getType().getFullTypeString());
-            TableInfo inputTable = mpcMetadata.getTable(pair.left);
+            if(usedFields.contains(fullQualifiedfield)) {
+                inputData.setColumnName(pair.right);
+                inputData.setType(field.getType().getFullTypeString());
+                TableInfo inputTable = mpcMetadata.getTable(pair.left);
 
-            inputData.setDataName(inputTable.getAssetName());
-            inputData.setDataId(inputTable.getAssetName());
+                inputData.setDataName(inputTable.getAssetName());
+                inputData.setDataId(inputTable.getAssetName());
 
-            inputData.setDomainId(inputTable.getOrgDId());
-            inputData.setDomainName(inputTable.getOrgName());
-            inputData.setTaskSrc(childTask.getTaskName());
-            inputDataList.add(inputData);
+                inputData.setDomainId(inputTable.getOrgDId());
+                inputData.setDomainName(inputTable.getOrgName());
+                inputData.setTaskSrc(childTask.getTaskName());
+                inputDataList.add(inputData);
+            }
         }
 
         List<RelDataTypeField> outFields = phyPlan.getRowType().getFieldList();
