@@ -17,12 +17,8 @@ import com.chainmaker.jobservice.core.calcite.relnode.MPCFilter;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCJoin;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCProject;
 import com.chainmaker.jobservice.core.calcite.utils.ParserWithOptimizerReturnValue;
-import com.chainmaker.jobservice.core.optimizer.model.InputData;
 import com.chainmaker.jobservice.core.optimizer.plans.*;
-import com.chainmaker.jobservice.core.parser.plans.FederatedLearning;
-import com.chainmaker.jobservice.core.parser.plans.XPCHint;
-import com.chainmaker.jobservice.core.parser.plans.XPCPlan;
-import com.chainmaker.jobservice.core.parser.plans.XPCProject;
+import com.chainmaker.jobservice.core.parser.plans.*;
 import com.chainmaker.jobservice.core.parser.tree.*;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -96,7 +92,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private List<Task> taskcp = new ArrayList<>();
     private Set<Party> jobPartySet = Sets.newHashSet();
     private LinkedHashSet<String> jobParties = new LinkedHashSet<>();
-    private XPCPlan OriginPlan;
+    private XPCPlan originPlan;
     private XPCHint hint;
     private HashMap<String, String> columnInfoMap;
     private String orgID;
@@ -107,13 +103,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         this.modelType = modelType;
         this.isStream = isStream;
         this.phyPlan = value.getPhyPlan();
-        this.OriginPlan = value.getOriginPlan();
+        this.originPlan = value.getOriginPlan();
         this.createTime = String.valueOf(System.currentTimeMillis());
         this.jobID = UUID.randomUUID().toString().replace("-", "").toLowerCase();
         this.metadata = MPCMetadata.getInstance();
-        if (OriginPlan instanceof XPCHint) {
-            hint = (XPCHint) OriginPlan;
-            OriginPlan = (XPCPlan) OriginPlan.getChildren().get(0);
+        if (originPlan instanceof XPCHint) {
+            hint = (XPCHint) originPlan;
+            originPlan = (XPCPlan) originPlan.getChildren().get(0);
         } else {
             hint = null;
         }
@@ -165,7 +161,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         HashMap<RelNode, Task> phyTaskMap = new HashMap<>();
         // 生成tasks
-        generateFLTasks(OriginPlan);
+        generateFLTasks(originPlan);
         tasks.addAll(dfsPlan(phyPlan, phyTaskMap));
 //        updateTeePsi();
         // 特殊处理联邦学习相关的tasks
@@ -1165,10 +1161,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         List<AggregateCall> calls = phyPlan.getAggCallList();
         List<String> funcList = Lists.newArrayList();
         for(AggregateCall call : calls){
-            String funcLiteral = call.toString() + " as " + getColumnName(call.name);
-            if(call.getArgList().isEmpty()){
-                funcList.add(funcLiteral);
-            }else{
+            String callStr = call.toString();
+            String funcLiteral = callStr + " as " + getColumnName(call.name);
+            if(!call.getArgList().isEmpty()){
                 String ref = call.getArgList().get(0).toString();
                 String qualifiedName = fromNumericName2FieldName(phyPlan, ref);
                 Pair<String,String> pair = getTableNameAndColumnName(qualifiedName);
@@ -1176,6 +1171,11 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 assert pair.right != null;
                 funcList.add(funcLiteral.replace(refLiteral, pair.right));
                 usedFields.add(qualifiedName);
+            }else if("COUNT()".equalsIgnoreCase(callStr)){
+                funcLiteral = funcLiteral.replace("()", "(1)");
+                funcList.add(funcLiteral);
+            }else{
+                throw new RuntimeException("illegal agg func: " + callStr);
             }
         }
         String funcStr = String.join(",", funcList);
@@ -1770,6 +1770,22 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
     public String getFieldDomainID(String fieldName) {return getFieldInfo(fieldName).getDomainID();}
 
+
+//    public void searchAggInfo(XPCPlan xpcPlan, AggregateCall call){
+//        if(xpcPlan instanceof XPCAggregate){
+//            XPCAggregate xpcAggregate = (XPCAggregate) xpcPlan;
+//            List<NamedExpression> exprs = xpcAggregate.getAggCallList();
+//
+//            for(NamedExpression expr : exprs){
+//                System.out.println(expr);
+//            }
+//        }else{
+//        List<XPCPlan> children = xpcPlan.getChildren();
+//        for(XPCPlan child : children){
+//            searchAggInfo(child,call);
+//        }
+//    }
+//    }
     private void multipartyPsi() {
         HashMap<String, InputDetail> inputMap = new HashMap<>();
         HashMap<String, Output> outputMap = new HashMap<>();

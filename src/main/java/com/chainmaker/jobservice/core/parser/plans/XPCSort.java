@@ -40,11 +40,6 @@ public class XPCSort extends XPCPlan {
 
 
     @Override
-    public List<? extends Node> getChildren() {
-        return null;
-    }
-
-    @Override
     public String toString() {
         return null;
     }

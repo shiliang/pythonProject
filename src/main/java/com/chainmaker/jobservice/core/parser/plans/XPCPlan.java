@@ -3,6 +3,8 @@ package com.chainmaker.jobservice.core.parser.plans;
 import com.chainmaker.jobservice.core.parser.tree.Node;
 import org.apache.calcite.rel.RelNode;
 
+import java.util.List;
+
 /**
  * basic logical operator:
  * Project
@@ -17,5 +19,9 @@ public abstract class XPCPlan extends Node {
 
     public RelNode accept(LogicalPlanRelVisitor visitor) {
         return visitor.visit(this);
+    }
+
+    public List<XPCPlan> getChildren() {
+        return null;
     }
 }
