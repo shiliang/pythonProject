@@ -1200,6 +1200,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 inputData.setDataName(inputTable.getAssetName());
                 inputData.setDataId(inputTable.getAssetName());
 
+                inputData.setAssetName(inputTable.getAssetName());
+                inputData.setTableName(inputTable.getName());
+
                 inputData.setDomainId(inputTable.getOrgDId());
                 inputData.setDomainName(inputTable.getOrgName());
                 inputData.setTaskSrc(childTask.getTaskName());
