@@ -12,10 +12,7 @@ import com.chainmaker.jobservice.api.model.job.task.Module;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.FieldInfo;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
-import com.chainmaker.jobservice.core.calcite.relnode.MPCAggregate;
-import com.chainmaker.jobservice.core.calcite.relnode.MPCFilter;
-import com.chainmaker.jobservice.core.calcite.relnode.MPCJoin;
-import com.chainmaker.jobservice.core.calcite.relnode.MPCProject;
+import com.chainmaker.jobservice.core.calcite.relnode.*;
 import com.chainmaker.jobservice.core.calcite.utils.ParserWithOptimizerReturnValue;
 import com.chainmaker.jobservice.core.optimizer.plans.*;
 import com.chainmaker.jobservice.core.parser.plans.*;
@@ -98,6 +95,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private String orgID;
     private String orgName;
     private String sql;
+
+    private Map<String, RelNode> tableOriginTableMap = new HashMap<>();
+
 
     public JobBuilderWithOptimizer(Integer modelType, Integer isStream, ParserWithOptimizerReturnValue value, HashMap<String, String> columnInfoMap, OrgInfo orgInfo, String sql) {
         this.modelType = modelType;
@@ -1059,6 +1059,50 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
     }
 
+    public void buildTableCache(RelNode phyPlan){
+        List<String> fieldNames = phyPlan.getRowType().getFieldNames();
+        if(phyPlan instanceof MPCTableScan) {
+            String tableName = getTableName(fieldNames.get(0));
+            tableOriginTableMap.put(tableName, phyPlan);
+        }else if(phyPlan instanceof MPCAggregate){
+            Set<String> set = fieldNames.stream().map(CalciteUtil::getTableName).collect(Collectors.toSet());
+            RelNode node = getOneInputOriginTable(phyPlan);
+            for(String tableName : set){
+                if(!tableOriginTableMap.containsKey(tableName) && node != null){
+                    tableOriginTableMap.put(tableName, node);
+                }
+            }
+        }else if(phyPlan instanceof MPCProject){
+            RelNode node = getOneInputOriginTable(phyPlan);
+            if(node != null){
+                String tableName = getTableName(fieldNames.get(0));
+                tableOriginTableMap.put(tableName, node);
+            }
+        }
+    }
+
+    public String getOriginalTableName(String table){
+        return tableOriginTableMap.get(table).getTable().getQualifiedName().get(0);
+    }
+
+
+    //这个是准确的。
+    //无法用表名去映射relNode，因为project可能涉及多个表名。
+    public RelNode getOneInputOriginTable(RelNode phyPlan){
+        if(phyPlan.getInputs().size() > 1){
+            return null;
+        }
+        if(phyPlan instanceof MPCTableScan){
+            return phyPlan;
+        }else if(phyPlan instanceof RelSubset) {
+            phyPlan = ((RelSubset) phyPlan).getBest();
+        }else {
+            phyPlan = phyPlan.getInputs().get(0);
+        }
+        return getOneInputOriginTable(phyPlan);
+    }
+
+
     /**
      * 具体Task转化的实现
      * @param phyPlan
@@ -1067,7 +1111,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      */
     public List<Task> generateMpcTasks(RelNode phyPlan, HashMap<RelNode, Task> phyTaskMap) {
         List<Task> tasks = new ArrayList<>();
-
+        buildTableCache(phyPlan);
 //        if (phyPlan instanceof RelSubset) {
 //            phyPlan = ((RelSubset) phyPlan).getBest();
 //        }
@@ -1336,7 +1380,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             inputdata.setTableName(tableInfo.getName());
             FieldInfo fieldInfo = tableInfo.getFields().get(tableField);
             inputdata.setColumnName(fieldInfo.getFieldName());
-            inputdata.setAssetName(tableInfo.getAssetName());
+
+            //对于中间表，需要找到源头的资产名称。因为中间表不会注册在ida中
+            String originTable = getOriginalTableName(table);
+            TableInfo originTableInfo = metadata.getTableInfoMap().get(originTable);
+            inputdata.setAssetName(originTableInfo.getAssetName());
+
             inputdata.setDatabaseName(fieldInfo.getDatabaseName());
             inputdata.setComments(fieldInfo.getComments());
             inputdata.setLength(fieldInfo.getDataLength());
@@ -1453,7 +1502,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         String leftField = phyPlan.getRowType().getFieldNames().get(((RexInputRef) cond.getOperands().get(0)).getIndex());
         String rightField = phyPlan.getRowType().getFieldNames().get(((RexInputRef) cond.getOperands().get(1)).getIndex());
         Task leftChild = phyTaskMap.get(((RelSubset) phyPlan.getLeft()).getBest());
-        System.out.println(((RelSubset) phyPlan.getRight()).getBest() instanceof MPCFilter);
+//        System.out.println(((RelSubset) phyPlan.getRight()).getBest() instanceof MPCFilter);
         Task rightChild = phyTaskMap.get(((RelSubset) phyPlan.getRight()).getBest());
 
         inputdata1.setTaskSrc(leftChild.getTaskName());
@@ -1480,7 +1529,11 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         inputdata1.setType(columnInfoMap.get(leftField.toUpperCase()));
         TableInfo leftTableInfo = metadata.getTableInfoMap().get(leftTable);
         inputdata1.setTableName(leftTableInfo.getName());
-        inputdata1.setAssetName(leftTableInfo.getAssetName());
+
+        String leftOriginTable = getOriginalTableName(leftTableInfo.getAssetName());
+        TableInfo leftOriginTableInfo = metadata.getTable(leftOriginTable);
+        inputdata1.setAssetName(leftOriginTableInfo.getAssetName());
+
         FieldInfo leftFieldInfo = leftTableInfo.getFields().get(leftField);
         inputdata1.setColumnName(leftFieldInfo.getFieldName());
         inputdata1.setDatabaseName(leftFieldInfo.getDatabaseName());
@@ -1511,7 +1564,11 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         inputdata2.setType(columnInfoMap.get(rightField.toUpperCase()));
         TableInfo rightTableInfo = metadata.getTableInfoMap().get(rightTable);
         inputdata2.setTableName(rightTableInfo.getName());
-        inputdata2.setAssetName(rightTableInfo.getAssetName());
+
+        String rightOriginTable = getOriginalTableName(rightTableInfo.getAssetName());
+        TableInfo rightOriginTableInfo = metadata.getTable(rightOriginTable);
+        inputdata2.setAssetName(rightOriginTableInfo.getAssetName());
+
         FieldInfo rightFieldInfo = rightTableInfo.getFields().get(rightField);
         inputdata2.setColumnName(rightFieldInfo.getFieldName());
         inputdata2.setDatabaseName(rightFieldInfo.getDatabaseName());
