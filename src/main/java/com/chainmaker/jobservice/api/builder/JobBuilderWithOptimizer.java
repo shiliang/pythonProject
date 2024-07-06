@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.api.builder;
 
+import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.Constant;
@@ -1231,7 +1232,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         RelSubset relSubset = (RelSubset)(phyPlan.getInputs().get(0));
         List<RelDataTypeField> inFields =relSubset.getBest().getRowType().getFieldList();
-        Task childTask = phyTaskMap.get(relSubset.getBest());
+        Task srcTask = phyTaskMap.get(relSubset.getBest());
         for(RelDataTypeField field: inFields){
             InputDetail inputData = new InputDetail();
             String fullQualifiedfield = fromNumericName2FieldName(relSubset.getBest(),field.getName());
@@ -1241,7 +1242,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 inputData.setType(field.getType().getFullTypeString());
                 TableInfo inputTable = mpcMetadata.getTable(pair.left);
 
-                inputData.setDataName(inputTable.getAssetName());
+                inputData.setDataName(srcTask.getOutputList().get(0).getDataName());
                 inputData.setDataId(inputTable.getAssetName());
 
                 inputData.setAssetName(inputTable.getAssetName());
@@ -1249,7 +1250,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
                 inputData.setDomainId(inputTable.getOrgDId());
                 inputData.setDomainName(inputTable.getOrgName());
-                inputData.setTaskSrc(childTask.getTaskName());
+                inputData.setTaskSrc(srcTask.getTaskName());
                 inputDataList.add(inputData);
             }
         }
@@ -1262,7 +1263,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             outputData.setColumnName(pair.right);
             outputData.setType(field.getType().getFullTypeString());
             TableInfo inputTable = mpcMetadata.getTable(pair.left);
-            outputData.setDataName("");  //不能去除，后面有代码依赖这个做判断
+            outputData.setDataName(inputDataList.get(0).getDomainId() + "_" + cnt);  //不能去除，后面有代码依赖这个做判断
             outputData.setDataId("");
             outputData.setDomainId(inputTable.getOrgDId());
             outputData.setDomainName(inputTable.getOrgName());
@@ -1279,7 +1280,17 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         return task;
     }
 
-
+    public RexCall rmAsOfRexCall(RexCall call){
+        String callStr = call.toString();
+        int cnt = ReUtil.count("AS\\(", callStr);
+        for (int i = 0; i < cnt - 1 ; i++){
+            RexNode rexNode = call.getOperands().get(0);
+            if (rexNode instanceof  RexCall){
+                call = (RexCall) rexNode;
+            }
+        }
+        return call;
+    }
 
 
 
@@ -1302,7 +1313,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     rexBuilder.getTypeFactory().createSqlType(SqlTypeName.VARCHAR),
                     false);
             rexNode = rexBuilder.makeCall(new SqlAsOperator(), rexNode, stringLiteral);
+        }else if(rexNode instanceof RexCall){
+            rexNode = rmAsOfRexCall((RexCall)rexNode);
         }
+
         RexCall node = (RexCall)rexNode;
         RexNode proj = node.getOperands().get(0);
         // module信息（即进行什么操作）
