@@ -160,7 +160,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 RelOptUtil.dumpPlan("[Physical plan] TEXT", phyPlan, SqlExplainFormat.TEXT,
                         SqlExplainLevel.ALL_ATTRIBUTES));
 
-        HashMap<RelNode, Task> phyTaskMap = new HashMap<>();
+        HashMap<RelNode, List<Task>> phyTaskMap = new HashMap<>();
         // 生成tasks
         generateFLTasks(originPlan);
         tasks.addAll(dfsPlan(phyPlan, phyTaskMap));
@@ -230,12 +230,15 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             }
         }
         queryIDs.sort(Comparator.reverseOrder());
-        int index = 0;
-        while (index + 1 < queryIDs.size() && queryIDs.get(index) - 1 == queryIDs.get(index + 1)) {
-            index++;
+        if(queryIDs.size() > 1) {
+            int index = 0;
+            while (index + 1 < queryIDs.size() && queryIDs.get(index) - 1 == queryIDs.get(index + 1)) {
+                index++;
+            }
+            // 截取连续部分
+            return queryIDs.subList(0, index + 1).stream().map(String::valueOf).collect(Collectors.toList());
         }
-        // 截取连续部分
-        return queryIDs.subList(0, index + 1).stream().map(String::valueOf).collect(Collectors.toList());
+        return queryIDs.stream().map(String::valueOf).collect(Collectors.toList());
 
     }
     public void updateTeePsi() {
@@ -291,7 +294,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * @param phyTaskMap
      * @return
      */
-    public List<Task> dfsPlan(RelNode phyPlan, HashMap<RelNode, Task> phyTaskMap) {
+    public List<Task> dfsPlan(RelNode phyPlan, HashMap<RelNode, List<Task>> phyTaskMap) {
         List<Task> result = new ArrayList<>();
         if (phyPlan instanceof RelSubset) {
             phyPlan = ((RelSubset) phyPlan).getBest();
@@ -1135,7 +1138,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * @param phyTaskMap
      * @return
      */
-    public List<Task> generateMpcTasks(RelNode phyPlan, HashMap<RelNode, Task> phyTaskMap) {
+    public List<Task> generateMpcTasks(RelNode phyPlan, HashMap<RelNode, List<Task>> phyTaskMap) {
         List<Task> tasks = new ArrayList<>();
         buildTableCache(phyPlan);
 //        if (phyPlan instanceof RelSubset) {
@@ -1180,7 +1183,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 party.setPartyId(metadata.getTableOrgId(tableName));
                 party.setPartyName(metadata.getTable(tableName).getOrgName());
                 task.setPartyList(List.of(party));
-                phyTaskMap.put(phyPlan, task);
+                phyTaskMap.put(phyPlan, Lists.newArrayList(task));
+//                updatePhyTaskMap(phyTaskMap, phyPlan, task);
                 break;
             default:
                 break;
@@ -1212,7 +1216,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         return inputList;
     }
 
-    public Task generateAggregateTask(MPCAggregate phyPlan, HashMap<RelNode, Task> phyTaskMap){
+    public Task generateAggregateTask(MPCAggregate phyPlan, HashMap<RelNode, List<Task>> phyTaskMap){
         Task task = basicTask(String.valueOf(cnt++));
         MPCMetadata mpcMetadata = MPCMetadata.getInstance();
 
@@ -1257,7 +1261,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         RelSubset relSubset = (RelSubset)(phyPlan.getInputs().get(0));
         List<RelDataTypeField> inFields =relSubset.getBest().getRowType().getFieldList();
-        Task srcTask = phyTaskMap.get(relSubset.getBest());
+        Task srcTask = phyTaskMap.get(relSubset.getBest()).get(0);
         for(RelDataTypeField field: inFields){
             InputDetail inputData = new InputDetail();
             String fullQualifiedfield = fromNumericName2FieldName(relSubset.getBest(),field.getName());
@@ -1305,7 +1309,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         task.setOutputList(outputDataList);
 
         genParties(input,task);
-        phyTaskMap.put(phyPlan, task);
+        updatePhyTaskMap(phyTaskMap, phyPlan, task);
         return task;
     }
 
@@ -1323,7 +1327,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
 
 
-    public Task generateProjectTask(MPCProject phyPlan, HashMap<RelNode, Task> phyTaskMap, RexNode rexNode, List<String> inputList) {
+
+
+    public Task generateProjectTask(MPCProject phyPlan, HashMap<RelNode, List<Task>> phyTaskMap, RexNode rexNode, List<String> inputList) {
         log.info("inputList:" + inputList);
         Task task = basicTask(String.valueOf(cnt++));
 
@@ -1387,7 +1393,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         // 输入信息
         Input input = new Input();
         List<InputDetail> inputDatas = new ArrayList<>();
-        Task srcTask = phyTaskMap.get(((RelSubset) phyPlan.getInput()).getBest());
+        Task srcTask = phyTaskMap.get(((RelSubset) phyPlan.getInput()).getBest()).get(0);
         for (int i = 0; i < inputList.size(); i++) {
             InputDetail inputdata = new InputDetail();
             String tableField = inputList.get(i);
@@ -1486,8 +1492,18 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             );
             moduleparams.add(new ModuleParam("aggFunc", StrUtil.format("{}({})",func, field)));
         }
-        phyTaskMap.put(phyPlan, task);
+        updatePhyTaskMap(phyTaskMap, phyPlan , task);
         return task;
+    }
+
+    public void updatePhyTaskMap(Map<RelNode, List<Task>> map , RelNode phyPlan, Task task){
+        if(map.containsKey(phyPlan)){
+            List<Task> mapTasks = map.get(phyPlan);
+            mapTasks.add(task);
+            map.put(phyPlan, mapTasks);
+        }else {
+            map.put(phyPlan, Lists.newArrayList(task));
+        }
     }
 
     /**
@@ -1529,7 +1545,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         return expr;
     }
 
-    public Task generateJoinTask(MPCJoin phyPlan, HashMap<RelNode, Task> phyTaskMap) {
+    public Task generateJoinTask(MPCJoin phyPlan, HashMap<RelNode, List<Task>> phyTaskMap) {
         Task task = basicTask(String.valueOf(cnt++));
         RexCall cond = (RexCall) phyPlan.getCondition();
 
@@ -1544,10 +1560,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         String leftField = phyPlan.getRowType().getFieldNames().get(((RexInputRef) cond.getOperands().get(0)).getIndex());
         String rightField = phyPlan.getRowType().getFieldNames().get(((RexInputRef) cond.getOperands().get(1)).getIndex());
-        Task leftChild = phyTaskMap.get(((RelSubset) phyPlan.getLeft()).getBest());
+//        List<Task> leftChilds = phyTaskMap.get();
 //        System.out.println(((RelSubset) phyPlan.getRight()).getBest() instanceof MPCFilter);
-        Task rightChild = phyTaskMap.get(((RelSubset) phyPlan.getRight()).getBest());
+        RelNode leftInputNode = ((RelSubset) phyPlan.getLeft()).getBest();
+        RelNode rightInputNode = ((RelSubset) phyPlan.getRight()).getBest();
 
+        Task leftChild = findTask(phyTaskMap, leftInputNode, getColumnName(leftField));
+        Task rightChild = findTask(phyTaskMap, rightInputNode, getColumnName(rightField));
         inputdata1.setTaskSrc(leftChild.getTaskName());
         inputdata1.setRole("client");
         inputdata1.setDomainId(getFieldDomainID(leftField));
@@ -1663,13 +1682,30 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
 
 
-
-        phyTaskMap.put(phyPlan, task);
+        updatePhyTaskMap(phyTaskMap, phyPlan, task);
+//        phyTaskMap.put(phyPlan, task);
 
         return task;
     }
 
-    public Task generateFilterTask(MPCFilter phyPlan, HashMap<RelNode, Task> phyTaskMap, RexCall cond) {
+
+    public Task findTask(Map<RelNode, List<Task>> map, RelNode inputNode , String column) {
+        List<Task> tasks = map.get(inputNode);
+        if(tasks.size() == 1){
+            return tasks.get(0);
+        }
+        for(Task task: tasks){
+            String outCol = task.getOutputList().get(0).getColumnName();
+            if(column.equals(outCol)){
+                return task;
+            }else if(inputNode instanceof MPCTableScan){
+                return task;
+            }
+        }
+        throw new RuntimeException("can not find task");
+}
+
+    public Task generateFilterTask(MPCFilter phyPlan, HashMap<RelNode, List<Task>> phyTaskMap, RexCall cond) {
         Task task = basicTask(String.valueOf(cnt++));
 
         // module信息（即进行什么操作）
@@ -1705,9 +1741,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         InputDetail inputdata = new InputDetail();
         Task childTask;
         if (phyTaskMap.containsKey(phyPlan)) {
-            childTask = phyTaskMap.get(phyPlan);
+            childTask = phyTaskMap.get(phyPlan).get(0);
         } else {
-            childTask = phyTaskMap.get(((RelSubset) phyPlan.getInput()).getBest());
+            childTask = phyTaskMap.get(((RelSubset) phyPlan.getInput()).getBest()).get(0);
         }
         String table = tableField.split("\\.")[0];
         inputdata.setTaskSrc(childTask.getTaskName());
@@ -1753,7 +1789,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // parties信息
         genParties(input, task);
-        phyTaskMap.put(phyPlan, task);
+//        phyTaskMap.put(phyPlan, task);
+        updatePhyTaskMap(phyTaskMap, phyPlan ,task);
         return task;
     }
 
