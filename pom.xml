@@ -15,11 +15,6 @@
 <description>SQL parser</description>
 <properties>
     <java.version>11</java.version>
-    <bouncycastle.version>1.69</bouncycastle.version>
-    <validation-api.version>2.0.1.Final</validation-api.version>
-    <grpc.version>1.23.0</grpc.version>
-    <protoc.version>3.19.4</protoc.version>
-    <grpc-spring-boot-starter.version>2.5.0.RELEASE</grpc-spring-boot-starter.version>
 
 </properties>
 <dependencies>
@@ -42,6 +37,18 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-aop</artifactId>
     </dependency>
+
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+
+
     <dependency>
         <groupId>org.apache.calcite</groupId>
         <artifactId>calcite-elasticsearch</artifactId>
@@ -66,10 +73,10 @@
         <optional>true</optional>
     </dependency>
 
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-data-redis</artifactId>
-    </dependency>
+<!--    <dependency>-->
+<!--        <groupId>org.springframework.boot</groupId>-->
+<!--        <artifactId>spring-boot-starter-data-redis</artifactId>-->
+<!--    </dependency>-->
 
     <dependency>
         <groupId>ch.qos.logback</groupId>
@@ -137,16 +144,12 @@
         <artifactId>junit</artifactId>
         <scope>test</scope>
     </dependency>
-    <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <scope>test</scope>
-    </dependency>
 
     <dependency>
         <groupId>org.junit.platform</groupId>
         <artifactId>junit-platform-commons</artifactId>
     </dependency>
+
     <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
