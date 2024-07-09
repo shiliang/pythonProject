@@ -69,7 +69,7 @@ public class TestAllPqlV2 {
             "select atest.a1, tmp_table.id from atest, btest,(select id, cnt, tot_val from (select id, count(a1) as cnt, sum(a1) as tot_val from atest group by id ) tmp_inner ) tmp_table where atest.id= btest.id and tmp_table.id= btest.id",
             "select atest.a1, tmp_table1.id, tmp_table2.id from atest,( select id, count(b2) as cnt, sum(b2) as tot_val from btest group by id) tmp_table1, ( select id, count(a1) as cnt, sum(a1) as tot_val from atest group by id ) tmp_table2 where atest.id= tmp_table1.id and tmp_table1.id= tmp_table2.id",
             "select atest.a1, tmp_table.id*2 + 1 from atest, btest,( select id, cnt, tot_val from ( select id, count(a1) as cnt, sum(a1) as tot_val from atest group by id) tmp_inner ) tmp_table where atest.id= btest.id and tmp_table.id= btest.id",
-            "select atest.a1, tmp_table1.id*2 + tmp_table2.id*8 from atest,( select id, count(b2) as cnt, sum(b2) as tot_val from btest group by id) tmp_table1, ( select id, count(a1) as cnt, sum(a1) as tot_val from atest group by id ) tmp_table2 where atest.id= tmp_table1.id and tmp_table1.id= tmp_table2.id",
+            "select atest.k + tmp_table1.id*2 + tmp_table2.id*8 from atest,( select id, count(b2) as cnt, sum(b2) as tot_val from btest group by id) tmp_table1, ( select id, count(a1) as cnt, sum(a1) as tot_val from atest group by id ) tmp_table2 where atest.id= tmp_table1.id and tmp_table1.id= tmp_table2.id",
 
             " select temp.a1 from (select atest.a1 from atest) temp "
     );
