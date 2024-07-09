@@ -1150,9 +1150,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 if(tableSets.size() > 1){
                     log.info("multi-party query");
                     RelNode childNode = phyPlan.getInputs().get(0);
-                    if(!(childNode instanceof MPCJoin)){
-                        throw new RuntimeException("多方计算，缺乏mpcjoin语句");
-                    }
+//                    if(!(childNode instanceof MPCJoin)){
+//                        throw new RuntimeException("多方计算，缺乏mpcjoin语句");
+//                    }
                 }else{
                     log.info("single-party query");
                 }
