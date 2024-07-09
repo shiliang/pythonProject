@@ -228,8 +228,14 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         for (NamedExpression e : node.getAggCallList()){
             FunctionCallExpression expr = (FunctionCallExpression)e.getExpression();
             String func = expr.getFunction().toUpperCase();
-            String field = ((Identifier)expr.getExpressions().get(0)).getIdentifier();
-            String fullQualifiedName = fullQualify(child, field);
+            Expression innerExpr = expr.getExpressions().get(0);
+            String fullQualifiedName = null;
+            if(innerExpr instanceof Identifier){
+                String field = ((Identifier)innerExpr).getIdentifier();
+                fullQualifiedName = fullQualify(child, field);
+            }else if(innerExpr instanceof DereferenceExpression){
+                fullQualifiedName = innerExpr.toString();
+            }
             String alias = e.getIdentifier().getIdentifier();
             if(tmpTable != null){
                 alias = tmpTable + "." + alias;

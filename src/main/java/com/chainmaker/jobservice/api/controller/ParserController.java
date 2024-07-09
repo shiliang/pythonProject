@@ -44,10 +44,14 @@ public class ParserController {
         if (!sqlVo.getSqltext().contains("?") && sqlVo.getIsStream() == 1) {
             return Result.failure(ResultCode.NOT_STREAM_WITH_STREAM_PARAM_EXCEPTION);
         }
-        Job job = jobParserService.jobPreview(sqlVo);
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("job", job);
-        return Result.success(jsonObject);
+        try {
+            Job job = jobParserService.jobPreview(sqlVo);
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("job", job);
+            return Result.success(jsonObject);
+        }catch (Exception e){
+            return Result.failure(ResultCode.SQL_GRAMMAR_EXCEPTION, e.getMessage());
+        }
     }
 
 

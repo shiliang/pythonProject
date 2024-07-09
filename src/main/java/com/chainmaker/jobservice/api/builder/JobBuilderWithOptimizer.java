@@ -1132,6 +1132,34 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     }
 
 
+    public void isRunnableJob(RelNode phyPlan, boolean isDML){
+        //check project
+        if(isDML) {
+            if (!(phyPlan instanceof MPCProject)) {
+                throw new RuntimeException("PQL 不是查询语句");
+            }else{
+                List<RelNode> inputs = phyPlan.getInputs();
+                if(inputs.size() > 1){
+                    throw new RuntimeException("无效的PQL, select 后有多表的输入");
+                }
+                List<String> fields = Lists.newArrayList();
+                for (int i = 0; i < phyPlan.getRowType().getFieldNames().size(); i++) {
+                    fields.addAll(getInputList(phyPlan, i));
+                }
+                Set<String> tableSets = fields.stream().map(CalciteUtil::getTableName).collect(Collectors.toSet());
+                if(tableSets.size() > 1){
+                    log.info("multi-party query");
+                    RelNode childNode = phyPlan.getInputs().get(0);
+                    if(!(childNode instanceof MPCJoin)){
+                        throw new RuntimeException("多方计算，缺乏mpcjoin语句");
+                    }
+                }else{
+                    log.info("single-party query");
+                }
+            }
+        }
+    }
+
     /**
      * 具体Task转化的实现
      * @param phyPlan
@@ -1141,9 +1169,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     public List<Task> generateMpcTasks(RelNode phyPlan, HashMap<RelNode, List<Task>> phyTaskMap) {
         List<Task> tasks = new ArrayList<>();
         buildTableCache(phyPlan);
-//        if (phyPlan instanceof RelSubset) {
-//            phyPlan = ((RelSubset) phyPlan).getBest();
-//        }
+        isRunnableJob(this.phyPlan, true);
         switch (phyPlan.getRelTypeName()) {
             case "MPCProject":
 //                notifyPSIOthers(tasks);
@@ -1702,7 +1728,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 return task;
             }
         }
-        throw new RuntimeException("can not find task");
+        throw new RuntimeException("task json build failure...  can not find task");
 }
 
     public Task generateFilterTask(MPCFilter phyPlan, HashMap<RelNode, List<Task>> phyTaskMap, RexCall cond) {
