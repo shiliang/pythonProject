@@ -1469,10 +1469,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             inputdata.setColumnName(fieldInfo.getFieldName());
 
             //对于中间表，需要找到源头的资产名称。因为中间表不会注册在ida中
-            String originTable = getOriginalTableName(table);
-            TableInfo originTableInfo = metadata.getTableInfoMap().get(originTable);
-            inputdata.setAssetName(originTableInfo.getAssetName());
-
+            if (this.phyPlan.getId() != phyPlan.getId()){
+                String originTable = getOriginalTableName(table);
+                TableInfo originTableInfo = metadata.getTableInfoMap().get(originTable);
+                inputdata.setAssetName(originTableInfo.getAssetName());
+            }else{
+                inputdata.setAssetName(tableInfo.getAssetName());
+            }
             inputdata.setDatabaseName(fieldInfo.getDatabaseName());
             inputdata.setComments(fieldInfo.getComments());
             inputdata.setLength(fieldInfo.getDataLength());

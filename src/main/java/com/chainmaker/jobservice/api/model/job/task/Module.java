@@ -27,7 +27,7 @@ public class Module {
     }
 
     public void deleteByKey(String key){
-        paramList = paramList.stream().filter(e -> e.getKey().equals(key)).collect(Collectors.toList());
+        paramList = paramList.stream().filter(e -> !e.getKey().equals(key)).collect(Collectors.toList());
     }
     public boolean containsKey(String key){
         for (ModuleParam moduleParam : paramList) {
