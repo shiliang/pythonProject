@@ -49,7 +49,8 @@ public class ParserController {
             jsonObject.put("job", job);
             return Result.success(jsonObject);
         }catch (Exception e){
-            return Result.failure(ResultCode.SQL_GRAMMAR_EXCEPTION, e.getMessage());
+            log.error(e.getMessage(), e);
+            return Result.failure(ResultCode.SQL_GRAMMAR_EXCEPTION, e.toString());
         }
     }
 

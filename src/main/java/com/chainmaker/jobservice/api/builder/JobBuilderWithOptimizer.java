@@ -36,6 +36,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.chainmaker.jobservice.api.builder.CalciteUtil.*;
@@ -1088,6 +1089,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
     }
 
+
+    //对于特殊的函数
     public void buildTableCache(RelNode phyPlan){
         List<String> fieldNames = phyPlan.getRowType().getFieldNames();
         if(phyPlan instanceof MPCTableScan) {
@@ -1103,14 +1106,23 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             }
         }else if(phyPlan instanceof MPCProject){
             RelNode node = getOneInputOriginTable(phyPlan);
-            if(node != null){
+            if(node != null ){
                 String tableName = getTableName(fieldNames.get(0));
-                tableOriginTableMap.put(tableName, node);
+                if(isValidJavaIdentifier(tableName)) {
+                    tableOriginTableMap.put(tableName, node);
+                }
             }
         }
     }
 
+    private static boolean isValidJavaIdentifier(String identifier) {
+        return Pattern.matches("[A-Za-z_][A-Za-z\\d_]*", identifier);
+    }
+
     public String getOriginalTableName(String table){
+        if(!tableOriginTableMap.containsKey(table)){
+            throw new RuntimeException("找不到中间表" + table + "的源表信息，请查看PQL");
+        }
         return tableOriginTableMap.get(table).getTable().getQualifiedName().get(0);
     }
 
