@@ -224,9 +224,15 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
     //任务ID的生成是从叶子节点开始递增的，root节点的id都是最大的几个。
     public List<String> getFinalResultTasks(){
+        List<String> finalTaskType = Lists.newArrayList(
+                TaskType.QUERY.name(),
+                TaskType.MPC.name(),
+                TaskType.MPCEXP.name(),
+                TaskType.LOCALEXP.name());
         List<Integer> queryIDs = new ArrayList<>();
         for (Task task : tasks) {
-            if(task.getModule().getModuleName().equals(TaskType.QUERY.name())){
+            String moduleName = task.getModule().getModuleName();
+            if(finalTaskType.contains(moduleName)){
                 queryIDs.add(Integer.parseInt(task.getTaskId()));
             }
         }
