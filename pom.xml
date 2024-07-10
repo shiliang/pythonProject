@@ -15,6 +15,8 @@
 <description>SQL parser</description>
 <properties>
     <java.version>11</java.version>
+    <validation-api.version>2.0.1.Final</validation-api.version>
+
 
 </properties>
 <dependencies>
@@ -150,10 +152,10 @@
         <artifactId>junit-platform-commons</artifactId>
     </dependency>
 
-    <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-    </dependency>
+<!--    <dependency>-->
+<!--        <groupId>org.slf4j</groupId>-->
+<!--        <artifactId>slf4j-api</artifactId>-->
+<!--    </dependency>-->
 
     <dependency>
         <groupId>javax.validation</groupId>
@@ -221,28 +223,6 @@
                 <visitor>true</visitor>
                 <!--<treatWarningsAsErrors>true</treatWarningsAsErrors>-->
             </configuration>
-        </plugin>
-
-        <!-- grpc代码生成插件 -->
-        <plugin>
-            <groupId>org.xolstice.maven.plugins</groupId>
-            <artifactId>protobuf-maven-plugin</artifactId>
-            <version>0.6.1</version>
-            <configuration>
-                <protocArtifact>com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}
-                </protocArtifact>
-                <pluginId>grpc-java</pluginId>
-                <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}
-                </pluginArtifact>
-            </configuration>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>compile</goal>
-                        <goal>compile-custom</goal>
-                    </goals>
-                </execution>
-            </executions>
         </plugin>
 
         <!-- Jacoco 插件配置 -->
