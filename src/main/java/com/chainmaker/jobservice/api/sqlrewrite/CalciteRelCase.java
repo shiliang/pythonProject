@@ -16,22 +16,25 @@ import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.sql.SqlExplainFormat;
-import org.apache.calcite.sql.SqlExplainLevel;
-import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.pretty.SqlPrettyWriter;
+import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.util.RelToSqlConverterUtil;
 
 import java.io.File;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.Properties;
 
@@ -76,6 +79,11 @@ public class CalciteRelCase {
         System.out.println("[validated sqlNode]");
         System.out.println(sqlNodeValidated);
 
+        SqlDialect sqlDialect = SqlDialect.DatabaseProduct.MYSQL.getDialect();
+
+        SqlString sqlString = sqlNodeValidated.toSqlString(sqlDialect);
+        System.out.println("convert to " + sqlString);
+
 
 
 
@@ -103,12 +111,27 @@ public class CalciteRelCase {
                 SqlToRelConverter.config());
         RelRoot logicalPlan = sqlToRelConverter.convertQuery(sqlNodeValidated, false, true);
 
-        System.out.println();
         System.out.println(RelOptUtil.dumpPlan("[Logical plan]", logicalPlan.rel, SqlExplainFormat.TEXT, SqlExplainLevel.NON_COST_ATTRIBUTES));
 
         hepPlanner.setRoot(logicalPlan.rel);
         RelNode phyPlan = hepPlanner.findBestExp();
         System.out.println(RelOptUtil.dumpPlan("[Physical plan]", phyPlan, SqlExplainFormat.TEXT, SqlExplainLevel.NON_COST_ATTRIBUTES));
+
+
+        SqlWriterConfig writerConfig = SqlWriterConfig.of()
+                .withDialect(sqlDialect)
+                .withAlwaysUseParentheses(true) // 可选配置，控制括号的使用
+                .withSelectListItemsOnSeparateLines(false) // 控制 SELECT 列表的格式
+                ;
+        // 使用配置创建 SqlWriter
+
+        SqlPrettyWriter prettyWriter = new SqlPrettyWriter(writerConfig, new StringBuilder());
+        RelToSqlConverter relToSqlConverter = new RelToSqlConverter(sqlDialect);
+        SqlNode sqlNode = relToSqlConverter.visitRoot(phyPlan).asStatement();
+
+        sqlNode.unparse(prettyWriter, 0, 0);
+        String sqlStr = prettyWriter.toString();
+        System.out.println(sqlStr);
 
 
     }
