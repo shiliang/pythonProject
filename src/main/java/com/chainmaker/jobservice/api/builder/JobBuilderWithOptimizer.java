@@ -1111,10 +1111,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 }
             }
         }else if(phyPlan instanceof MPCProject){
-            RelNode node = getOneInputOriginTable(phyPlan);
-            if(node != null ){
-                String tableName = getTableName(fieldNames.get(0));
-                if(isValidJavaIdentifier(tableName)) {
+            if(!isMultiParties(phyPlan)) {
+                RelNode node = getOneInputOriginTable(phyPlan);
+                if (node != null) {
+                    String tableName = getTableName(fieldNames.get(0));
                     tableOriginTableMap.put(tableName, node);
                 }
             }
@@ -1127,7 +1127,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
     public String getOriginalTableName(String table){
         if(!tableOriginTableMap.containsKey(table)){
-            throw new RuntimeException("找不到中间表" + table + "的源表信息，请查看PQL");
+            log.warn("找不到中间表" + table + "的源表信息，请查看PQL");
+            return table;
         }
         return tableOriginTableMap.get(table).getTable().getQualifiedName().get(0);
     }
@@ -1149,6 +1150,20 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         return getOneInputOriginTable(phyPlan);
     }
 
+    public boolean isMultiParties(RelNode phyPlan){
+        List<String> fields = Lists.newArrayList();
+        for (int i = 0; i < phyPlan.getRowType().getFieldNames().size(); i++) {
+            fields.addAll(getInputList(phyPlan, i));
+        }
+        Set<String> tableSets = fields.stream().map(CalciteUtil::getTableName).collect(Collectors.toSet());
+        if(tableSets.size() > 1){
+            log.info("multi-party query: " + tableSets.size());
+            return true;
+        }else{
+            log.info("single-party query");
+        }
+        return false;
+    }
 
     public void isRunnableJob(RelNode phyPlan, boolean isDML){
         //check project
@@ -1159,20 +1174,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 List<RelNode> inputs = phyPlan.getInputs();
                 if(inputs.size() > 1){
                     throw new RuntimeException("无效的PQL, select 后有多表的输入");
-                }
-                List<String> fields = Lists.newArrayList();
-                for (int i = 0; i < phyPlan.getRowType().getFieldNames().size(); i++) {
-                    fields.addAll(getInputList(phyPlan, i));
-                }
-                Set<String> tableSets = fields.stream().map(CalciteUtil::getTableName).collect(Collectors.toSet());
-                if(tableSets.size() > 1){
-                    log.info("multi-party query");
-                    RelNode childNode = phyPlan.getInputs().get(0);
-//                    if(!(childNode instanceof MPCJoin)){
-//                        throw new RuntimeException("多方计算，缺乏mpcjoin语句");
-//                    }
-                }else{
-                    log.info("single-party query");
                 }
             }
         }
@@ -1475,13 +1476,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             inputdata.setColumnName(fieldInfo.getFieldName());
 
             //对于中间表，需要找到源头的资产名称。因为中间表不会注册在ida中
-            if (this.phyPlan.getId() != phyPlan.getId()){
-                String originTable = getOriginalTableName(table);
-                TableInfo originTableInfo = metadata.getTableInfoMap().get(originTable);
-                inputdata.setAssetName(originTableInfo.getAssetName());
-            }else{
-                inputdata.setAssetName(tableInfo.getAssetName());
-            }
+            String originTable = getOriginalTableName(table);
+            TableInfo originTableInfo = metadata.getTableInfoMap().get(originTable);
+            inputdata.setAssetName(originTableInfo.getAssetName());
+
             inputdata.setDatabaseName(fieldInfo.getDatabaseName());
             inputdata.setComments(fieldInfo.getComments());
             inputdata.setLength(fieldInfo.getDataLength());

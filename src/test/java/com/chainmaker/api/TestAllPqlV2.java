@@ -48,6 +48,9 @@ public class TestAllPqlV2 {
 //    );
 
     public static final List<String> pqls = Lists.newArrayList(
+            "select /*+ FUNC(TEE) */ JSB01(atest.k,btest.k) from atest, btest",
+
+            " select temp.a1 from (select atest.a1 from atest) temp ",
             "select atest.id from atest, btest where atest.id=btest.id",
             "select /*+ JOIN(TEE) */ atest.id from atest, btest where atest.id=btest.id",
             "select atest.k from atest where atest.id=?",
@@ -63,15 +66,15 @@ public class TestAllPqlV2 {
             "select /*+ FUNC(TEE) */ MULAVG(atest.k,btest.k) from atest, btest where atest.id=btest.id",
             "select /*+ FUNC(TEE) */ MULMAX(atest.k,btest.k) from atest, btest where atest.id=btest.id",
             "select /*+ FUNC(TEE) */ MULMIN(atest.k,btest.k) from atest, btest where atest.id=btest.id",
+
             "select atest.id, (0.1 * atest.a1) + (0.2 * btest.b1) + (0.1 * atest.a2) + (0.4 * btest.b2) from atest, btest where atest.id=btest.id",
             "select /*+ FUNC(TEE) */ SCORE(0.1, atest.a1, 0.2, btest.b2, 0.1, atest.a2, 0.4, btest.b2) from atest, btest where atest.id=btest.id",
 
             "select atest.a1, tmp_table.id from atest, btest,(select id, cnt, tot_val from (select id, count(a1) as cnt, sum(a1) as tot_val from atest group by id ) tmp_inner ) tmp_table where atest.id= btest.id and tmp_table.id= btest.id",
             "select atest.a1, tmp_table1.id, tmp_table2.id from atest,( select id, count(b2) as cnt, sum(b2) as tot_val from btest group by id) tmp_table1, ( select id, count(a1) as cnt, sum(a1) as tot_val from atest group by id ) tmp_table2 where atest.id= tmp_table1.id and tmp_table1.id= tmp_table2.id",
             "select atest.a1, tmp_table.id*2 + 1 from atest, btest,( select id, cnt, tot_val from ( select id, count(a1) as cnt, sum(a1) as tot_val from atest group by id) tmp_inner ) tmp_table where atest.id= btest.id and tmp_table.id= btest.id",
-            "select atest.k + tmp_table1.id*2 + tmp_table2.id*8 from atest,( select id, count(b2) as cnt, sum(b2) as tot_val from btest group by id) tmp_table1, ( select id, count(a1) as cnt, sum(a1) as tot_val from atest group by id ) tmp_table2 where atest.id= tmp_table1.id and tmp_table1.id= tmp_table2.id",
+            "select atest.k + tmp_table1.id*2 + tmp_table2.id*8 from atest,( select id, count(b2) as cnt, sum(b2) as tot_val from btest group by id) tmp_table1, ( select id, count(a1) as cnt, sum(a1) as tot_val from atest group by id ) tmp_table2 where atest.id= tmp_table1.id and tmp_table1.id= tmp_table2.id"
 
-            " select temp.a1 from (select atest.a1 from atest) temp "
     );
     @Test
     public void pql() {
@@ -86,7 +89,7 @@ public class TestAllPqlV2 {
             sqlVo.setSqltext(pql);
             System.out.println(sqlVo);
             Job job = jobParser.jobPreview(sqlVo);
-            System.out.println(JSON.toJSONString(job, SerializerFeature.PrettyFormat));
+            System.out.println(JSON.toJSONString(job, SerializerFeature.PrettyFormat,SerializerFeature.DisableCircularReferenceDetect));
         }
 
     }
