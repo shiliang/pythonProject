@@ -7,10 +7,15 @@ public class ModuleParam {
     private String Key;
     private Object Value;
 
-    public ModuleParam(String key, Object value) {
+    public ModuleParam(String key, String value) {
         Key = key;
         Value = value;
     }
+
+//    public ModuleParam(String key, Object value) {
+//        Key = key;
+//        Value = value;
+//    }
 
     public ModuleParam(){
 

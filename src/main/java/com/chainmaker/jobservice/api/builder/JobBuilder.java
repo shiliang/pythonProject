@@ -347,7 +347,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
         Module module = new Module();
         module.setModuleName(moduleName);
         List<ModuleParam> moduleParams = new ArrayList<>();
-        moduleParams.add(new ModuleParam("expression", plan.getExpression()));
+        moduleParams.add(new ModuleParam("expression", JSONObject.toJSONString(plan.getExpression())));
         moduleParams.add(new ModuleParam("aggregate", plan.getAggregateType()));
 //        JSONObject param = new JSONObject();
 //        param.put("expression", plan.getExpression());
@@ -462,10 +462,10 @@ public class JobBuilder extends PhysicalPlanVisitor {
         Module module = new Module();
         module.setModuleName(moduleName);
         List<ModuleParam> moduleParams = new ArrayList<>();
-        moduleParams.add(new ModuleParam("FL", plan.getFateModel().getFl()));
-        moduleParams.add(new ModuleParam("EVAL", plan.getFateModel().getEval()));
-        moduleParams.add(new ModuleParam("MODEL", plan.getFateModel().getEval()));
-        moduleParams.add(new ModuleParam("INTERSECTION", plan.getFateModel().getIntersection()));
+        moduleParams.add(new ModuleParam("FL", plan.getFateModel().getFl().toJSONString()));
+        moduleParams.add(new ModuleParam("EVAL", plan.getFateModel().getEval().toJSONString()));
+        moduleParams.add(new ModuleParam("MODEL", plan.getFateModel().getEval().toJSONString()));
+        moduleParams.add(new ModuleParam("INTERSECTION", plan.getFateModel().getIntersection().toJSONString()));
 //        param.put("FL", plan.getFateModel().getFl());
 //        param.put("EVAL", plan.getFateModel().getEval());
 //        param.put("MODEL", plan.getFateModel().getModel());

@@ -122,10 +122,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     }
 
     public Job getJob() {
-//        jobTemplate.setJob(job);
         job.setServiceList(services);
         job.setTaskList(tasks);
-//        jobTemplate.setTasks(mergedTasks);
         return job;
     }
 
@@ -133,21 +131,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         String jobStatus = "WAITING";
         String taskDAG = "taskDAG";
         Integer jobType = null;
-//        if (modelType == 0 && isStream == 0) {
-//            jobType = JobType.FQ.name();
-//        } else if (modelType == 0 && isStream == 1) {
-//            jobType = JobType.CCS.name();
-//        } else if (modelType == 1 && isStream == 0) {
-//            jobType = JobType.FL.name();
-//        } else if (modelType == 1 && isStream == 1) {
-//            jobType = JobType.FLS.name();
-//        } else if (modelType == 2 && isStream == 0) {
-//            jobType = JobType.CC.name();
-//        } else if (modelType == 2 && isStream == 1) {
-//            jobType = JobType.CCS.name();
-//        } else {
-//            throw new ParserException("暂不支持的任务类型");
-//        }
 
         if (this.sql.contains("FL")) {
             jobType = JobType.FL.getValue();
@@ -165,15 +148,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         // 生成tasks
         generateFLTasks(originPlan);
         tasks.addAll(dfsPlan(phyPlan, phyTaskMap));
-//        updateTeePsi();
-        // 特殊处理联邦学习相关的tasks
-
-        // 合并OTPSI，暂时放弃
-//        mergeOTPSI();
         // PSI后通知所有参与表
         notifyPSIOthers();
-        // 合并本地tasks
-//        mergeLocalTasks();
+
         List<String> finalTasks = getFinalResultTasks();
         for (Task task : tasks) {
             String taskId = task.getTaskId();
@@ -197,7 +174,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         job.setJobId(jobID);
         job.setJobName(jobID);
         job.setModelType(jobType);
-//        job.setStatus(jobStatus);
         job.setStatus(Constant.JOB_STATUS);
         job.setCreateTime(createTime);
         job.setUpdateTime(createTime);
@@ -246,52 +222,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             return queryIDs.subList(0, index + 1).stream().map(String::valueOf).collect(Collectors.toList());
         }
         return queryIDs.stream().map(String::valueOf).collect(Collectors.toList());
-
-    }
-    public void updateTeePsi() {
-        Boolean updateFlag = true;
-        String psiColumn = "";
-        HashMap<Integer, String> indexPartyMap = new HashMap<>();
-        HashMap<String, Output> outputMap = new HashMap<>();
-         for (Task task : tasks) {
-             if (task.getModule().getModuleName().equals(TaskType.TEEPSI.name())) {
-                 psiColumn = task.getInput().getInputDataDetailList().get(0).getParams().getString("field");
-                 for (Output taskOutputData : task.getOutputList()) {
-                     outputMap.put(taskOutputData.getDomainId(), taskOutputData);
-                 }
-             }
-         }
-        for (int i = 0; i < tasks.size(); i++) {
-            if (tasks.get(i).getModule().getModuleName().equals(TaskType.QUERY.name())) {
-                indexPartyMap.put(i, tasks.get(i).getPartyList().get(0).getPartyId());
-                if (!tasks.get(i).getInput().getInputDataDetailList().get(0).getParams().getString("field").equals(psiColumn)) {
-                    updateFlag = false;
-                }
-            }
-        }
-        if (updateFlag) {
-            for (Integer index : indexPartyMap.keySet()) {
-                System.out.println("remove query");
-                Task task = tasks.get(index);
-                tasks.remove(task);
-            }
-            System.out.println(tasks.size());
-            for (Task task : tasks) {
-                if (task.getModule().getModuleName().equals(TaskType.TEEPSI.name())) {
-//                    Output output = new Output();
-                    List<Output> taskOutputDataList = new ArrayList<>();
-                    for (Output taskOutputData : task.getOutputList()) {
-                        if (indexPartyMap.containsValue(taskOutputData.getDomainId())) {
-                            taskOutputData.setFinalResult("Y");
-                            taskOutputData.setIsFinalResult(true);
-                            taskOutputDataList.add(taskOutputData);
-                        }
-                    }
-//                    output.setData(taskOutputDataList);
-                    task.setOutputList(taskOutputDataList);
-                }
-            }
-        }
 
     }
 
@@ -418,27 +348,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             inputData2.setRole("server");
         }
 
-        // 以下是添加uid的通知方式
-//        for (String table : notifyList) {
-//            if (table.equals(leader1)) {
-//                continue;
-//            }
-//            TaskInputData inputData = new TaskInputData();
-//            if (table.equals(leader2)) {
-//                inputData.setRole("server");
-//            } else {
-//                inputData.setRole("client");
-//            }
-//            inputData.setDomainID(metadata.getTableOrgId(table));
-//            inputData.setDataName(inputData.getDomainID() + "-" + affectedOutputNames.get(inputData.getDomainID()));
-//            inputData.setTaskSrc(String.valueOf(Integer.parseInt(affectedOutputNames.get(inputData.getDomainID()))-1));
-//
-//            JSONObject inputDataParams = new JSONObject(true);
-//            inputDataParams.put("table", table);
-////            inputDataParams.put("field", );
-//            inputData.setParams(inputDataParams);
-//            inputDatas.add(inputData);
-//        }
         input.setInputDataDetailList(inputDatas);
         input.setTaskId(task.getTaskName());
         input.setSrcTaskId(inputData1.getTaskSrc());
@@ -513,115 +422,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 psiTaskList.add(tasks.get(i));
             } else {
                 continue;
-            }
-        }
-//        // 找出所有的OTPSI 的 input、output、parties信息
-//        List<TaskInputData> inputDataList = new ArrayList<>();
-//        LinkedHashSet<Party> parties = new LinkedHashSet<>();
-//        LinkedHashSet<String> outputNames = new LinkedHashSet<>();
-//        int lastOTPSItaskId = -1;
-//        for (int i = 0; i < tasks.size(); i++) {
-//            Task t = tasks.get(i);
-//            if (!t.getModule().getModuleName().equals(TaskType.OTPSI.name())) {
-//                continue;
-//            }
-//            inputDataList.addAll(t.getInput().getData());
-//            parties.addAll(t.getParties());
-//            for (int j = 0; i < t.getOutput().getData().size(); i++) {
-//                outputNames.add(t.getOutput().getData().get(i).getDataName().split("-")[0]);
-//            }
-//            lastOTPSItaskId = i;
-//        }
-//
-//        // 修改最后一个OTPSI的task信息
-//        if (inputDataList.size() <= 2) {
-//            return;
-//        }
-//        Task t = tasks.get(lastOTPSItaskId);
-//        t.setParties(List.copyOf(parties));
-//        List<TaskInputData> newInputDataList = new ArrayList<>();
-//        for (int i = 0; i < inputDataList.size(); i += 2) {
-//
-//        }
-//
-//        // 改变上位依赖项
-
-    }
-
-
-    /**
-     * 修改LocalJoin中的output数量 超过一个的都改成一个，并修改上位依赖
-     * @param
-     */
-    public void localJoinCorrect() {
-        for (int taskID = 0; taskID < tasks.size(); taskID++) {
-            Task t = tasks.get(taskID);
-            if (!t.getModule().getModuleName().equals(TaskType.LOCALJOIN.name())) {
-                continue;
-            }
-            // 记录旧的outputName
-            LinkedHashSet<String> outputNames = new LinkedHashSet<>();
-            int n = t.getOutputList().size();
-            for (int i = 0; i < n; i++) {
-                outputNames.add(t.getOutputList().get(i).getDataName());
-            }
-            // 删除多余的output，修改outputName
-            for (int i = 1; i < n; i++) {
-                t.getOutputList().remove(i);
-            }
-            String outName = "LOCALJOIN-" + t.getTaskName();
-            t.getOutputList().get(0).setDataName(outName);
-
-            // 修改上位依赖项
-            for (int i = taskID + 1; i < tasks.size(); i++) {
-                Task ft = tasks.get(i);
-                for (InputDetail inputData : ft.getInput().getInputDataDetailList()) {
-                    String inputName = inputData.getDataName();
-                    if (outputNames.contains(inputName)) {
-                        inputData.setDataName(outName);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * 合并本地Task，将它们批量交给spark进行处理
-     */
-    public void mergeLocalTasks() {
-        // 1、构建Task调用关系树
-        TaskNode root = buildTaskTree();
-        // 2、先复制一份tasks
-        makeTackCp();
-        // 3、遍历该树，对LocalTask节点进行merge
-        dfsTaskTree(root);
-        // 4、排序mergedTasks
-        mergedTasks.sort(new Comparator<Task>() {
-            @Override
-            public int compare(Task o1, Task o2) {
-                return Integer.parseInt(o1.getTaskName()) - Integer.parseInt(o2.getTaskName());
-            }
-        });
-    }
-
-    /**
-     * 深拷贝tasks
-     */
-    private void makeTackCp() {
-//        Gson gson = new Gson();
-        for (int i = 0; i < tasks.size(); i++) {
-            taskcp.add(tasks.get(i));
-//            taskcp.add(gson.fromJson(gson.toJson(tasks.get(i)), Task.class));
-            String moduleName = taskcp.get(i).getModule().getModuleName();
-            if (moduleName.equals(TaskType.LOCALEXP.name()) || moduleName.equals(TaskType.LOCALAGG.name()) || moduleName.startsWith(TaskType.MPC.name())) {
-                for (InputDetail inputData : taskcp.get(i).getInput().getInputDataDetailList()) {
-                    List<Double> doubleList = (List<Double>) inputData.getParams().get("index");
-                    List<Integer> integerList = new ArrayList<>();
-                    for (double j : doubleList) {
-                        integerList.add((int) j);
-                    }
-                    inputData.getParams().put("index", integerList);
-                }
             }
         }
     }
@@ -959,20 +759,20 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 //        JSONObject moduleParams = new JSONObject(true);
         List<ModuleParam> moduleParams = new ArrayList<ModuleParam>();
         if (expression.getPsi().size() != 0) {
-            moduleParams.add(new ModuleParam("intersection", parseFLParams(expression.getPsi())));
+            moduleParams.add(new ModuleParam("intersection", parseFLParams(expression.getPsi()).toJSONString()));
         }
         if (expression.getFl().size() != 0) {
-            moduleParams.add(new ModuleParam("fl", parseFLParams(expression.getFl())));
+            moduleParams.add(new ModuleParam("fl", parseFLParams(expression.getFl()).toJSONString()));
         }
 
         if (expression.getFeat().size() != 0) {
-            moduleParams.add(new ModuleParam("feat", parseFLParams(expression.getFeat())));
+            moduleParams.add(new ModuleParam("feat", parseFLParams(expression.getFeat()).toJSONString()));
         }
         if (expression.getModel().size() != 0) {
-            moduleParams.add(new ModuleParam("model", parseFLParams(expression.getModel())));
+            moduleParams.add(new ModuleParam("model", parseFLParams(expression.getModel()).toJSONString()));
         }
         if (expression.getEval().size() != 0) {
-            moduleParams.add(new ModuleParam("eval", parseFLParams(expression.getEval())));
+            moduleParams.add(new ModuleParam("eval", parseFLParams(expression.getEval()).toJSONString()));
         }
 
         module.setParamList(moduleParams);
