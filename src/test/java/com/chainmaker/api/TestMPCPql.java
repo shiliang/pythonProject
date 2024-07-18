@@ -11,13 +11,19 @@ import com.chainmaker.jobservice.api.model.job.Job;
 import com.chainmaker.jobservice.api.model.vo.SqlVo;
 import com.chainmaker.jobservice.api.service.impl.JobParserServiceImpl;
 import com.google.common.collect.Lists;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+@Slf4j
 public class TestMPCPql {
 
     public static final List<String> pqls = Lists.newArrayList(
+            "select count(atest.k), max(atest.k), avg(atest.k) from atest ",
+
+            "select counnt(atest.k), max(atest.k), avg(atest.k) from atest ",
+
             "select /*+ FUNC(TEE) */ JSB01(atest.k,btest.k) from atest, btest",
 
             "select temp.a1 from (select atest.a1 from atest) temp ",

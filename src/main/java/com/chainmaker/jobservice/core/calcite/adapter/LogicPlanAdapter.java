@@ -939,26 +939,33 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
      */
     private RexNode dealWithFunctionCallExpression(FunctionCallExpression expr) {
 //        System.out.println("enter dealWithFunctionCallExpression function");
-        RexNode ans = null;
-        SqlAggFunction op = SqlStdOperatorTable.SUM;
+        RexNode ans;
+        SqlAggFunction op = null;
         String function = expr.getFunction();
-        switch (function.toUpperCase()) {
-            case "SUM":
-                op = SqlStdOperatorTable.SUM;
-                break;
-            case "AVG":
-                op = SqlStdOperatorTable.AVG;
-                break;
-            case "COUNT":
-                op = SqlStdOperatorTable.COUNT;
-                break;
-            case "MAX":
-                op = SqlStdOperatorTable.MAX;
-                break;
-            case "MIN":
-                op = SqlStdOperatorTable.MIN;
-            default:
-                break;
+        if(hints == null) {
+            switch (function.toUpperCase()) {
+                case "SUM":
+                    op = SqlStdOperatorTable.SUM;
+                    break;
+                case "AVG":
+                    op = SqlStdOperatorTable.AVG;
+                    break;
+                case "COUNT":
+                    op = SqlStdOperatorTable.COUNT;
+                    break;
+                case "MAX":
+                    op = SqlStdOperatorTable.MAX;
+                    break;
+                case "MIN":
+                    op = SqlStdOperatorTable.MIN;
+                default:
+                    break;
+            }
+            if(op == null){
+                throw new RuntimeException(expr + " is not supported... SUM, AVG, COUNT, MAX, MIN is supported");
+            }
+        } else {
+            op = SqlStdOperatorTable.SUM;
         }
         List<RexNode> childs = new ArrayList<>();
         for (Expression subExpr : expr.getExpressions()) {
