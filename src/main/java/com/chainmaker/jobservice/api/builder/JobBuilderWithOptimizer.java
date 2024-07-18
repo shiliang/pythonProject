@@ -960,7 +960,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             log.info("multi-party query: " + tableSets.size());
             return true;
         }else{
-            log.info("single-party query");
+            log.debug("single-party query");
         }
         return false;
     }
@@ -1175,7 +1175,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
 
     public Task generateProjectTask(MPCProject phyPlan, HashMap<RelNode, List<Task>> phyTaskMap, RexNode rexNode, List<String> inputList) {
-        log.info("inputList:" + inputList);
+        log.info("project inputList:" + inputList);
         Task task = basicTask(String.valueOf(cnt++));
 
         // [AS(+($8, $7), ''), AS(SUM($4), ''), AS($0, '')]
