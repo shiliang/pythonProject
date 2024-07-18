@@ -827,7 +827,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         String dataName = "";
         for (int i = 0; i < label.size(); i++) {
             FlExpression expr = label.get(i);
-            if (expr.getLeft().toString().equals("SOURCE_DATA")) {
+            if (expr.getLeft().toString().equalsIgnoreCase("SOURCE_DATA")) {
                 dataName = expr.getRight().toString();
                 label.remove(i);
                 break;
