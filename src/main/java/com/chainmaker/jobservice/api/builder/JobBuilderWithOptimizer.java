@@ -33,7 +33,6 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -44,10 +43,6 @@ import static com.chainmaker.jobservice.api.builder.CalciteUtil.*;
 
 @Slf4j
 public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
-//    private enum JobType {
-//        FQ(), FQS(), FL(), FLS(), CC(), CCS(), TEE(), MPC
-//    }
-
 
     private enum TaskType {
         QUERY, LOCALFILTER, LOCALJOIN, OTPSI, PSIRSA, TEEPSI, TEEAVG, MPC, MPCEXP, FL, TEE, LOCALMERGE, LOCALEXP, LOCALAGG, NOTIFY
@@ -100,6 +95,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
     private Map<String, RelNode> tableOriginTableMap = new HashMap<>();
 
+    private List<Integer> multiPartiesNodeIds = new ArrayList<>();
+
 
     public JobBuilderWithOptimizer(Integer modelType, Integer isStream, ParserWithOptimizerReturnValue value, HashMap<String, String> columnInfoMap, OrgInfo orgInfo, String sql) {
         this.modelType = modelType;
@@ -127,6 +124,35 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         return job;
     }
 
+
+    /**
+     * 需要转为sql的单方计算，主要就是Project ,Filter, Join 三类。
+     *
+     * 目标子树只有两种：
+     * 1 纯单方计算， 整棵树都要转为sql
+     * 2 多方计算，多方内外的单方子树需要提取出来
+     * 比较复杂，最好是遍历所有的RelNode，将id记录下来。然后进行转换。
+     * @param phyPlan
+     */
+    public void searchMultiNode(RelNode phyPlan) {
+        if (phyPlan instanceof RelSubset) {
+            phyPlan = ((RelSubset) phyPlan).getBest();
+        }
+        if (phyPlan == null) {
+            return;
+        }
+        if (phyPlan instanceof MPCTableScan) {
+            return;
+        }
+        if (isMultiParties(phyPlan)) {
+            multiPartiesNodeIds.add(phyPlan.getId());
+            int n = phyPlan.getInputs().size();
+            for (int i = 0; i < n; i++) {
+                searchMultiNode(phyPlan.getInput(i));
+            }
+        }
+    }
+
     public void build() {
         String jobStatus = "WAITING";
         String taskDAG = "taskDAG";
@@ -147,6 +173,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         HashMap<RelNode, List<Task>> phyTaskMap = new HashMap<>();
         // 生成tasks
         generateFLTasks(originPlan);
+        searchMultiNode(phyPlan);
         tasks.addAll(dfsPlan(phyPlan, phyTaskMap));
         // PSI后通知所有参与表
         notifyPSIOthers();
@@ -185,16 +212,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         job.setTasksDAG(taskDAG);
         job.setPartyList(new ArrayList<>(jobPartySet));
     }
-
-    public boolean isSingleOrg(RelNode phyPlan){
-        List<String> fieldNames = phyPlan.getRowType().getFieldNames();
-        Set<String> tables = fieldNames.stream()
-                .map(x -> getTableName(fromNumericName2FieldName(phyPlan, x))).collect(Collectors.toSet());
-        return tables.size() == 1;
-    }
-
-
-
 
 
 
@@ -952,8 +969,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
     public boolean isMultiParties(RelNode phyPlan){
         List<String> fields = Lists.newArrayList();
-        for (int i = 0; i < phyPlan.getRowType().getFieldNames().size(); i++) {
-            fields.addAll(getInputList(phyPlan, i));
+        if(phyPlan instanceof MPCProject) {
+            for (int i = 0; i < phyPlan.getRowType().getFieldNames().size(); i++) {
+                fields.addAll(getInputList(phyPlan, i));
+            }
+        }else{
+            fields.addAll(phyPlan.getRowType().getFieldNames());
         }
         Set<String> tableSets = fields.stream().map(CalciteUtil::getTableName).collect(Collectors.toSet());
         if(tableSets.size() > 1){
@@ -989,13 +1010,23 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         List<Task> tasks = new ArrayList<>();
         buildTableCache(phyPlan);
 //        isRunnableJob(this.phyPlan, true);
+        log.info("rowType: " + JSONObject.toJSONString(phyPlan.getRowType().getFieldNames()));
+        if(phyPlan instanceof MPCProject){
+            MPCProject prj = (MPCProject)phyPlan;
+            log.info("projects: " + JSONObject.toJSONString(prj.getProjects().stream().map(x -> x.toString()).collect(Collectors.toList())));
+        }
         switch (phyPlan.getRelTypeName()) {
             case "MPCProject":
-//                notifyPSIOthers(tasks);
-                for (int i = 0; i < phyPlan.getRowType().getFieldNames().size(); i++) {
-                    RexNode node = ((MPCProject) phyPlan).getProjects().get(i);
-                    List<String> inputList = getInputList(phyPlan, i);
-                    tasks.add(generateProjectTask((MPCProject) phyPlan, phyTaskMap, node, inputList));
+                MPCProject projectPlan = (MPCProject) phyPlan;
+                if(!isMultiParties(projectPlan) && projectPlan.getId() != this.phyPlan.getId()) {
+                    tasks.add(generateSinglePartyProjectTask(projectPlan, phyTaskMap));
+                }else {
+                    List<RexNode> projectList = projectPlan.getProjects();
+                    for (int i = 0; i < projectList.size(); i++) {
+                        RexNode node = projectList.get(i);
+                        List<String> inputList = getInputList(phyPlan, i);
+                        tasks.add(generateProjectTask(projectPlan, phyTaskMap, node, inputList));
+                    }
                 }
                 break;
             case "MPCJoin":
@@ -1171,7 +1202,166 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     }
 
 
+    public String getFieldAlias(RexCall node){
+        String fieldAlias = null;
+        if(node.getOperands().size() > 1 && node.getOperator() instanceof SqlAsOperator){
+            fieldAlias = node.getOperands().get(1).toString();
+        }
+        return fieldAlias;
+    }
 
+    public Task generateSinglePartyProjectTask(MPCProject phyPlan, HashMap<RelNode, List<Task>> phyTaskMap) {
+        Task task = basicTask(String.valueOf(cnt++));
+
+        List<InputDetail> inputDatas = new ArrayList<>();
+        Module module = new Module();
+        String moduleName = TaskType.QUERY.name();
+        List<ModuleParam> moduleparams = new ArrayList<>();
+        Task srcTask = phyTaskMap.get(((RelSubset) phyPlan.getInput()).getBest()).get(0);
+
+        List<RexNode> projects = phyPlan.getProjects();
+        List<String> outCols = phyPlan.getRowType().getFieldNames().stream().map(CalciteUtil::getColumnName).collect(Collectors.toList());
+
+        for (int i = 0; i < projects.size(); i++) {
+            RexNode rexNode = projects.get(i);
+            // [AS(+($8, $7), ''), AS(SUM($4), ''), AS($0, '')]
+            // 所有 project 默认最上层都是 AS 的 RexCall, 所以去掉一层之后才是真的 proj 的内容
+            RexCall rexCall = dealProjectRexNode(phyPlan, rexNode);
+            RexNode proj = rexCall.getOperands().get(0);
+            List<String> constantList = new ArrayList<>();
+            if (proj instanceof RexCall) {
+                SqlOperator op = ((RexCall) proj).getOperator();
+                if (op.equals(SqlStdOperatorTable.PLUS) || op.equals(SqlStdOperatorTable.MINUS) ||
+                        op.equals(SqlStdOperatorTable.MULTIPLY) || op.equals(SqlStdOperatorTable.DIVIDE) ||
+                        op.equals(SqlStdOperatorTable.MOD)) {
+                    moduleName =  TaskType.LOCALEXP.name();
+                    moduleparams.add(new ModuleParam("function", "base"));
+                    String expr = dfsRexNode(proj, constantList);
+                    moduleparams.add(new ModuleParam("expression", expr));
+                } else {
+                    moduleName = TaskType.LOCALAGG.name();
+                    moduleparams.add(new ModuleParam("function", op.toString()));
+                    String expr = dfsRexNode(((RexCall) proj).getOperands().get(0), constantList);
+                    moduleparams.add(new ModuleParam("expression", expr));
+                    moduleparams.add(new ModuleParam("aggFunc", StrUtil.format("{}({})",op, expr)));
+                }
+            }
+            if (!constantList.isEmpty()) {
+                String constants = "";
+                for (String constant : constantList) {
+                    constants += constant + ",";
+                }
+                constants = constants.substring(0, constants.length() - 1);
+                moduleparams.add(new ModuleParam("constant", constants));
+            }
+
+
+
+            List<String> inputList = getInputList(phyPlan, i);
+            for (int j = 0; j < inputList.size(); j++) {
+                InputDetail inputdata = new InputDetail();
+                String tableField = inputList.get(j);
+                inputdata.setTaskSrc(srcTask.getTaskName());
+                inputdata.setDomainId(getFieldDomainID(tableField));
+                if (srcTask.getTaskName().equals("") ||
+                        srcTask.getOutputList().get(0).getDataName().startsWith(inputdata.getDomainId())) {
+                    inputdata.setDataName(srcTask.getOutputList().get(0).getDataName());
+                    inputdata.setDataId(srcTask.getOutputList().get(0).getDataId());
+                } else {
+                    inputdata.setDataName(srcTask.getOutputList().get(1).getDataName());
+                    inputdata.setDataId(srcTask.getOutputList().get(1).getDataId());
+                }
+                if (j == 0) {
+                    inputdata.setRole("server");
+                } else {
+                    inputdata.setRole("client");
+                }
+                JSONObject inputParam = new JSONObject(true);
+                String table = tableField.split("\\.")[0];
+                String field = tableField.split("\\.")[1];
+                inputParam.put("table", table);
+                inputParam.put("field", field);
+                if (!moduleName.equalsIgnoreCase(TaskType.QUERY.name())) {
+                    inputParam.put("type", columnInfoMap.get(tableField));
+                    List<Integer> list = new ArrayList<>();
+                    list.add(j);
+                    inputParam.put("index", Arrays.toString(list.toArray()));
+                }
+                inputdata.setParams(inputParam);
+                inputdata.setType(columnInfoMap.get(tableField.toUpperCase()));
+                TableInfo tableInfo = metadata.getTableInfoMap().get(table);
+                inputdata.setTableName(tableInfo.getName());
+                FieldInfo fieldInfo = tableInfo.getFields().get(tableField);
+                inputdata.setColumnName(fieldInfo.getFieldName());
+
+                //对于中间表，需要找到源头的资产名称。因为中间表不会注册在ida中
+                String originTable = getOriginalTableName(table);
+                TableInfo originTableInfo = metadata.getTableInfoMap().get(originTable);
+                inputdata.setAssetName(originTableInfo.getAssetName());
+
+                inputdata.setDatabaseName(fieldInfo.getDatabaseName());
+                inputdata.setComments(fieldInfo.getComments());
+                inputdata.setLength(fieldInfo.getDataLength());
+                inputdata.setDomainName(fieldInfo.getDomainName());
+                inputDatas.add(inputdata);
+            }
+        }
+
+
+
+        // 输入信息
+        Input input = new Input();
+        input.setInputDataDetailList(inputDatas);
+        input.setTaskId(task.getTaskId());
+        input.setSrcTaskId(inputDatas.get(0).getTaskSrc());
+        input.setSrcTaskName(inputDatas.get(0).getTaskSrc());
+        task.setInput(input);
+
+        //计算模型
+        module.setModuleName(moduleName);
+        module.setParamList(moduleparams);
+        task.setModule(checkMpcModule(module));
+
+        // 输出信息
+//        Output output = new Output();
+        Output outputdata = new Output();
+        outputdata.setDataName(inputDatas.get(0).getDomainId() + "-" + cnt);
+
+        outputdata.setColumnName(String.join(",", outCols));
+        outputdata.setLength(inputDatas.get(0).getLength());
+        outputdata.setType(inputDatas.get(0).getType());
+        outputdata.setFinalResult("Y");
+        outputdata.setIsFinalResult(true);
+        outputdata.setDomainId(inputDatas.get(0).getDomainId());
+        outputdata.setDomainName(inputDatas.get(0).getDomainName());
+        outputdata.setDataId("");
+        task.setOutputList(List.of(outputdata));
+
+        // parties信息
+        genParties(input, task);
+        updatePhyTaskMap(phyTaskMap, phyPlan , task);
+        return task;
+    }
+
+    private RexCall dealProjectRexNode(MPCProject phyPlan, RexNode rexNode) {
+        if (rexNode instanceof RexInputRef) {
+            RexBuilder rexBuilder = phyPlan.getCluster().getRexBuilder();
+            RexNode stringLiteral = rexBuilder.makeLiteral("",
+                    rexBuilder.getTypeFactory().createSqlType(SqlTypeName.VARCHAR),
+                    false);
+            rexNode = rexBuilder.makeCall(new SqlAsOperator(), rexNode, stringLiteral);
+        } else if (rexNode instanceof RexLiteral) {
+            RexLiteral rexLiteral = (RexLiteral) rexNode;
+            RexBuilder rexBuilder = phyPlan.getCluster().getRexBuilder();
+            RexNode stringLiteral = rexBuilder.makeLiteral(rexLiteral.getValue(),
+                    rexBuilder.getTypeFactory().createSqlType(SqlTypeName.VARCHAR),
+                    false);
+            rexNode = rexBuilder.makeCall(new SqlAsOperator(), rexNode, stringLiteral);
+        } else if (rexNode instanceof RexCall) {
+            rexNode = rmAsOfRexCall((RexCall) rexNode);
+        }
+        return (RexCall) rexNode;
+    }
 
 
     public Task generateProjectTask(MPCProject phyPlan, HashMap<RelNode, List<Task>> phyTaskMap, RexNode rexNode, List<String> inputList) {
