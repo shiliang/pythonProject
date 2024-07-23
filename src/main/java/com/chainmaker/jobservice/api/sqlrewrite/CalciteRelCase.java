@@ -1,6 +1,8 @@
 package com.chainmaker.jobservice.api.sqlrewrite;
 
 
+import com.chainmaker.jobservice.core.calcite.relnode.MPCTableScan;
+import com.google.common.collect.Lists;
 import org.apache.calcite.adapter.csv.CsvSchema;
 import org.apache.calcite.adapter.csv.CsvTable;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
@@ -13,6 +15,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -132,8 +135,40 @@ public class CalciteRelCase {
         sqlNode.unparse(prettyWriter, 0, 0);
         String sqlStr = prettyWriter.toString();
         System.out.println(sqlStr);
+    }
 
+    public static String rel2sql(RelNode phyPlan){
+        SqlDialect sqlDialect = SqlDialect.DatabaseProduct.MYSQL.getDialect();
 
+        SqlWriterConfig writerConfig = SqlWriterConfig.of()
+                .withDialect(sqlDialect)
+                .withAlwaysUseParentheses(true) // 可选配置，控制括号的使用
+                .withSelectListItemsOnSeparateLines(false) // 控制 SELECT 列表的格式
+                ;
+        SqlPrettyWriter prettyWriter = new SqlPrettyWriter(writerConfig, new StringBuilder());
+        RelToSqlConverter relToSqlConverter = new RelToSqlConverter(sqlDialect);
+        SqlNode sqlNode = relToSqlConverter.visitRoot(phyPlan).asStatement();
+
+        sqlNode.unparse(prettyWriter, 0, 0);
+
+        return prettyWriter.toString();
+    }
+
+    public static RelNode cleanRelSubSet(RelNode phyPlan){
+        if(phyPlan instanceof MPCTableScan){
+            return phyPlan;
+        }
+        if(phyPlan instanceof RelSubset){
+            RelSubset subset = (RelSubset)phyPlan;
+            return subset.getBest();
+        }
+        List<RelNode> inputs = phyPlan.getInputs();
+        List<RelNode> newInputs = Lists.newArrayList();
+        for(RelNode input : inputs){
+            RelNode newInput = cleanRelSubSet(input);
+            newInputs.add(newInput);
+        }
+        return phyPlan.copy(phyPlan.getTraitSet(), newInputs);
     }
 
 }

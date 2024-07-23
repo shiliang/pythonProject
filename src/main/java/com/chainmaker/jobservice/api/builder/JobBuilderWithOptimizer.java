@@ -10,6 +10,7 @@ import com.chainmaker.jobservice.api.model.job.Job;
 import com.chainmaker.jobservice.api.model.job.service.Service;
 import com.chainmaker.jobservice.api.model.job.task.*;
 import com.chainmaker.jobservice.api.model.job.task.Module;
+import com.chainmaker.jobservice.api.sqlrewrite.CalciteRelCase;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.FieldInfo;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
@@ -981,6 +982,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             log.info("multi-party query: " + tableSets.size());
             return true;
         }else{
+            RelNode newPlan = CalciteRelCase.cleanRelSubSet(phyPlan);
+            log.info("generate sql: " + CalciteRelCase.rel2sql(newPlan));
             log.debug("single-party query");
         }
         return false;
@@ -1135,12 +1138,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         List<InputDetail> inputDataList = new ArrayList<>();
         List<Output> outputDataList = new ArrayList<>();
 
-        RelSubset relSubset = (RelSubset)(phyPlan.getInputs().get(0));
-        List<RelDataTypeField> inFields =relSubset.getBest().getRowType().getFieldList();
-        Task srcTask = phyTaskMap.get(relSubset.getBest()).get(0);
+        RelNode relNode = (phyPlan.getInputs().get(0));
+        List<RelDataTypeField> inFields =relNode.getRowType().getFieldList();
+        Task srcTask = phyTaskMap.get(relNode).get(0);
         for(RelDataTypeField field: inFields){
             InputDetail inputData = new InputDetail();
-            String fullQualifiedfield = fromNumericName2FieldName(relSubset.getBest(),field.getName());
+            String fullQualifiedfield = fromNumericName2FieldName(relNode,field.getName());
             Pair<String, String> pair = getTableNameAndColumnName(fullQualifiedfield);
             if(usedFields.contains(fullQualifiedfield)) {
                 inputData.setColumnName(pair.right);
@@ -1217,7 +1220,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         Module module = new Module();
         String moduleName = TaskType.QUERY.name();
         List<ModuleParam> moduleparams = new ArrayList<>();
-        Task srcTask = phyTaskMap.get(((RelSubset) phyPlan.getInput()).getBest()).get(0);
+        Task srcTask = phyTaskMap.get(phyPlan.getInput()).get(0);
 
         List<RexNode> projects = phyPlan.getProjects();
         List<String> outCols = phyPlan.getRowType().getFieldNames().stream().map(CalciteUtil::getColumnName).collect(Collectors.toList());
@@ -1428,7 +1431,13 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         // 输入信息
         Input input = new Input();
         List<InputDetail> inputDatas = new ArrayList<>();
-        Task srcTask = phyTaskMap.get(((RelSubset) phyPlan.getInput()).getBest()).get(0);
+        RelNode relNode = phyPlan.getInput();
+        Task srcTask;
+        if(relNode instanceof RelSubset) {
+            srcTask = phyTaskMap.get(((RelSubset) phyPlan.getInput()).getBest()).get(0);
+        }else{
+            srcTask = phyTaskMap.get(phyPlan.getInput()).get(0);
+        }
         for (int i = 0; i < inputList.size(); i++) {
             InputDetail inputdata = new InputDetail();
             String tableField = inputList.get(i);
@@ -1597,8 +1606,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         String rightField = phyPlan.getRowType().getFieldNames().get(((RexInputRef) cond.getOperands().get(1)).getIndex());
 //        List<Task> leftChilds = phyTaskMap.get();
 //        System.out.println(((RelSubset) phyPlan.getRight()).getBest() instanceof MPCFilter);
-        RelNode leftInputNode = ((RelSubset) phyPlan.getLeft()).getBest();
-        RelNode rightInputNode = ((RelSubset) phyPlan.getRight()).getBest();
+        RelNode leftInputNode = phyPlan.getLeft();
+        RelNode rightInputNode = phyPlan.getRight();
 
         Task leftChild = findTask(phyTaskMap, leftInputNode, getColumnName(leftField));
         Task rightChild = findTask(phyTaskMap, rightInputNode, getColumnName(rightField));
@@ -1778,7 +1787,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         if (phyTaskMap.containsKey(phyPlan)) {
             childTask = phyTaskMap.get(phyPlan).get(0);
         } else {
-            childTask = phyTaskMap.get(((RelSubset) phyPlan.getInput()).getBest()).get(0);
+            childTask = phyTaskMap.get(phyPlan.getInput()).get(0);
         }
         String table = tableField.split("\\.")[0];
         inputdata.setTaskSrc(childTask.getTaskName());

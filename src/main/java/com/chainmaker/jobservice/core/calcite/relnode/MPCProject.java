@@ -44,7 +44,7 @@ public class MPCProject extends Project implements EnumerableRel {
 
     @Override
     public Project copy(RelTraitSet relTraitSet, RelNode relNode, List<RexNode> list, RelDataType relDataType) {
-        return new MPCProject(getCluster(), traitSet, input, list, rowType);
+        return new MPCProject(getCluster(), traitSet, relNode, list, rowType);
     }
 
     public static MPCProject create(RelNode input, List<? extends RexNode> projects, RelDataType rowType) {

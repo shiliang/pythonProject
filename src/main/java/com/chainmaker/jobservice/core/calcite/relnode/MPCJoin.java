@@ -47,8 +47,8 @@ public class MPCJoin extends Join implements EnumerableRel {
     @SneakyThrows
     @Override
     public MPCJoin copy(RelTraitSet relTraitSet, RexNode rexNode, RelNode relNode, RelNode relNode1, JoinRelType joinRelType, boolean b) {
-        return new MPCJoin(getCluster(), traitSet, left, right,
-                condition, variablesSet, joinType);
+        return new MPCJoin(getCluster(), traitSet, relNode, relNode1,
+                rexNode, variablesSet, joinType);
     }
 
 

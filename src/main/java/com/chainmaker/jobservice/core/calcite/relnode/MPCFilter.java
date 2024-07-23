@@ -36,7 +36,7 @@ public class MPCFilter extends Filter implements EnumerableRel {
 
     @Override
     public Filter copy(RelTraitSet relTraitSet, RelNode relNode, RexNode rexNode) {
-        return new MPCFilter(getCluster(), traitSet, input, condition);
+        return new MPCFilter(getCluster(), traitSet, relNode, rexNode);
     }
 
     public static MPCFilter create(final RelNode input, RexNode condition) {
