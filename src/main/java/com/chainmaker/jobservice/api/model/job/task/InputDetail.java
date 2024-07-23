@@ -1,6 +1,8 @@
 package com.chainmaker.jobservice.api.model.job.task;
 
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.annotation.JSONField;
+import com.chainmaker.jobservice.api.serdeser.Obj2StrSerializer;
 import lombok.Data;
 
 /**
@@ -23,6 +25,10 @@ public class InputDetail {
     private Integer length;
     private String comments;
     private String role = "client";
+
+    //go 的json解析库
+    @JSONField(serializeUsing = Obj2StrSerializer.class)
     private JSONObject params;
+
     private String assetName;
 }

@@ -87,6 +87,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private Job job = new Job();
     private List<Service> services = new ArrayList<>();
     private List<Task> tasks = new ArrayList<>();
+
+    private Map<Integer, Integer> taskIdLevelMap = new HashMap<>();
+
+    private Integer taskMaxLevel = 0;
     private List<Task> mergedTasks = new ArrayList<>();
     private List<Task> taskcp = new ArrayList<>();
     private Set<Party> jobPartySet = Sets.newHashSet();
@@ -151,7 +155,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         // PSI后通知所有参与表
         notifyPSIOthers();
 
-        List<String> finalTasks = getFinalResultTasks();
+        buildTaskIDLevelMap();
+        List<String> finalTasks = getLeafTasks();
         for (Task task : tasks) {
             String taskId = task.getTaskId();
             List<InputDetail> inputs = task.getInput().getInputDataDetailList();
@@ -159,6 +164,15 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             Optional<InputDetail> srcTaskOp = inputs.stream().filter(x -> StrUtil.isNotEmpty(x.getTaskSrc())).findAny();
             if(srcTaskOp.isEmpty()){
                 task.setTaskLabel("起始任务" + task.getTaskName());
+                outputs.forEach(output -> {
+                    if(taskMaxLevel > 1) {
+                        output.setFinalResult("N");
+                        output.setIsFinalResult(false);
+                    }else{
+                        output.setFinalResult("Y");
+                        output.setIsFinalResult(true);
+                    }
+                });
             }else if(!finalTasks.contains(taskId)){
                 //project, fl, tee 任务，默认都是最终任务，但是在子查询中，project有可能都是中间任务，需要更新finalResult。
                 task.setTaskLabel("中间任务" + task.getTaskName());
@@ -168,6 +182,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 });
             } else{
                 task.setTaskLabel("最终任务" + task.getTaskName());
+                outputs.forEach(output -> {
+                    output.setFinalResult("Y");
+                    output.setIsFinalResult(true);
+                });
             }
         }
 
@@ -186,15 +204,56 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         job.setPartyList(new ArrayList<>(jobPartySet));
     }
 
-    public boolean isSingleOrg(RelNode phyPlan){
-        List<String> fieldNames = phyPlan.getRowType().getFieldNames();
-        Set<String> tables = fieldNames.stream()
-                .map(x -> getTableName(fromNumericName2FieldName(phyPlan, x))).collect(Collectors.toSet());
-        return tables.size() == 1;
+    public List<String> getLeafTasks(){
+        return taskIdLevelMap.entrySet().stream()
+                .filter(x -> Objects.equals(x.getValue(), taskMaxLevel))
+                .map(x -> x.getKey().toString())
+                .collect(Collectors.toList());
     }
 
 
+    public void buildTaskIDLevelMap() {
+        HashMap<Integer, Set<Integer>> nextMap = new HashMap<>();
+        for (Task task : tasks) {
+            Integer id = Integer.parseInt(task.getTaskId());
+            for (InputDetail taskInputData : task.getInput().getInputDataDetailList()) {
+                String taskSrc = taskInputData.getTaskSrc();
+                if (!StringUtils.isEmpty(taskSrc)) {
+                    Integer srcId = Integer.parseInt(taskSrc);
+                    if(nextMap.containsKey(srcId)){
+                        nextMap.get(srcId).add(id);
+                    }else {
+                        nextMap.put(srcId, Sets.newHashSet(id));
+                    }
+                }
+                else{
+                    taskIdLevelMap.put(id, 1);
+                }
+            }
+        }
+        if(nextMap.isEmpty()){
+            taskMaxLevel = 1;
+            return;
+        }
 
+        int maxKey = tasks.size();
+        for(int i=1; i <= maxKey; i++){
+            int levelVal = i;
+            List<Integer> ids = taskIdLevelMap.entrySet().stream()
+                    .filter(x -> x.getValue() == levelVal).map(Map.Entry::getKey).collect(Collectors.toList());
+            for(Map.Entry<Integer, Set<Integer>> entry: nextMap.entrySet()){
+                Integer key = entry.getKey();
+                Set<Integer> vals = entry.getValue();
+                if(ids.contains(key)){
+                    for(Integer val: vals){
+                        taskIdLevelMap.put(val, levelVal + 1);
+                        taskMaxLevel = levelVal + 1;
+                    }
+                }
+            }
+        }
+        log.info("task id level: " + JSONObject.toJSONString(taskIdLevelMap));
+    }
 
 
 
@@ -1238,7 +1297,15 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         // 输入信息
         Input input = new Input();
         List<InputDetail> inputDatas = new ArrayList<>();
-        Task srcTask = phyTaskMap.get(((RelSubset) phyPlan.getInput()).getBest()).get(0);
+//        Task srcTask = phyTaskMap.get(((RelSubset) phyPlan.getInput()).getBest()).get(0);
+        RelNode inputNode = phyPlan.getInput();
+        Task srcTask;
+        if(inputNode instanceof RelSubset){
+            RelSubset subset = (RelSubset)inputNode;
+            srcTask = phyTaskMap.get(subset.getBest()).get(0);
+        }else {
+            srcTask = phyTaskMap.get(phyPlan.getInput()).get(0);
+        }
         for (int i = 0; i < inputList.size(); i++) {
             InputDetail inputdata = new InputDetail();
             String tableField = inputList.get(i);

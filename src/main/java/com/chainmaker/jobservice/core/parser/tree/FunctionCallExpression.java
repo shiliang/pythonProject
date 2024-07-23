@@ -1,6 +1,9 @@
 package com.chainmaker.jobservice.core.parser.tree;
 
+import cn.hutool.core.util.StrUtil;
+
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class FunctionCallExpression extends Expression {
     public FunctionCallExpression(String function, List<Expression> expressions) {
@@ -21,7 +24,9 @@ public class FunctionCallExpression extends Expression {
 
     @Override
     public String toString() {
-        return function + expressions.toString();
+        List<String> exprs = expressions.stream().map(x -> x.toString()).collect(Collectors.toList());
+        return function + StrUtil.format( "({})",String.join(",", exprs));
+//        return function + expressions.toString();
     }
     @Override
     public List<Expression> getChildren() {
