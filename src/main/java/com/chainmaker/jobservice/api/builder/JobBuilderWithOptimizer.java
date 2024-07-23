@@ -1011,8 +1011,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
     public boolean isMultiParties(RelNode phyPlan){
         List<String> fields = Lists.newArrayList();
-        for (int i = 0; i < phyPlan.getRowType().getFieldNames().size(); i++) {
-            fields.addAll(getInputList(phyPlan, i));
+        if(phyPlan instanceof MPCProject) {
+            for (int i = 0; i < phyPlan.getRowType().getFieldNames().size(); i++) {
+                fields.addAll(getInputList(phyPlan, i));
+            }
+        }else{
+            fields.addAll(phyPlan.getRowType().getFieldNames());
         }
         Set<String> tableSets = fields.stream().map(CalciteUtil::getTableName).collect(Collectors.toSet());
         if(tableSets.size() > 1){
@@ -1023,6 +1027,144 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
         return false;
     }
+
+//    public Task generateSinglePartyProjectTask(MPCProject phyPlan, HashMap<RelNode, List<Task>> phyTaskMap) {
+//        Task task = basicTask(String.valueOf(cnt++));
+//
+//        List<InputDetail> inputDatas = new ArrayList<>();
+//        Module module = new Module();
+//        String moduleName = TaskType.QUERY.name();
+//        List<ModuleParam> moduleparams = new ArrayList<>();
+//        Task srcTask = phyTaskMap.get(((RelSubset) phyPlan.getInput()).getBest()).get(0);
+//
+//        List<RexNode> projects = phyPlan.getProjects();
+//        List<String> outCols = phyPlan.getRowType().getFieldNames().stream().map(CalciteUtil::getColumnName).collect(Collectors.toList());
+//
+//        for (int i = 0; i < projects.size(); i++) {
+//            RexNode rexNode = projects.get(i);
+//            // [AS(+($8, $7), ''), AS(SUM($4), ''), AS($0, '')]
+//            // 所有 project 默认最上层都是 AS 的 RexCall, 所以去掉一层之后才是真的 proj 的内容
+//            RexCall rexCall = dealProjectRexNode(phyPlan, rexNode);
+//            RexNode proj = rexCall.getOperands().get(0);
+//            List<String> constantList = new ArrayList<>();
+//            if (proj instanceof RexCall) {
+//                SqlOperator op = ((RexCall) proj).getOperator();
+//                if (op.equals(SqlStdOperatorTable.PLUS) || op.equals(SqlStdOperatorTable.MINUS) ||
+//                        op.equals(SqlStdOperatorTable.MULTIPLY) || op.equals(SqlStdOperatorTable.DIVIDE) ||
+//                        op.equals(SqlStdOperatorTable.MOD)) {
+//                    moduleName =  TaskType.LOCALEXP.name();
+//                    moduleparams.add(new ModuleParam("function", "base"));
+//                    String expr = dfsRexNode(proj, constantList);
+//                    moduleparams.add(new ModuleParam("expression", expr));
+//                } else {
+//                    moduleName = TaskType.LOCALAGG.name();
+//                    moduleparams.add(new ModuleParam("function", op.toString()));
+//                    String expr = dfsRexNode(((RexCall) proj).getOperands().get(0), constantList);
+//                    moduleparams.add(new ModuleParam("expression", expr));
+//                    moduleparams.add(new ModuleParam("aggFunc", StrUtil.format("{}({})",op, expr)));
+//                }
+//            }
+//            if (!constantList.isEmpty()) {
+//                String constants = "";
+//                for (String constant : constantList) {
+//                    constants += constant + ",";
+//                }
+//                constants = constants.substring(0, constants.length() - 1);
+//                moduleparams.add(new ModuleParam("constant", constants));
+//            }
+//
+//
+//
+//            List<String> inputList = getInputList(phyPlan, i);
+//            for (int j = 0; j < inputList.size(); j++) {
+//                InputDetail inputdata = new InputDetail();
+//                String tableField = inputList.get(j);
+//                inputdata.setTaskSrc(srcTask.getTaskName());
+//                inputdata.setDomainId(getFieldDomainID(tableField));
+//                if (srcTask.getTaskName().equals("") ||
+//                        srcTask.getOutputList().get(0).getDataName().startsWith(inputdata.getDomainId())) {
+//                    inputdata.setDataName(srcTask.getOutputList().get(0).getDataName());
+//                    inputdata.setDataId(srcTask.getOutputList().get(0).getDataId());
+//                } else {
+//                    inputdata.setDataName(srcTask.getOutputList().get(1).getDataName());
+//                    inputdata.setDataId(srcTask.getOutputList().get(1).getDataId());
+//                }
+//                if (j == 0) {
+//                    inputdata.setRole("server");
+//                } else {
+//                    inputdata.setRole("client");
+//                }
+//                JSONObject inputParam = new JSONObject(true);
+//                String table = tableField.split("\\.")[0];
+//                String field = tableField.split("\\.")[1];
+//                inputParam.put("table", table);
+//                inputParam.put("field", field);
+//                if (!moduleName.equalsIgnoreCase(TaskType.QUERY.name())) {
+//                    inputParam.put("type", columnInfoMap.get(tableField));
+//                    List<Integer> list = new ArrayList<>();
+//                    list.add(j);
+//                    inputParam.put("index", Arrays.toString(list.toArray()));
+//                }
+//                inputdata.setParams(inputParam);
+//                inputdata.setType(columnInfoMap.get(tableField.toUpperCase()));
+//                TableInfo tableInfo = metadata.getTableInfoMap().get(table);
+//                inputdata.setTableName(tableInfo.getName());
+//                FieldInfo fieldInfo = tableInfo.getFields().get(tableField);
+//                inputdata.setColumnName(fieldInfo.getFieldName());
+//
+//                //对于中间表，需要找到源头的资产名称。因为中间表不会注册在ida中
+//                String originTable = getOriginalTableName(table);
+//                TableInfo originTableInfo = metadata.getTableInfoMap().get(originTable);
+//                inputdata.setAssetName(originTableInfo.getAssetName());
+//
+//                inputdata.setDatabaseName(fieldInfo.getDatabaseName());
+//                inputdata.setComments(fieldInfo.getComments());
+//                inputdata.setLength(fieldInfo.getDataLength());
+//                inputdata.setDomainName(fieldInfo.getDomainName());
+//                inputDatas.add(inputdata);
+//            }
+//        }
+//
+//
+//
+//        // 输入信息
+//        Input input = new Input();
+//        input.setInputDataDetailList(inputDatas);
+//        input.setTaskId(task.getTaskId());
+//        input.setSrcTaskId(inputDatas.get(0).getTaskSrc());
+//        input.setSrcTaskName(inputDatas.get(0).getTaskSrc());
+//        task.setInput(input);
+//
+//        //计算模型
+//        module.setModuleName(moduleName);
+//        module.setParamList(moduleparams);
+//        task.setModule(checkMpcModule(module));
+//
+//        // 输出信息
+////        Output output = new Output();
+//        Output outputdata = new Output();
+//        outputdata.setDataName(inputDatas.get(0).getDomainId() + "-" + cnt);
+//
+//        outputdata.setColumnName(String.join(",", outCols));
+//        outputdata.setLength(inputDatas.get(0).getLength());
+//        outputdata.setType(inputDatas.get(0).getType());
+//        outputdata.setFinalResult("Y");
+//        outputdata.setIsFinalResult(true);
+//        outputdata.setDomainId(inputDatas.get(0).getDomainId());
+//        outputdata.setDomainName(inputDatas.get(0).getDomainName());
+//        outputdata.setDataId("");
+//        task.setOutputList(List.of(outputdata));
+//
+//        // parties信息
+//        genParties(input, task);
+//        updatePhyTaskMap(phyTaskMap, phyPlan , task);
+//        return task;
+//    }
+//
+
+
+
+
 
     public void isRunnableJob(RelNode phyPlan, boolean isDML){
         //check project
