@@ -4,6 +4,9 @@ import lombok.Data;
 
 @Data
 public class ModuleParam {
+
+    private String partyId;
+
     private String Key;
     private Object Value;
 

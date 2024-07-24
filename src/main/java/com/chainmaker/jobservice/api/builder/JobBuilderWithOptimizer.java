@@ -189,6 +189,14 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             }
         }
 
+        for (Task task : tasks) {
+            List<Output> outputs = task.getOutputList();
+            String partyId = outputs.get(0).getDomainId();
+            for (ModuleParam param : task.getModule().getParamList()) {
+                param.setPartyId(partyId);
+            }
+        }
+
         job.setJobId(jobID);
         job.setJobName(jobID);
         job.setModelType(jobType);
