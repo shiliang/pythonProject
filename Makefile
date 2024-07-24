@@ -1,5 +1,5 @@
-VERSION=v1.1.0
-BRANCH=v1.1.0
+VERSION=v1.1.1
+BRANCH=v1.1.1
 OS := $(shell uname -s)
 PLATFORM=$(shell uname -m)
 ARCH := $(shell uname -m)
@@ -15,6 +15,12 @@ build:
 build_local:
 	mvn package -Dmaven.test.skip=true
 
+# 构建 Docker 镜像
 build_docker:
 	# build docker image
 	./docker_build.sh -t ${VERSION} -p false
+
+# 构建简单版 Docker 镜像
+build_docker_simple: build_local
+	# build simple docker image
+	./docker_build.sh -t ${VERSION} -p false -d Dockerfile_simple

@@ -1,25 +1,22 @@
 #!/bin/bash
 
 show_help() {
-    echo "Usage: $0 -t <tag> [-p <true|false>] [-r <registry_address>]"
+    echo "Usage: $0 -t <tag> [-p <true|false>] [-r <registry_address>] [-v <version>] [-d <Dockerfile|Dockerfile_simple>]"
     echo "Options:"
     echo "  -t <tag>                Specify the tag for Docker images."
     echo "  -p <true|false>         Push the Docker images to the registry. (Default: false)"
     echo "  -r <registry_address>   Specify the address of the Docker registry."
     echo "                          If not provided, Docker Hub is assumed as the default registry."
+    echo "  -v <version>            Specify the version for the JAR file. If not provided, it will be read from pom.xml."
+    echo "  -d <Dockerfile|Dockerfile_simple> Specify which Dockerfile to use. (Default: Dockerfile)"
 }
-
-# Check if the number of parameters is correct
-if [ $# -lt 1 ]; then
-    show_help
-    exit 1
-fi
 
 # Default values
 push_flag=false
+dockerfile="Dockerfile"
 
 # Parse command line options
-while getopts ":t::p:r:" opt; do
+while getopts ":t:p:r:v:d:" opt; do
     case ${opt} in
         t)
             docker_tag=$OPTARG
@@ -34,6 +31,17 @@ while getopts ":t::p:r:" opt; do
             ;;
         r)
             registry_address=$OPTARG
+            ;;
+        v)
+            jar_version=$OPTARG
+            ;;
+        d)
+            dockerfile=$OPTARG
+            if [[ ! $OPTARG =~ ^(Dockerfile|Dockerfile_simple)$ ]]; then
+                echo "Invalid argument for -d. Please provide 'Dockerfile' or 'Dockerfile_simple'." >&2
+                show_help
+                exit 1
+            fi
             ;;
         \?)
             echo "Invalid option: $OPTARG" 1>&2
@@ -57,24 +65,30 @@ if [ -z "$docker_tag" ]; then
     exit 1
 fi
 
-echo "Building mira-job-service environment image"
+# If version is not provided, read it from pom.xml
+if [ -z "$jar_version" ]; then
+    jar_version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+    if [ $? -ne 0 ]; then
+        echo "Failed to read version from pom.xml"
+        exit 1
+    fi
+fi
 
+echo "Building mira-job-service environment image with version ${jar_version}"
 
-#git pull && mvn clean package && docker build -f ./Dockerfile -t chainweaver/mira-job-service:${docker_tag} .
-docker build -f ./Dockerfile -t chainweaver/mira-job-service:${docker_tag} .
-
+# Build the Docker image
+docker build --build-arg JAR_VERSION=${jar_version} -f ./${dockerfile} -t chainweaver/mira-job-service:${docker_tag} .
 
 if [ ! -z "$registry_address" ]; then
-  #tag mira-backend-service-build
+    # Tag the Docker image with the registry address
     docker tag chainweaver/mira-job-service:${docker_tag} ${registry_address}/chainweaver/mira-job-service:${docker_tag}
 fi
 
-#是否push
+# Push the Docker image if the push flag is set to true
 if [ "$push_flag" == "true" ]; then
-  # 假设$docker_register_address 为空，则默认为docker hub
-  if [ -z "$registry_address" ]; then
-    docker push chainweaver/mira-job-service:${docker_tag}
-  else
-    docker push ${registry_address}/chainweaver/mira-job-service:${docker_tag}
-  fi
+    if [ -z "$registry_address" ]; then
+        docker push chainweaver/mira-job-service:${docker_tag}
+    else
+        docker push ${registry_address}/chainweaver/mira-job-service:${docker_tag}
+    fi
 fi
