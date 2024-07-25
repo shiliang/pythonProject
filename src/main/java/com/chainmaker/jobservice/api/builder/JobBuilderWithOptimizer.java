@@ -417,8 +417,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         input.setInputDataDetailList(inputDatas);
         input.setTaskId(task.getTaskName());
-        input.setSrcTaskId(inputData1.getTaskSrc());
-        input.setSrcTaskName(inputData1.getTaskSrc());
+//        input.setSrcTaskId(inputData1.getTaskSrc());
+//        input.setSrcTaskName(inputData1.getTaskSrc());
         task.setInput(input);
 
 
@@ -665,8 +665,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             inputDataList.add(inputData);
         }
         ans.getInput().setTaskId(ans.getTaskId());
-        ans.getInput().setSrcTaskName(inputDataList.get(0).getTaskSrc());
-        ans.getInput().setSrcTaskId(inputDataList.get(0).getTaskSrc());
+//        ans.getInput().setSrcTaskName(inputDataList.get(0).getTaskSrc());
+//        ans.getInput().setSrcTaskId(inputDataList.get(0).getTaskSrc());
         ans.getInput().setInputDataDetailList(inputDataList);
 
         // 删除多余的output，修改outputName
@@ -861,8 +861,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
         input.setInputDataDetailList(inputDataList);
         input.setTaskId(task.getTaskId());
-        input.setSrcTaskId(inputDataList.get(0).getTaskSrc());
-        input.setSrcTaskName(inputDataList.get(0).getTaskSrc());
+//        input.setSrcTaskId(inputDataList.get(0).getTaskSrc());
+//        input.setSrcTaskName(inputDataList.get(0).getTaskSrc());
         task.setInput(input);
 
         // output
@@ -1160,8 +1160,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         Input input = new Input();
         input.setInputDataDetailList(inputDatas);
         input.setTaskId(task.getTaskId());
-        input.setSrcTaskId(inputDatas.get(0).getTaskSrc());
-        input.setSrcTaskName(inputDatas.get(0).getTaskSrc());
+//        input.setSrcTaskId(inputDatas.get(0).getTaskSrc());
+//        input.setSrcTaskName(inputDatas.get(0).getTaskSrc());
         task.setInput(input);
 
         //计算模型
@@ -1527,8 +1527,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         input.setInputDataDetailList(inputDatas);
         input.setTaskId(task.getTaskId());
-        input.setSrcTaskId(inputDatas.get(0).getTaskSrc());
-        input.setSrcTaskName(inputDatas.get(0).getTaskSrc());
+//        input.setSrcTaskId(inputDatas.get(0).getTaskSrc());
+//        input.setSrcTaskName(inputDatas.get(0).getTaskSrc());
         task.setInput(input);
 
         // 输出信息
@@ -1723,8 +1723,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         input.setInputDataDetailList(List.of(inputdata1, inputdata2));
         input.setTaskId(task.getTaskId());
-        input.setSrcTaskName(inputdata1.getTaskSrc());
-        input.setSrcTaskId(inputdata1.getTaskSrc());
+//        input.setSrcTaskName(inputdata1.getTaskSrc());
+//        input.setSrcTaskId(inputdata1.getTaskSrc());
         task.setInput(input);
 
         // parties信息
@@ -1851,8 +1851,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         inputdata.setParams(inputParam);
         input.setInputDataDetailList(List.of(inputdata));
         input.setTaskId(task.getTaskId());
-        input.setSrcTaskName(inputdata.getTaskSrc());
-        input.setSrcTaskId(inputdata.getTaskSrc());
+//        input.setSrcTaskName(inputdata.getTaskSrc());
+//        input.setSrcTaskId(inputdata.getTaskSrc());
         task.setInput(input);
 
         // 输出信息
@@ -2033,8 +2033,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
         Input input = new Input();
         List<InputDetail> inputData = new ArrayList<>(inputMap.values());
-        input.setSrcTaskName(inputData.get(0).getTaskSrc());
-        input.setSrcTaskId(inputData.get(0).getTaskSrc());
+//        input.setSrcTaskName(inputData.get(0).getTaskSrc());
+//        input.setSrcTaskId(inputData.get(0).getTaskSrc());
         input.setInputDataDetailList(inputData);
 
 //        Output output = new Output();

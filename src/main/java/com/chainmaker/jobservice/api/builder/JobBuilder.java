@@ -540,8 +540,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
         }
         input.setInputDataDetailList(taskInputDataList);
         input.setTaskId(taskName);
-        input.setSrcTaskId(srcTaskName);
-        input.setSrcTaskId(srcTaskName);
+//        input.setSrcTaskId(srcTaskName);
+//        input.setSrcTaskId(srcTaskName);
         task.setInput(input);
 //        Output output = new Output();
         List<Output> taskOutputDataList = new ArrayList<>();
