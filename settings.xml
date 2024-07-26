@@ -1,0 +1,22 @@
+<settings>
+  <mirrors>
+    <mirror>
+      <id>nexus-aliyun</id>
+      <mirrorOf>central</mirrorOf>
+      <name>Nexus aliyun</name>
+      <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
+    </mirror>
+    <mirror>
+      <id>nexus-ustc</id>
+      <mirrorOf>central</mirrorOf>
+      <name>Nexus USTC</name>
+      <url>http://mirrors.ustc.edu.cn/nexus/content/groups/public/</url>
+    </mirror>
+    <mirror>
+      <id>nexus-tuna</id>
+      <mirrorOf>central</mirrorOf>
+      <name>Nexus Tuna</name>
+      <url>https://mirrors.tuna.tsinghua.edu.cn/repository/maven-central/</url>
+    </mirror>
+  </mirrors>
+</settings>
