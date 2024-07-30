@@ -7,6 +7,9 @@ DATETIME=$(shell date "+%Y/%m/%d %H:%M:%S")
 GIT_BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
 GIT_COMMIT = $(shell git log --pretty=format:'%h' -n 1)
 
+
+.PHONY: build build_local build_docker build_docker_simple
+
 # 本地编译
 build:
 	mvn clean package && mvn package -Dmaven.test.skip=true
