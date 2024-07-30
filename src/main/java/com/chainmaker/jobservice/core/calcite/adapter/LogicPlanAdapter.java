@@ -327,7 +327,7 @@ public class LogicPlanAdapter extends LogicalPlanRelVisitor {
         // 将每个表达式转换成的RexNode放入需要映射的列表
         for (NamedExpression exp : namedExpressionList) {
             Expression expr = exp.getExpression();
-            String alias = exp.getIdentifier().getIdentifier();
+            String alias = exp.getIdentifier() == null? null: exp.getIdentifier().getIdentifier();
             RexNode proj = dealWithExpression(expr);
             String name = StringUtils.isNotEmpty(alias)? alias : expr.toString();
             projectionNames.add(name);

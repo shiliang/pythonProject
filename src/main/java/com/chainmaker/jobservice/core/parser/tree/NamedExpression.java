@@ -20,7 +20,6 @@ public class NamedExpression extends Expression {
 
     public NamedExpression(Expression expression) {
         this.expression = expression;
-        this.identifier = new Identifier("");
     }
 
     public Expression getExpression() {
@@ -38,7 +37,7 @@ public class NamedExpression extends Expression {
 
     @Override
     public String toString() {
-        if (identifier.toString().equals("")) {
+        if (identifier == null ) {
             return expression.toString();
         } else {
             return expression.toString() + " " + identifier.toString();

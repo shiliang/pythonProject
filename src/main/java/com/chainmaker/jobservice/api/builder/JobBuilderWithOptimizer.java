@@ -10,7 +10,7 @@ import com.chainmaker.jobservice.api.model.job.Job;
 import com.chainmaker.jobservice.api.model.job.service.Service;
 import com.chainmaker.jobservice.api.model.job.task.*;
 import com.chainmaker.jobservice.api.model.job.task.Module;
-import com.chainmaker.jobservice.api.sqlrewrite.CalciteRelCase;
+import com.chainmaker.jobservice.api.sqlrewrite.CalciteRelOps;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.FieldInfo;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -46,7 +45,7 @@ import static com.chainmaker.jobservice.api.builder.CalciteUtil.*;
 public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
     private enum TaskType {
-        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, PSIRSA, TEEPSI, TEEAVG, MPC, MPCEXP, FL, TEE, LOCALMERGE, LOCALEXP, LOCALAGG, NOTIFY
+        QUERY, LOCALFILTER, LOCALJOIN, OTPSI, PSIRSA, TEEPSI, TEEAVG, MPC, MPCEXP, FL, TEE, LOCALMERGE, LOCALEXP, LOCALAGG, NOTIFY, LOCALEXEC
     }
 
     private class TaskNode {
@@ -98,6 +97,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
     private List<Integer> multiPartiesNodeIds = new ArrayList<>();
 
+    private List<RelNode> phyPlanLeafNodes = new ArrayList<>();
+
 
     public JobBuilderWithOptimizer(Integer modelType, Integer isStream, ParserWithOptimizerReturnValue value, HashMap<String, String> columnInfoMap, OrgInfo orgInfo, String sql) {
         this.modelType = modelType;
@@ -125,6 +126,18 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         return job;
     }
 
+    public List<RelNode> getPhyPlanLeafNodes(RelNode phyPlan){
+        if (phyPlan instanceof MPCTableScan) {
+            return Lists.newArrayList(phyPlan);
+        }
+        List<RelNode> leafs = Lists.newArrayList();
+        int n = phyPlan.getInputs().size();
+        for (int i = 0; i < n; i++) {
+            leafs.addAll(getPhyPlanLeafNodes(phyPlan.getInput(i)));
+        }
+        return leafs;
+    }
+
 
     /**
      * 需要转为sql的单方计算，主要就是Project ,Filter, Join 三类。
@@ -136,21 +149,15 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      * @param phyPlan
      */
     public void searchMultiNode(RelNode phyPlan) {
-        if (phyPlan instanceof RelSubset) {
-            phyPlan = ((RelSubset) phyPlan).getBest();
-        }
         if (phyPlan == null) {
-            return;
-        }
-        if (phyPlan instanceof MPCTableScan) {
             return;
         }
         if (isMultiParties(phyPlan)) {
             multiPartiesNodeIds.add(phyPlan.getId());
-            int n = phyPlan.getInputs().size();
-            for (int i = 0; i < n; i++) {
-                searchMultiNode(phyPlan.getInput(i));
-            }
+        }
+        int n = phyPlan.getInputs().size();
+        for (int i = 0; i < n; i++) {
+            searchMultiNode(phyPlan.getInput(i));
         }
     }
 
@@ -167,15 +174,19 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             jobType = JobType.MPC.getValue();
         }
 
-        System.out.println(
-                RelOptUtil.dumpPlan("[Physical plan] TEXT", phyPlan, SqlExplainFormat.TEXT,
-                        SqlExplainLevel.ALL_ATTRIBUTES));
+//        System.out.println(
+//                RelOptUtil.dumpPlan("[Physical plan] TEXT", phyPlan, SqlExplainFormat.TEXT,
+//                        SqlExplainLevel.ALL_ATTRIBUTES));
 
         HashMap<RelNode, List<Task>> phyTaskMap = new HashMap<>();
         // 生成tasks
         generateFLTasks(originPlan);
         searchMultiNode(phyPlan);
-        tasks.addAll(dfsPlan(phyPlan, phyTaskMap));
+        if(multiPartiesNodeIds.isEmpty()){
+            tasks.add(generateLocalTasks(phyPlan, phyTaskMap));
+        }else {
+            tasks.addAll(dfsPlanV2(phyPlan, phyTaskMap));
+        }
         // PSI后通知所有参与表
         notifyPSIOthers();
 
@@ -215,6 +226,64 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     }
 
 
+    public List<Task> dfsPlanV2(RelNode phyPlan, HashMap<RelNode, List<Task>> phyTaskMap) {
+        List<Task> result = new ArrayList<>();
+        if(phyPlan != this.phyPlan){
+            if(!isMultiParties(phyPlan)){
+                //MPCTableScan属于叶子节点，无需要生成sql。
+                if(!(phyPlan instanceof MPCTableScan)) {
+                    return Lists.newArrayList(generateLocalTasks(phyPlan, phyTaskMap));
+                }
+            }
+        }
+
+        int n = phyPlan.getInputs().size();
+        for (int i = 0; i < n; i++) {
+            result.addAll(dfsPlanV2(phyPlan.getInput(i), phyTaskMap));
+        }
+        result.addAll(generateMpcTasks(phyPlan, phyTaskMap));
+        return result;
+    }
+
+    public Task generateLocalTasks(RelNode phyPlan, HashMap<RelNode, List<Task>> phyTaskMap) {
+        Task task = basicTask(String.valueOf(cnt++));
+
+        // module信息（即进行什么操作）
+        Module module = new Module();
+        module.setModuleName(TaskType.LOCALEXEC.name());
+        ModuleParam sqlParams = new ModuleParam("local_sql",CalciteRelOps.rel2sql(phyPlan));
+        module.setParamList(List.of(sqlParams));
+        task.setModule(module);
+        List<RelNode> leafs =getPhyPlanLeafNodes(phyPlan);
+        Input input = new Input();
+        List<InputDetail> inputDetailList = new ArrayList<>();
+        for(RelNode leaf : leafs){
+            MPCTableScan table = (MPCTableScan)leaf;
+            InputDetail inputdata = new InputDetail();
+            inputdata.setAssetName(table.getTable().getQualifiedName().get(0));
+            inputdata.setDomainId(table.getOrgDId());
+            inputDetailList.add(inputdata);
+        }
+        input.setInputDataDetailList(inputDetailList);
+        input.setTaskId(task.getTaskId());
+        task.setInput(input);
+
+        Output outputData = new Output();
+        String tableName = String.valueOf(phyPlan.getId());
+        outputData.setDataName(tableName);
+        outputData.setDataId(tableName);
+        task.setOutputList(List.of(outputData));
+
+        Party party = new Party();
+        party.setPartyId(inputDetailList.get(0).getDomainId());
+        party.setPartyName(inputDetailList.get(0).getDomainName());
+
+        task.setPartyList(List.of(party));
+
+        phyTaskMap.put(phyPlan, Lists.newArrayList(task));
+
+        return task;
+    }
 
     //任务ID的生成是从叶子节点开始递增的，root节点的id都是最大的几个。
     public List<String> getFinalResultTasks(){
@@ -982,8 +1051,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             log.info("multi-party query: " + tableSets.size());
             return true;
         }else{
-            RelNode newPlan = CalciteRelCase.cleanRelSubSet(phyPlan);
-            log.info("generate sql: " + CalciteRelCase.rel2sql(newPlan));
             log.debug("single-party query");
         }
         return false;

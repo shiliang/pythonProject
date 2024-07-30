@@ -1,6 +1,7 @@
 package com.chainmaker.jobservice.api.sqlrewrite;
 
 
+import com.chainmaker.jobservice.api.builder.CalciteUtil;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCTableScan;
 import com.google.common.collect.Lists;
 import org.apache.calcite.adapter.csv.CsvSchema;
@@ -34,14 +35,12 @@ import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.tools.Frameworks;
-import org.apache.calcite.util.RelToSqlConverterUtil;
 
 import java.io.File;
-import java.io.StringWriter;
 import java.util.List;
 import java.util.Properties;
 
-public class CalciteRelCase {
+public class CalciteRelOps {
     public static void main( String[] args ) throws Exception {
 
         String sql = "SELECT o.id, o.goods, o.price, o.amount, c.firstname, c.lastname FROM orders AS o LEFT OUTER JOIN consumers c ON o.user_id = c.id WHERE o.amount > 30 ORDER BY o.id LIMIT 5";
@@ -148,10 +147,25 @@ public class CalciteRelCase {
         SqlPrettyWriter prettyWriter = new SqlPrettyWriter(writerConfig, new StringBuilder());
         RelToSqlConverter relToSqlConverter = new RelToSqlConverter(sqlDialect);
         SqlNode sqlNode = relToSqlConverter.visitRoot(phyPlan).asStatement();
-
+        sqlNode = correctField((SqlSelect) sqlNode);
         sqlNode.unparse(prettyWriter, 0, 0);
 
         return prettyWriter.toString();
+    }
+
+    public static SqlNode correctField(SqlSelect node){
+        SqlNode from = node.getFrom();
+        if(from instanceof SqlJoin){
+            SqlJoin join = (SqlJoin)from;
+            SqlBasicCall cond = (SqlBasicCall)join.getCondition();
+            List<SqlNode> nodes = cond.getOperandList();
+            for(int i=0; i < nodes.size(); i++){
+                SqlIdentifier field = (SqlIdentifier)(nodes.get(i));
+                SqlIdentifier newField = field.setName(1, CalciteUtil.getColumnName(field.names.get(1)));
+                cond.setOperand(i, newField);
+            }
+        }
+        return node;
     }
 
     public static RelNode cleanRelSubSet(RelNode phyPlan){
@@ -170,5 +184,7 @@ public class CalciteRelCase {
         }
         return phyPlan.copy(phyPlan.getTraitSet(), newInputs);
     }
+
+
 
 }
