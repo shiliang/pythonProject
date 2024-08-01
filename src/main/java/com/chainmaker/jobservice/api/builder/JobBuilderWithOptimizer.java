@@ -174,15 +174,11 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             jobType = JobType.MPC.getValue();
         }
 
-//        System.out.println(
-//                RelOptUtil.dumpPlan("[Physical plan] TEXT", phyPlan, SqlExplainFormat.TEXT,
-//                        SqlExplainLevel.ALL_ATTRIBUTES));
-
         HashMap<RelNode, List<Task>> phyTaskMap = new HashMap<>();
         // 生成tasks
         generateFLTasks(originPlan);
         searchMultiNode(phyPlan);
-        if(multiPartiesNodeIds.isEmpty()){
+        if(multiPartiesNodeIds.isEmpty() && !(phyPlan instanceof MPCTableScan)){
             tasks.add(generateLocalTasks(phyPlan, phyTaskMap));
         }else {
             tasks.addAll(dfsPlanV2(phyPlan, phyTaskMap));
@@ -272,6 +268,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         String tableName = String.valueOf(phyPlan.getId());
         outputData.setDataName(tableName);
         outputData.setDataId(tableName);
+        outputData.setDomainId(inputDetailList.get(0).getDomainId());
+        outputData.setDomainName(inputDetailList.get(0).getDomainName());
         task.setOutputList(List.of(outputData));
 
         Party party = new Party();

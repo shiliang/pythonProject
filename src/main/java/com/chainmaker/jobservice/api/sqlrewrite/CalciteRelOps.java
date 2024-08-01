@@ -39,6 +39,7 @@ import org.apache.calcite.tools.Frameworks;
 import java.io.File;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 public class CalciteRelOps {
     public static void main( String[] args ) throws Exception {
@@ -164,9 +165,49 @@ public class CalciteRelOps {
                 SqlIdentifier newField = field.setName(1, CalciteUtil.getColumnName(field.names.get(1)));
                 cond.setOperand(i, newField);
             }
+        }else if(from instanceof SqlBasicCall){
+            SqlBasicCall call = (SqlBasicCall)from;
+            dealInnerSubQuery(call);
+        }else{
+
         }
         return node;
     }
+
+    public static String dealAlias(SqlSelect select){
+        String tableAlias = null;
+        for(SqlNode node : select.getSelectList()){
+            if(node instanceof SqlBasicCall){
+                SqlBasicCall exprCall = (SqlBasicCall)node;
+                SqlIdentifier fieldIdentifier = (SqlIdentifier) exprCall.getOperandList().get(1);
+                String fieldAlias = fieldIdentifier.toString();
+                if(fieldAlias.contains(".")){
+                    tableAlias = fieldAlias.split("\\.")[0];
+                    fieldAlias = fieldAlias.split("\\.")[1];
+                    exprCall.setOperand(1, fieldIdentifier.setName(0,fieldAlias));
+                }
+            }
+        }
+        return tableAlias;
+    }
+
+
+    public static void dealInnerSubQuery(SqlBasicCall call){
+        SqlOperator op = call.getOperator();
+        if(op instanceof SqlAsOperator){ //有内部子查询
+            SqlSelect select =(SqlSelect) call.getOperandList().get(0);
+            SqlIdentifier tableIdentifier = (SqlIdentifier) call.getOperandList().get(1);
+            String tableAlias = tableIdentifier.toString();
+            if(select.getFrom() instanceof SqlBasicCall){ //多层嵌套子查询
+                SqlBasicCall fromCall = (SqlBasicCall) select.getFrom();
+                dealInnerSubQuery(fromCall);
+            }else{
+                tableAlias = dealAlias(select);
+                call.setOperand(1, tableIdentifier.setName(0, tableAlias));
+            }
+        }
+    }
+
 
     public static RelNode cleanRelSubSet(RelNode phyPlan){
         if(phyPlan instanceof MPCTableScan){
