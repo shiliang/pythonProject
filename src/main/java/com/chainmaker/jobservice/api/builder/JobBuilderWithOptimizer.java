@@ -1045,7 +1045,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             fields.addAll(phyPlan.getRowType().getFieldNames());
         }
         Set<String> tableSets = fields.stream().map(CalciteUtil::getTableName).collect(Collectors.toSet());
-        if(tableSets.size() > 1){
+        Set<String> partySets = tableSets.stream().map(x -> MPCMetadata.getInstance().getTable(x).getOrgDId()).collect(Collectors.toSet());
+        if(partySets.size() > 1){
             log.info("multi-party query: " + tableSets.size());
             return true;
         }else{

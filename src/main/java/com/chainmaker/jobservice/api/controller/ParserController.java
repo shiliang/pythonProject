@@ -24,12 +24,17 @@ public class ParserController {
     @WebLog(description = "预生成DAG")
     @RequestMapping(value = "/preview/dag", method = RequestMethod.POST)
     public Result jobPreview(@RequestBody String req) {
-        SqlVo sqlVo = JSONObject.parseObject(req, SqlVo.class, Feature.OrderedField);
-        if (sqlVo.getSqltext().contains("?")) {
-            sqlVo.setIsStream(1);
+        try {
+            SqlVo sqlVo = JSONObject.parseObject(req, SqlVo.class, Feature.OrderedField);
+            if (sqlVo.getSqltext().contains("?")) {
+                sqlVo.setIsStream(1);
+            }
+            JSONObject json = jobParserService.analyzeSql(sqlVo.getSqltext());
+            return Result.success(json);
+        }catch (Exception e){
+            log.error(e.getMessage(), e);
+            return Result.failure(ResultCode.SQL_GRAMMAR_EXCEPTION, e.toString());
         }
-        JSONObject json= jobParserService.analyzeSql(sqlVo.getSqltext());
-        return Result.success(json);
     }
 
     @WebLog(description = "提交DAG")
