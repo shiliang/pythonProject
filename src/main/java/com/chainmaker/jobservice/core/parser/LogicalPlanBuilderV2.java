@@ -574,19 +574,24 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     @Override
     public FederatedLearningExpression visitFederatedLearningExpression(FederatedLearningExpressionContext context) {
         List<FlExpression> fl = new ArrayList<>();
+        if(context.flExpressionSeq().isEmpty()){
+            throw new RuntimeException("fl is the required component");
+        }
         for (int i=0; i<context.flExpressionSeq().flExpression().size(); i++) {
             FlExpression flExpression = visitFlExpression(context.flExpressionSeq().flExpression(i));
             fl.add(flExpression);
         }
 
         List<List<FlExpression>> labels = new ArrayList<>();
-        for (int i=0; i<context.flLabelSeq(0).flLabel().size(); i++) {
-            List<FlExpression> flExpressions = new ArrayList<>();
-            for (int j=0; j<context.flLabelSeq(0).flLabel(i).flExpressionSeq().flExpression().size(); j++) {
-                FlExpression flExpression = visitFlExpression(context.flLabelSeq(0).flLabel(i).flExpressionSeq().flExpression(j));
-                flExpressions.add(flExpression);
+        if(!context.flLabelSeq().isEmpty()) {
+            for (int i = 0; i < context.flLabelSeq(0).flLabel().size(); i++) {
+                List<FlExpression> flExpressions = new ArrayList<>();
+                for (int j = 0; j < context.flLabelSeq(0).flLabel(i).flExpressionSeq().flExpression().size(); j++) {
+                    FlExpression flExpression = visitFlExpression(context.flLabelSeq(0).flLabel(i).flExpressionSeq().flExpression(j));
+                    flExpressions.add(flExpression);
+                }
+                labels.add(flExpressions);
             }
-            labels.add(flExpressions);
         }
 
         List<FlExpression> psi = new ArrayList<>();
@@ -623,7 +628,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         }
 
         List<FlExpression> eval = new ArrayList<>();
-        if (!context.flModelSeq().isEmpty()) {
+        if (!context.flEvalSeq().isEmpty()) {
             for (int i = 0; i < context.flEvalSeq(0).flEval(0).flExpressionSeq().flExpression().size(); i++) {
                 FlExpression flExpression = visitFlExpression(context.flEvalSeq(0).flEval(0).flExpressionSeq().flExpression(i));
                 eval.add(flExpression);

@@ -8,7 +8,7 @@ spec:
   arguments:
     parameters:
     - name: git_repo
-      value: git@git.code.tencent.com:ChainWeaver/mira/mira-backend-service.git
+      value: git@git.code.tencent.com:ChainWeaver/mira/mira-job-service.git
     - name: git_sha
       value: 92a60b52f1f81e5eb9e143ad787336811282c00d
 
