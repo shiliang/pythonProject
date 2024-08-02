@@ -1078,7 +1078,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      */
     public List<Task> generateMpcTasks(RelNode phyPlan, HashMap<RelNode, List<Task>> phyTaskMap) {
         List<Task> tasks = new ArrayList<>();
-        buildTableCache(phyPlan);
+//        buildTableCache(phyPlan);
 //        isRunnableJob(this.phyPlan, true);
         log.info("rowType: " + JSONObject.toJSONString(phyPlan.getRowType().getFieldNames()));
         if(phyPlan instanceof MPCProject){
