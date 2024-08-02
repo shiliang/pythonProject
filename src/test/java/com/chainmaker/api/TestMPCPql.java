@@ -26,31 +26,31 @@ public class TestMPCPql {
      */
     public static final List<String> pqls = Lists.newArrayList(
 //            "select count(atest_1.k) as field1 from atest_1",
-//            "select count(atest_1.k), max(atest_1.k), avg(atest_1.k) from atest_1 ",
-//
-//            "select counnt(atest_1.k), max(atest_1.k), avg(atest_1.k) from atest_1 ",
-//
-//            "select /*+ FUNC(TEE) */ JSB01(atest_1.k,btest_2.k) from atest_1, btest_2",
-//
-//            "select temp.a1 from (select atest_1.a1 from atest_1) temp ",
-//            "select atest_1.id from atest_1, btest_2 where atest_1.id=btest_2.id",
-//            "select /*+ JOIN(TEE) */ atest_1.id from atest_1, btest_2 where atest_1.id=btest_2.id",
-//            "select atest_1.k from atest_1 where atest_1.id=?",
-//            "select /*+ FILTER(TEE) */atest_1.k from atest_1 where atest_1.id=?",
-//            "select atest_1.k*btest_2.k from atest_1, btest_2 where atest_1.id=btest_2.id",
-//            "select SUM(atest_1.k*btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
-//            "select AVG(atest_1.k*btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
-//            "select MAX(atest_1.k*btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
-//            "select MIN(atest_1.k*btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
-//            "select COUNT(atest_1.id) from atest_1, btest_2 where atest_1.id=btest_2.id",
-//            "select /*+ FUNC(TEE) */ MUL(atest_1.k,btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
-//            "select /*+ FUNC(TEE) */ MULSUM(atest_1.k,btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
-//            "select /*+ FUNC(TEE) */ MULAVG(atest_1.k,btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
-//            "select /*+ FUNC(TEE) */ MULMAX(atest_1.k,btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
-//            "select /*+ FUNC(TEE) */ MULMIN(atest_1.k,btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
-//
-//            "select atest_1.id, (0.1 * atest_1.a1) + (0.2 * btest_2.b1) + (0.1 * atest_1.a2) + (0.4 * btest_2.b2) from atest_1, btest_2 where atest_1.id=btest_2.id",
-//            "select /*+ FUNC(TEE) */ SCORE(0.1, atest_1.a1, 0.2, btest_2.b2, 0.1, atest_1.a2, 0.4, btest_2.b2) from atest_1, btest_2 where atest_1.id=btest_2.id",
+            "select count(atest_1.k), max(atest_1.k), avg(atest_1.k) from atest_1 ",
+
+            "select counnt(atest_1.k), max(atest_1.k), avg(atest_1.k) from atest_1 ",
+
+            "select /*+ FUNC(TEE) */ JSB01(atest_1.k,btest_2.k) from atest_1, btest_2",
+
+            "select temp.a1 from (select atest_1.a1 from atest_1) temp ",
+            "select atest_1.id from atest_1, btest_2 where atest_1.id=btest_2.id",
+            "select /*+ JOIN(TEE) */ atest_1.id from atest_1, btest_2 where atest_1.id=btest_2.id",
+            "select atest_1.k from atest_1 where atest_1.id=?",
+            "select /*+ FILTER(TEE) */atest_1.k from atest_1 where atest_1.id=?",
+            "select atest_1.k*btest_2.k from atest_1, btest_2 where atest_1.id=btest_2.id",
+            "select SUM(atest_1.k*btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
+            "select AVG(atest_1.k*btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
+            "select MAX(atest_1.k*btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
+            "select MIN(atest_1.k*btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
+            "select COUNT(atest_1.id) from atest_1, btest_2 where atest_1.id=btest_2.id",
+            "select /*+ FUNC(TEE) */ MUL(atest_1.k,btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
+            "select /*+ FUNC(TEE) */ MULSUM(atest_1.k,btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
+            "select /*+ FUNC(TEE) */ MULAVG(atest_1.k,btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
+            "select /*+ FUNC(TEE) */ MULMAX(atest_1.k,btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
+            "select /*+ FUNC(TEE) */ MULMIN(atest_1.k,btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
+
+            "select atest_1.id, (0.1 * atest_1.a1) + (0.2 * btest_2.b1) + (0.1 * atest_1.a2) + (0.4 * btest_2.b2) from atest_1, btest_2 where atest_1.id=btest_2.id",
+            "select /*+ FUNC(TEE) */ SCORE(0.1, atest_1.a1, 0.2, btest_2.b2, 0.1, atest_1.a2, 0.4, btest_2.b2) from atest_1, btest_2 where atest_1.id=btest_2.id",
 
             "select atest_1.a1, tmp_table.id from atest_1, btest_2,(select id, cnt, tot_val from (select id, count(a1) as cnt, sum(a1) as tot_val from atest_1 group by id ) tmp_inner ) tmp_table where atest_1.id= btest_2.id and tmp_table.id= btest_2.id"
             ,

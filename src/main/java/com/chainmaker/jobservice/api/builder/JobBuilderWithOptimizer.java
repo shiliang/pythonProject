@@ -152,6 +152,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         if (phyPlan == null) {
             return;
         }
+        buildTableCache(phyPlan);
         if (isMultiParties(phyPlan)) {
             multiPartiesNodeIds.add(phyPlan.getId());
         }
