@@ -122,7 +122,7 @@ public class MPCJoin extends Join implements EnumerableRel {
         } else {
             // 位于不同数据源，需要隐私求交
             cost = planner.getCostFactory().makeCost(rowCount, rowCount, rowCount);
-            cost = cost.multiplyBy(5);
+            cost = cost.multiplyBy(100);
         }
 
         return cost;

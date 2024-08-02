@@ -173,10 +173,10 @@ public class SqlParser {
         planAdapter.CastToRelNode(); //核心步骤，将LogicalPlan转换为Calcite的RelNode
         // 查询优化部分   300ms
         RelNode root = planAdapter.getRoot();
-        log.info("calcite reltree: " + RelOptUtil.toString(root, SqlExplainLevel.ALL_ATTRIBUTES));
 
         OptimizerPlanner planner = new OptimizerPlanner(root, true);
         RelNode phyPlan = planner.optimize();
+        log.info("calcite optimized reltree: " + RelOptUtil.toString(phyPlan, SqlExplainLevel.ALL_ATTRIBUTES));
 
         return new ParserWithOptimizerReturnValue(phyPlan, logicalPlan);
     }
