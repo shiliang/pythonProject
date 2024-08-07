@@ -257,8 +257,14 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         for(RelNode leaf : leafs){
             MPCTableScan table = (MPCTableScan)leaf;
             InputDetail inputdata = new InputDetail();
-            inputdata.setAssetName(table.getTable().getQualifiedName().get(0));
-            inputdata.setDomainId(table.getOrgDId());
+            String assetName = table.getTable().getQualifiedName().get(0);
+            TableInfo tableInfo = MPCMetadata.getInstance().getTable(assetName);
+            inputdata.setAssetName(tableInfo.getAssetName());
+            inputdata.setDatabaseName("");
+            inputdata.setTableName(tableInfo.getName());
+            inputdata.setDomainName(tableInfo.getOrgDId());
+            inputdata.setDomainId(tableInfo.getOrgName());
+            inputdata.setTaskSrc("");
             inputDetailList.add(inputdata);
         }
         input.setInputDataDetailList(inputDetailList);
