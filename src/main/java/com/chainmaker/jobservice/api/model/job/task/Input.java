@@ -13,8 +13,8 @@ import java.util.List;
 @Data
 public class Input {
     private String taskId;
-//    private String srcTaskId;
-//    private String srcTaskName;
+    private String srcTaskId;
+    private String srcTaskName;
     private List<InputDetail> inputDataDetailList;
 
     @Override
