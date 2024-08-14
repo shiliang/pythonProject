@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.api.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.builder.JobBuilder;
@@ -20,6 +21,7 @@ import com.chainmaker.jobservice.core.calcite.utils.ParserWithOptimizerReturnVal
 import com.chainmaker.jobservice.core.parser.LogicalPlanBuilderV2;
 import lombok.extern.slf4j.Slf4j;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -78,14 +80,33 @@ public class JobParserServiceImpl implements JobParserService {
         return json;
     }
 
+    private void dealSqlText(SqlVo sqlVo){
+        String sqlText = sqlVo.getSqltext();
+        List<String> eles = StrUtil.split(sqlText, ";").stream()
+                .map(String::strip)
+                .filter(s -> !StrUtil.isBlank(s))
+                .collect(Collectors.toList());
+        List<String> setClauses = eles.stream()
+                .filter(s -> s.toUpperCase().startsWith("SET"))
+                .collect(Collectors.toList());
+        Optional<String> optional= eles.stream()
+                .filter(s -> s.toUpperCase().startsWith("SELECT"))
+                .findFirst();
+        optional.ifPresent(sqlVo::setExecuteSql);
+        sqlVo.setSetClauses(setClauses);
+
+    }
+
     @Override
     public JobMissionDetail parserSql(SqlVo sqlVo) {
-        String sqltext = sqlVo.getSqltext().replace("\"", "");
-        if (sqltext.contains("/*+ FILTER(TEE) */".replace("\\s", ""))){
-            sqlVo.setModelType(2);
-        }
-        sqltext = sqltext.replace("/*+ FILTER(TEE) */".replace("\\s", ""), "");
-        SqlParser sqlParser = new SqlParser(sqltext, sqlVo.getIsStream(), sqlVo.getModelType(), sqlVo.getAssetInfoList(), sqlVo.getModelParams());
+//        String sqltext = sqlVo.getSqltext().replace("\"", "");
+//        if (sqltext.contains("/*+ FILTER(TEE) */".replace("\\s", ""))){
+//            sqlVo.setModelType(2);
+//        }
+//        sqltext = sqltext.replace("/*+ FILTER(TEE) */".replace("\\s", ""), "");
+        dealSqlText(sqlVo);
+        String executeSql = sqlVo.getExecuteSql();
+        SqlParser sqlParser = new SqlParser(executeSql, sqlVo.getIsStream(), sqlVo.getModelType(), sqlVo.getAssetInfoList(), sqlVo.getModelParams());
         if (sqlVo.getIsStream() == 1) {
             JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser(), sqlVo.getOrgInfo(), sqlParser.getSql());
             jobBuilder.build();
@@ -99,10 +120,7 @@ public class JobParserServiceImpl implements JobParserService {
             ParserWithOptimizerReturnValue optimizer = sqlParser.parserWithOptimizer();
 //            OrgInfo orgInfo = new OrgInfo("orgId1", "orgName1");
             OrgInfo orgInfo = sqlVo.getOrgInfo();
-            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo.getModelType(),  sqlVo.getIsStream(),
-                    optimizer, sqlParser.getColumnInfoMap(), orgInfo,
-                    sqlParser.getSql()
-            );
+            JobBuilderWithOptimizer jobBuilder = new JobBuilderWithOptimizer(sqlVo, optimizer, sqlParser.getColumnInfoMap(), orgInfo);
             jobBuilder.build();
             JobMissionDetail jobMissionDetail = new JobMissionDetail();
             jobMissionDetail.setJob(jobBuilder.getJob());

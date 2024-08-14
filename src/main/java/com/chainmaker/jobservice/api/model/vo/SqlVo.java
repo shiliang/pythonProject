@@ -16,7 +16,9 @@ import java.util.List;
 @Data
 public class SqlVo {
     private String sqltext;
+
     private Integer modelType;
+
     private Integer isStream;
 
     private List<AssetInfo> assetInfoList;
@@ -24,4 +26,8 @@ public class SqlVo {
     private List<ModelParamsVo> modelParams;
 
     private OrgInfo orgInfo;
+
+    private String executeSql;
+
+    private List<String> setClauses;
 }

@@ -10,6 +10,7 @@ import com.chainmaker.jobservice.api.model.job.Job;
 import com.chainmaker.jobservice.api.model.job.service.Service;
 import com.chainmaker.jobservice.api.model.job.task.*;
 import com.chainmaker.jobservice.api.model.job.task.Module;
+import com.chainmaker.jobservice.api.model.vo.SqlVo;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.FieldInfo;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
@@ -100,12 +101,19 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private HashMap<String, String> columnInfoMap;
     private String orgID;
     private String orgName;
+
+    private List<String> setClauses;
     private String sql;
 
     private Map<String, RelNode> tableOriginTableMap = new HashMap<>();
 
+    public JobBuilderWithOptimizer(SqlVo sqlVo, ParserWithOptimizerReturnValue value, HashMap<String, String> columnInfoMap, OrgInfo orgInfo){
+        this(sqlVo.getModelType(), sqlVo.getIsStream(), value, columnInfoMap, orgInfo, sqlVo.getExecuteSql(), sqlVo.getSetClauses());
+    }
 
-    public JobBuilderWithOptimizer(Integer modelType, Integer isStream, ParserWithOptimizerReturnValue value, HashMap<String, String> columnInfoMap, OrgInfo orgInfo, String sql) {
+    public JobBuilderWithOptimizer(Integer modelType, Integer isStream, ParserWithOptimizerReturnValue value,
+                                   HashMap<String, String> columnInfoMap, OrgInfo orgInfo, String sql,
+                                   List<String> setClauses) {
         this.modelType = modelType;
         this.isStream = isStream;
         this.phyPlan = value.getPhyPlan();
@@ -123,6 +131,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         this.orgID = orgInfo.getOrgId();
         this.orgName = orgInfo.getOrgName();
         this.sql = sql;
+        this.setClauses = setClauses;
     }
 
     public Job getJob() {
