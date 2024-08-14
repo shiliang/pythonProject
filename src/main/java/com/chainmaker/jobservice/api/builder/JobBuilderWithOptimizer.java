@@ -10,6 +10,7 @@ import com.chainmaker.jobservice.api.model.job.Job;
 import com.chainmaker.jobservice.api.model.job.service.Service;
 import com.chainmaker.jobservice.api.model.job.task.*;
 import com.chainmaker.jobservice.api.model.job.task.Module;
+import com.chainmaker.jobservice.api.model.vo.SqlVo;
 import com.chainmaker.jobservice.api.sqlrewrite.CalciteRelOps;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.FieldInfo;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
@@ -99,6 +100,14 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
     private List<RelNode> phyPlanLeafNodes = new ArrayList<>();
 
+    public JobBuilderWithOptimizer(SqlVo sqlVo, ParserWithOptimizerReturnValue value, HashMap<String, String> columnInfoMap, OrgInfo orgInfo){
+        this(sqlVo.getModelType(),
+                sqlVo.getIsStream(),
+                value,
+                columnInfoMap,
+                orgInfo,
+                sqlVo.getExecuteSql());
+    }
 
     public JobBuilderWithOptimizer(Integer modelType, Integer isStream, ParserWithOptimizerReturnValue value, HashMap<String, String> columnInfoMap, OrgInfo orgInfo, String sql) {
         this.modelType = modelType;
