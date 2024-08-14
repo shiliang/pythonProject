@@ -1,6 +1,11 @@
 package com.chainmaker.jobservice.api.sqlrewrite;
 
 
+import com.chainmaker.jobservice.api.builder.CalciteUtil;
+import com.chainmaker.jobservice.core.calcite.relnode.MPCTableScan;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.calcite.adapter.csv.CsvSchema;
 import org.apache.calcite.adapter.csv.CsvTable;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
@@ -13,6 +18,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -31,14 +37,16 @@ import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.tools.Frameworks;
-import org.apache.calcite.util.RelToSqlConverterUtil;
 
 import java.io.File;
-import java.io.StringWriter;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
-public class CalciteRelCase {
+public class CalciteRelOps {
+
+    public static Map<String, String> replaceMap = Maps.newHashMap();
     public static void main( String[] args ) throws Exception {
 
         String sql = "SELECT o.id, o.goods, o.price, o.amount, c.firstname, c.lastname FROM orders AS o LEFT OUTER JOIN consumers c ON o.user_id = c.id WHERE o.amount > 30 ORDER BY o.id LIMIT 5";
@@ -79,7 +87,7 @@ public class CalciteRelCase {
         System.out.println("[validated sqlNode]");
         System.out.println(sqlNodeValidated);
 
-        SqlDialect sqlDialect = SqlDialect.DatabaseProduct.MYSQL.getDialect();
+        SqlDialect sqlDialect = SqlDialect.DatabaseProduct.SPARK.getDialect();
 
         SqlString sqlString = sqlNodeValidated.toSqlString(sqlDialect);
         System.out.println("convert to " + sqlString);
@@ -132,8 +140,133 @@ public class CalciteRelCase {
         sqlNode.unparse(prettyWriter, 0, 0);
         String sqlStr = prettyWriter.toString();
         System.out.println(sqlStr);
-
-
     }
+
+    public static String rel2sql(RelNode phyPlan){
+        SqlDialect sqlDialect = SqlDialect.DatabaseProduct.SPARK.getDialect();
+
+        SqlWriterConfig writerConfig = SqlWriterConfig.of()
+                .withDialect(sqlDialect)
+                .withAlwaysUseParentheses(true) // 可选配置，控制括号的使用
+                .withSelectListItemsOnSeparateLines(false) // 控制 SELECT 列表的格式
+                ;
+        SqlPrettyWriter prettyWriter = new SqlPrettyWriter(writerConfig, new StringBuilder());
+        RelToSqlConverter relToSqlConverter = new RelToSqlConverter(sqlDialect);
+        SqlNode sqlNode = relToSqlConverter.visitRoot(phyPlan).asStatement();
+        sqlNode = correctField((SqlSelect) sqlNode);
+        sqlNode.unparse(prettyWriter, 0, 0);
+
+        return prettyWriter.toString();
+    }
+
+    public static SqlNode correctField(SqlSelect node){
+        SqlNode from = node.getFrom();
+        if(from instanceof SqlJoin){
+           dealJoin((SqlJoin) from);
+        }else if(from instanceof SqlBasicCall){
+            dealSubQuery((SqlBasicCall) from);
+        }else{
+
+        }
+        return node;
+    }
+
+    public static void dealJoin(SqlJoin join){
+        SqlBasicCall left = (SqlBasicCall) join.getLeft();
+        SqlBasicCall right = (SqlBasicCall) join.getRight();
+        SqlBasicCall cond = (SqlBasicCall)join.getCondition();
+        if(left.getOperandList().stream().anyMatch(x -> x instanceof SqlSelect)){
+            dealSubQuery(left);
+        }
+        if(right.getOperandList().stream().anyMatch(x -> x instanceof SqlSelect)){
+            dealSubQuery(right);
+        }
+
+        List<SqlNode> nodes = cond.getOperandList();
+        for(int i=0; i < nodes.size(); i++){
+            SqlIdentifier field = (SqlIdentifier)(nodes.get(i));
+            String tableAlias = field.names.get(0);
+            String fieldName =field.names.get(1);
+            if(fieldName.contains(".")){
+                fieldName = CalciteUtil.getColumnName(fieldName);
+            }
+            SqlIdentifier newField = field.setName(1, CalciteUtil.getColumnName(fieldName));
+            if(replaceMap.containsKey(tableAlias)) {
+                newField = newField.setName(0, replaceMap.get(tableAlias));
+            }
+            cond.setOperand(i, newField);
+        }
+    }
+
+    public static String dealSelectAlias(SqlSelect select){
+        String tableAlias = null;
+        SqlNodeList selectList = select.getSelectList();
+        for(int i = 0;  i < selectList.size(); i++ ){
+            SqlNode node = selectList.get(i);
+            if(node instanceof SqlBasicCall){
+                SqlBasicCall exprCall = (SqlBasicCall)node;
+                SqlNode sqlNode = exprCall.getOperandList().get(0);
+                SqlIdentifier fieldIdentifier = (SqlIdentifier) exprCall.getOperandList().get(1);
+                String fieldAlias = fieldIdentifier.toString();
+                if(fieldAlias.contains(".")){
+                    tableAlias = fieldAlias.split("\\.")[0];
+                    fieldAlias = fieldAlias.split("\\.")[1];
+                    if(sqlNode instanceof SqlCharStringLiteral) {
+                        String val = ((SqlCharStringLiteral) sqlNode).toValue();
+                        if (fieldAlias.equals(val)) {
+                            selectList.set(i, fieldIdentifier.setName(0, fieldAlias));
+                        }
+                    }else {
+                        exprCall.setOperand(1, fieldIdentifier.setName(0, fieldAlias));
+                    }
+                }
+            }else if(node instanceof SqlIdentifier){
+                SqlIdentifier identifier = (SqlIdentifier) node;
+                String fieldName = identifier.names.get(0);
+                selectList.set(i, identifier.setName(0, CalciteUtil.getColumnName(fieldName)));
+            }
+        }
+        return tableAlias;
+    }
+
+
+    public static void dealSubQuery(SqlBasicCall call){
+        SqlOperator op = call.getOperator();
+        if(op instanceof SqlAsOperator){ //有内部子查询
+            SqlSelect select =(SqlSelect) call.getOperandList().get(0);
+            SqlIdentifier tableIdentifier = (SqlIdentifier) call.getOperandList().get(1);
+            String tableAlias = tableIdentifier.toString();
+            if(select.getFrom() instanceof SqlJoin){
+                dealJoin((SqlJoin) select.getFrom());
+            }
+            if(select.getFrom() instanceof SqlBasicCall){ //多层嵌套子查询
+                dealSubQuery((SqlBasicCall) select.getFrom());
+            }
+            String newTableAlias = dealSelectAlias(select);
+            replaceMap.put(tableAlias, newTableAlias);
+            call.setOperand(1, tableIdentifier.setName(0, newTableAlias));
+
+        }
+    }
+
+
+    public static RelNode cleanRelSubSet(RelNode phyPlan){
+        if(phyPlan instanceof MPCTableScan){
+            return phyPlan;
+        }
+        if(phyPlan instanceof RelSubset){
+            RelSubset subset = (RelSubset)phyPlan;
+            return subset.getBest();
+        }
+        List<RelNode> inputs = phyPlan.getInputs();
+        List<RelNode> newInputs = Lists.newArrayList();
+        for(RelNode input : inputs){
+            RelNode newInput = cleanRelSubSet(input);
+            newInputs.add(newInput);
+        }
+        return phyPlan.copy(phyPlan.getTraitSet(), newInputs);
+    }
+
+
 
 }

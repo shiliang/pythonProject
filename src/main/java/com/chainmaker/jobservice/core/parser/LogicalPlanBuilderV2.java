@@ -582,6 +582,7 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             fl.add(flExpression);
         }
 
+
         List<List<FlExpression>> labels = new ArrayList<>();
         if(!context.flLabelSeq().isEmpty()) {
             for (int i = 0; i < context.flLabelSeq(0).flLabel().size(); i++) {
@@ -617,13 +618,15 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         }
         List<FlExpression> model = new ArrayList<>();
         if (!context.flModelSeq().isEmpty()) {
-            Identifier key = new Identifier("model_name");
-            Identifier value = new Identifier(context.flModelSeq(0).flModel(0).model.getText());
-            FlExpression modelName = new FlExpression(key, value, FlExpression.Operator.EQUAL);
-            model.add(modelName);
-            for (int i = 0; i < context.flModelSeq(0).flModel(0).flExpressionSeq().flExpression().size(); i++) {
-                FlExpression flExpression = visitFlExpression(context.flModelSeq(0).flModel(0).flExpressionSeq().flExpression(i));
-                model.add(flExpression);
+            if(context.flModelSeq() != null && (!context.flModelSeq().isEmpty())) {
+                Identifier key = new Identifier("model_name");
+                Identifier value = new Identifier(context.flModelSeq(0).flModel(0).model.getText());
+                FlExpression modelName = new FlExpression(key, value, FlExpression.Operator.EQUAL);
+                model.add(modelName);
+                for (int i = 0; i < context.flModelSeq(0).flModel(0).flExpressionSeq().flExpression().size(); i++) {
+                    FlExpression flExpression = visitFlExpression(context.flModelSeq(0).flModel(0).flExpressionSeq().flExpression(i));
+                    model.add(flExpression);
+                }
             }
         }
 

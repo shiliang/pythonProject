@@ -47,8 +47,8 @@ public class MPCJoin extends Join implements EnumerableRel {
     @SneakyThrows
     @Override
     public MPCJoin copy(RelTraitSet relTraitSet, RexNode rexNode, RelNode relNode, RelNode relNode1, JoinRelType joinRelType, boolean b) {
-        return new MPCJoin(getCluster(), traitSet, left, right,
-                condition, variablesSet, joinType);
+        return new MPCJoin(getCluster(), traitSet, relNode, relNode1,
+                rexNode, variablesSet, joinType);
     }
 
 
@@ -122,7 +122,7 @@ public class MPCJoin extends Join implements EnumerableRel {
         } else {
             // 位于不同数据源，需要隐私求交
             cost = planner.getCostFactory().makeCost(rowCount, rowCount, rowCount);
-            cost = cost.multiplyBy(5);
+            cost = cost.multiplyBy(100);
         }
 
         return cost;
