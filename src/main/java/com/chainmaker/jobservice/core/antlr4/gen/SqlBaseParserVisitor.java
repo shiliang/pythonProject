@@ -1364,12 +1364,19 @@ public interface SqlBaseParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitFederatedQueryExpression(SqlBaseParser.FederatedQueryExpressionContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code federatedLearningExpression}
+	 * Visit a parse tree produced by the {@code flSingleStageExpression}
 	 * labeled alternative in {@link SqlBaseParser#namedExpressionSeq}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitFederatedLearningExpression(SqlBaseParser.FederatedLearningExpressionContext ctx);
+	T visitFlSingleStageExpression(SqlBaseParser.FlSingleStageExpressionContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code flSequenceExpression}
+	 * labeled alternative in {@link SqlBaseParser#namedExpressionSeq}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFlSequenceExpression(SqlBaseParser.FlSequenceExpressionContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link SqlBaseParser#flType}.
 	 * @param ctx the parse tree
@@ -1377,17 +1384,17 @@ public interface SqlBaseParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitFlType(SqlBaseParser.FlTypeContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link SqlBaseParser#flModelSeq}.
+	 * Visit a parse tree produced by {@link SqlBaseParser#flStageSeq}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitFlModelSeq(SqlBaseParser.FlModelSeqContext ctx);
+	T visitFlStageSeq(SqlBaseParser.FlStageSeqContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link SqlBaseParser#flModel}.
+	 * Visit a parse tree produced by {@link SqlBaseParser#flStage}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitFlModel(SqlBaseParser.FlModelContext ctx);
+	T visitFlStage(SqlBaseParser.FlStageContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link SqlBaseParser#flExpressionSeq}.
 	 * @param ctx the parse tree
@@ -1777,6 +1784,13 @@ public interface SqlBaseParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitStringLiteral(SqlBaseParser.StringLiteralContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code FL}
+	 * labeled alternative in {@link SqlBaseParser#constant}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFL(SqlBaseParser.FLContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link SqlBaseParser#comparisonOperator}.
 	 * @param ctx the parse tree

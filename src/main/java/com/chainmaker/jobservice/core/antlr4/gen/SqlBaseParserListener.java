@@ -2298,17 +2298,29 @@ public interface SqlBaseParserListener extends ParseTreeListener {
 	 */
 	void exitFederatedQueryExpression(SqlBaseParser.FederatedQueryExpressionContext ctx);
 	/**
-	 * Enter a parse tree produced by the {@code federatedLearningExpression}
+	 * Enter a parse tree produced by the {@code flSingleStageExpression}
 	 * labeled alternative in {@link SqlBaseParser#namedExpressionSeq}.
 	 * @param ctx the parse tree
 	 */
-	void enterFederatedLearningExpression(SqlBaseParser.FederatedLearningExpressionContext ctx);
+	void enterFlSingleStageExpression(SqlBaseParser.FlSingleStageExpressionContext ctx);
 	/**
-	 * Exit a parse tree produced by the {@code federatedLearningExpression}
+	 * Exit a parse tree produced by the {@code flSingleStageExpression}
 	 * labeled alternative in {@link SqlBaseParser#namedExpressionSeq}.
 	 * @param ctx the parse tree
 	 */
-	void exitFederatedLearningExpression(SqlBaseParser.FederatedLearningExpressionContext ctx);
+	void exitFlSingleStageExpression(SqlBaseParser.FlSingleStageExpressionContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code flSequenceExpression}
+	 * labeled alternative in {@link SqlBaseParser#namedExpressionSeq}.
+	 * @param ctx the parse tree
+	 */
+	void enterFlSequenceExpression(SqlBaseParser.FlSequenceExpressionContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code flSequenceExpression}
+	 * labeled alternative in {@link SqlBaseParser#namedExpressionSeq}.
+	 * @param ctx the parse tree
+	 */
+	void exitFlSequenceExpression(SqlBaseParser.FlSequenceExpressionContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link SqlBaseParser#flType}.
 	 * @param ctx the parse tree
@@ -2320,25 +2332,25 @@ public interface SqlBaseParserListener extends ParseTreeListener {
 	 */
 	void exitFlType(SqlBaseParser.FlTypeContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link SqlBaseParser#flModelSeq}.
+	 * Enter a parse tree produced by {@link SqlBaseParser#flStageSeq}.
 	 * @param ctx the parse tree
 	 */
-	void enterFlModelSeq(SqlBaseParser.FlModelSeqContext ctx);
+	void enterFlStageSeq(SqlBaseParser.FlStageSeqContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link SqlBaseParser#flModelSeq}.
+	 * Exit a parse tree produced by {@link SqlBaseParser#flStageSeq}.
 	 * @param ctx the parse tree
 	 */
-	void exitFlModelSeq(SqlBaseParser.FlModelSeqContext ctx);
+	void exitFlStageSeq(SqlBaseParser.FlStageSeqContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link SqlBaseParser#flModel}.
+	 * Enter a parse tree produced by {@link SqlBaseParser#flStage}.
 	 * @param ctx the parse tree
 	 */
-	void enterFlModel(SqlBaseParser.FlModelContext ctx);
+	void enterFlStage(SqlBaseParser.FlStageContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link SqlBaseParser#flModel}.
+	 * Exit a parse tree produced by {@link SqlBaseParser#flStage}.
 	 * @param ctx the parse tree
 	 */
-	void exitFlModel(SqlBaseParser.FlModelContext ctx);
+	void exitFlStage(SqlBaseParser.FlStageContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link SqlBaseParser#flExpressionSeq}.
 	 * @param ctx the parse tree
@@ -3003,6 +3015,18 @@ public interface SqlBaseParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitStringLiteral(SqlBaseParser.StringLiteralContext ctx);
+	/**
+	 * Enter a parse tree produced by the {@code FL}
+	 * labeled alternative in {@link SqlBaseParser#constant}.
+	 * @param ctx the parse tree
+	 */
+	void enterFL(SqlBaseParser.FLContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code FL}
+	 * labeled alternative in {@link SqlBaseParser#constant}.
+	 * @param ctx the parse tree
+	 */
+	void exitFL(SqlBaseParser.FLContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link SqlBaseParser#comparisonOperator}.
 	 * @param ctx the parse tree

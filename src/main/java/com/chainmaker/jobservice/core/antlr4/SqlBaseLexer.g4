@@ -88,13 +88,10 @@ SEQUENCE: 'SEQUENCE';
 
 FL: 'FL';
 
-HE_TRAIN: 'HE_TRAIN';
-HO_TRAIN: 'HO_TRAIN';
-HE_FEATURE: 'HE_FEATURE';
-HO_FEATURE: 'HO_FEATURE';
+TRAIN: 'TRAIN';
+FE: 'FE';
 EVAL: 'EVAL';
-HE_PREDICT: 'HE_PREDICT';
-HO_PREDICT: 'HO_PREDICT';
+PREDICT: 'PREDICT';
 
 // NOTE: If you add a new token in the list below, you should update the list of keywords
 // and reserved tag in `docs/sql-ref-ansi-compliance.md#sql-keywords`, and

@@ -1474,7 +1474,14 @@ public class SqlBaseParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> imp
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitFederatedLearningExpression(SqlBaseParser.FederatedLearningExpressionContext ctx) { return visitChildren(ctx); }
+	@Override public T visitFlSingleStageExpression(SqlBaseParser.FlSingleStageExpressionContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitFlSequenceExpression(SqlBaseParser.FlSequenceExpressionContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -1488,14 +1495,14 @@ public class SqlBaseParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> imp
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitFlModelSeq(SqlBaseParser.FlModelSeqContext ctx) { return visitChildren(ctx); }
+	@Override public T visitFlStageSeq(SqlBaseParser.FlStageSeqContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitFlModel(SqlBaseParser.FlModelContext ctx) { return visitChildren(ctx); }
+	@Override public T visitFlStage(SqlBaseParser.FlStageContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -1895,6 +1902,13 @@ public class SqlBaseParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> imp
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public T visitStringLiteral(SqlBaseParser.StringLiteralContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitFL(SqlBaseParser.FLContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

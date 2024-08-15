@@ -823,19 +823,20 @@ namedExpression
 
 namedExpressionSeq
     : namedExpression (COMMA namedExpression)*                        #federatedQueryExpression
-    | flType LEFT_PAREN (flModelSeq) RIGHT_PAREN   #federatedLearningExpression
+    | flStage                                            #flSingleStageExpression
+    | flType LEFT_PAREN (flStageSeq) RIGHT_PAREN   #flSequenceExpression
     ;
 
 flType
     : SEQUENCE
     ;
 
-flModelSeq
-    : flModel (COMMA flModel)*
+flStageSeq
+    : flStage (COMMA flStage)*
     ;
 
-flModel
-    : model=(HE_TRAIN | HO_TRAIN | HE_FEATURE | HO_FEATURE | EVAL | HE_PREDICT | HO_PREDICT)  LEFT_PAREN flExpressionSeq RIGHT_PAREN
+flStage
+    : stage=(TRAIN | FE | EVAL | PREDICT)  LEFT_PAREN flExpressionSeq RIGHT_PAREN
     ;
 
 
@@ -968,6 +969,7 @@ constant
     | number                                                                                   #numericLiteral
     | booleanValue                                                                             #booleanLiteral
     | stringLit+                                                                               #stringLiteral
+    | FL                                                                                       # FL
     ;
 
 comparisonOperator

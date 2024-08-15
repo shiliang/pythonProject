@@ -175,11 +175,22 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
     }
 
-    public void build() {
-        String jobStatus = "WAITING";
-        String taskDAG = "taskDAG";
-        Integer jobType = null;
+    public boolean isFLJoin(){
+        if(hint != null){
+            for(HintExpression kv : hint.getValues()){
+                String key = kv.getKey();
+                String val = kv.getValues().get(0);
+                if(key.equalsIgnoreCase("JOIN") && val.equalsIgnoreCase("FL")){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
+    public void build() {
+        String taskDAG = "taskDAG";
+        Integer jobType;
         if (this.sql.contains("FL")) {
             jobType = JobType.FL.getValue();
         }else if (this.sql.contains("TEE")) {
@@ -190,13 +201,14 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         HashMap<RelNode, List<Task>> phyTaskMap = new HashMap<>();
         // 生成tasks
-        generateFLTasks(originPlan);
+        dealHint(originPlan);
         searchMultiNode(phyPlan);
         if(multiPartiesNodeIds.isEmpty() && !(phyPlan instanceof MPCTableScan)){
             tasks.add(generateLocalTasks(phyPlan, phyTaskMap));
         }else {
             tasks.addAll(dfsPlanV2(phyPlan, phyTaskMap));
         }
+        generateFLTasks(originPlan);
         // PSI后通知所有参与表
         notifyPSIOthers();
 
@@ -308,6 +320,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
     public List<Task> dfsPlanV2(RelNode phyPlan, HashMap<RelNode, List<Task>> phyTaskMap) {
         List<Task> result = new ArrayList<>();
+        if(phyPlan == null){
+            return result;
+        }
         if(phyPlan != this.phyPlan){
             if(!isMultiParties(phyPlan)){
                 //MPCTableScan属于叶子节点，无需要生成sql。
@@ -880,28 +895,18 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
      */
     public void generateFLTasks(XPCPlan node) {
         if (node instanceof FederatedLearning) {
+            if(isFLJoin()){
+                tasks.clear();
+            }
             tasks.add(parseFederatedLearning((FederatedLearning) node));
-            /*
-                    fl=[A.B.C.IS_TRAIN=TRUE, IS_TEST=FALSE],
-                    labels=[
-                        [SOURCE_DATA=ADATA, WITH_LABEL=TRUE, LABEL_TYPE=INT,
-                            OUTPUT_FORMAT=DENSE, NAMESPACE=EXPERIMENT],
-                        [SOURCE_DATA=BDATA, WITH_LABEL=FALSE, OUTPUT_FORMAT=DENSE,
-                            NAMESPACE=EXPERIMENT]],
+        }
+    }
 
-                    psi=[INTERSECT_METHOD=RSA],
-                    feat=[],
-                    model=[model_name=HELR, PENALTY=L2,
-                        TOL=0.0001, ALPHA=0.01, OPTIMIZER=RMSPROP, BATCH_SIZE=-1, LEARNING_RATE=0.15,
-                        INIT_PARAM.INIT_METHOD=ZEROS, INIT_PARAM.FIT_INTERCEPT=TRUE, MAX_ITER=1,
-                        EARLY_STOP=DIFF, ENCRYPT_PARAM.KEY_LENGTH=1024, REVEAL_STRATEGY=RESPECTIVELY,
-                        REVEAL_EVERY_ITER=TRUE],
-                    eval=[EVAL_TYPE=BINARY]}
-             */
-        } else if (node instanceof XPCProject) {
-            /*
+    /*
                 "select adata.a1, testt(adata.a1, bdata.b1) from adata, bdata";
              */
+    public void dealHint(XPCPlan node){
+        if (node instanceof XPCProject) {
             List<NamedExpression> namedExpressionList = ((XPCProject) node).getProjectList().getValues();
             for (NamedExpression ne : namedExpressionList) {
                 Expression expr = ne.getExpression();
@@ -918,8 +923,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     modelList.add(((FunctionCallExpression) expr).getFunction().toString());
                 }
             }
-        } else {
-            ;
         }
     }
 
@@ -933,14 +936,31 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         module.setModuleName(TaskType.FL.name());
         List<ModuleParam> moduleParams = new ArrayList<ModuleParam>();
         List<List<FlExpression>> exprs = expression.getExprs();
+        Set<String> assets = new HashSet<>();
+        String labelAsset = null;
         for(List<FlExpression> flExpressions : exprs){
             String key = null;
             for(FlExpression expr: flExpressions){
                 String left =expr.getLeft().toString();
-                if(left.equalsIgnoreCase("model_name")){
+                if(left.equalsIgnoreCase("stage")){
                     key = expr.getRight().toString();
                 }
-
+                if(left.equalsIgnoreCase("features")){
+                    String value = expr.getRight().toString();
+                    List<String> eleAssets = Arrays.stream(value.split(",")).map(s -> StrUtil.strip(s, "[", "]")).collect(Collectors.toList());
+                    assets.addAll(eleAssets);
+                }
+                if(left.equalsIgnoreCase("label")){
+                    labelAsset = expr.getRight().toString();
+                }
+            }
+            XPCPlan childPlan = node.getChildren().get(0);
+            if(childPlan instanceof XPCJoin){
+               XPCJoin joinNode = (XPCJoin) childPlan;
+               String joinCondition= joinNode.getCondition().toString();
+               Identifier ids = new Identifier("ids2");
+               Identifier vals = new Identifier("[" + joinCondition.replace("==", ",") + "]");
+               flExpressions.add(new FlExpression(ids, vals, FlExpression.Operator.EQUAL));
             }
             moduleParams.add(new ModuleParam(key, parseFLParams(flExpressions).toJSONString()));
         }
@@ -951,17 +971,27 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         // input
         Input input = new Input();
         List<InputDetail> inputDataList = new ArrayList<>();
-
-
-//        for (int i = 0; i < labels.size(); i++) {
-//            inputDataList.add(parseFLLabel(labels.get(i)));
-//        }
-        if (inputDataList.get(0).getRole().equals(inputDataList.get(1).getRole())) {
-            if (inputDataList.get(0).getRole().equals("guest")) {
-                inputDataList.get(0).setRole("host");
-            } else {
-                inputDataList.get(0).setRole("guest");
+        for (String asset: assets){
+            InputDetail inputData = new InputDetail();
+            String dataName = CalciteUtil.getTableName(asset);
+            inputData.setDataName(dataName);
+            inputData.setDataId(dataName);
+            inputData.setDomainId(metadata.getTableOrgId(dataName));
+            inputData.setDomainName(metadata.getTable(dataName).getOrgName());
+            if(tasks.isEmpty()) {
+                inputData.setTaskSrc("");
+            }else {
+                inputData.setTaskSrc(tasks.get(0).getTaskId());
             }
+            if(labelAsset != null) {
+                String guestAsset = CalciteUtil.getTableName(labelAsset);
+                if (dataName.equals(guestAsset)) {
+                    inputData.setRole("guest");
+                } else {
+                    inputData.setRole("host");
+                }
+            }
+            inputDataList.add(inputData);
         }
         input.setInputDataDetailList(inputDataList);
         input.setTaskId(task.getTaskId());
@@ -982,7 +1012,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         outputData.setIsFinalResult(true);
         outputDataList.add(outputData);
         task.setOutputList(outputDataList);
-
         // party
         genParties(input, task);
 

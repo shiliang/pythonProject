@@ -168,8 +168,11 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             }
         }
 
-        if (namedExpressionSeqCtx instanceof FederatedLearningExpressionContext) {
-            FederatedLearningExpression expression = visitFederatedLearningExpression((FederatedLearningExpressionContext) namedExpressionSeqCtx);
+        if(namedExpressionSeqCtx instanceof FlSingleStageExpressionContext){
+            FederatedLearningExpression expression = visitFlSingleStageExpression((FlSingleStageExpressionContext) namedExpressionSeqCtx);
+            return new FederatedLearning(expression, children);
+        }else if (namedExpressionSeqCtx instanceof FlSequenceExpressionContext) {
+            FederatedLearningExpression expression = visitFlSequenceExpression((FlSequenceExpressionContext) namedExpressionSeqCtx);
             return new FederatedLearning(expression, children);
         } else {
             FederatedQueryExpressionContext expressionCtx = (FederatedQueryExpressionContext) namedExpressionSeqCtx;
@@ -564,6 +567,29 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         return visitBooleanExpression(context.booleanExpression());
     }
 
+
+    public FederatedLearningExpression visitFlSingleStageExpression(FlSingleStageExpressionContext context){
+        List<FlExpression> fl = new ArrayList<>();
+
+        if (context.flStage().isEmpty()) {
+            throw new RuntimeException("fl function is the required component");
+        }
+        List<List<FlExpression>> models = Lists.newArrayList();
+        FlStageContext stageContext = context.flStage();
+        if(stageContext != null) {
+            List<FlExpression> model = new ArrayList<>();
+            Identifier stageKey = new Identifier("stage");
+            Identifier stageVal = new Identifier(stageContext.stage.getText());
+            model.add(new FlExpression(stageKey, stageVal,  FlExpression.Operator.EQUAL));
+            for (int j = 0; j < stageContext.flExpressionSeq().flExpression().size(); j++) {
+                FlExpression flExpression = visitFlExpression(stageContext.flExpressionSeq().flExpression(j));
+                model.add(flExpression);
+            }
+            models.add(model);
+        }
+        return new FederatedLearningExpression(fl, models);
+    }
+
     /***
      * @description 联邦学习解析
      * @param context
@@ -572,24 +598,24 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
      * @date 2022/8/14 22:01
      */
     @Override
-    public FederatedLearningExpression visitFederatedLearningExpression(FederatedLearningExpressionContext context) {
+    public FederatedLearningExpression visitFlSequenceExpression(FlSequenceExpressionContext context) {
         List<FlExpression> fl = new ArrayList<>();
-        if(context.flType().isEmpty()){
+        if(context.isEmpty()){
             throw new RuntimeException("fl is the required component");
         }
 
 
-        if (context.flModelSeq().isEmpty()) {
+        if (context.flStageSeq().isEmpty()) {
             throw new RuntimeException("fl function is the required component");
         }
         List<List<FlExpression>> models = Lists.newArrayList();
-        List<FlModelContext> modelContexts  = context.flModelSeq().flModel();
+        List<FlStageContext> modelContexts  = context.flStageSeq().flStage();
         if(modelContexts != null) {
             for(int i = 0; i < modelContexts.size(); i ++ ){
                 List<FlExpression> model = new ArrayList<>();
-                FlModelContext flModel = modelContexts.get(i);
+                FlStageContext flModel = modelContexts.get(i);
                 Identifier stageKey = new Identifier("stage");
-                Identifier stageVal = new Identifier(flModel.model.getText());
+                Identifier stageVal = new Identifier(flModel.stage.getText());
                 model.add(new FlExpression(stageKey, stageVal,  FlExpression.Operator.EQUAL));
                 for (int j = 0; j < flModel.flExpressionSeq().flExpression().size(); j++) {
                     FlExpression flExpression = visitFlExpression(flModel.flExpressionSeq().flExpression(j));
