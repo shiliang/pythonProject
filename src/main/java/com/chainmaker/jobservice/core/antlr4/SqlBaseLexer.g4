@@ -84,33 +84,17 @@ DOT: '.';
 LEFT_BRACKET: '[';
 RIGHT_BRACKET: ']';
 
+SEQUENCE: 'SEQUENCE';
+
 FL: 'FL';
-FLLABEL: 'FLLABEL';
-INTERSECTION: 'INTERSECTION';
 
-
-HEDS: 'HEDS';
-
-HEFSL: 'HEFSL';
-HEFB: 'HEFB';
-HOFB: 'HOFB';
-HEFSC: 'HEFSC';
-HEFSP: 'HEFSP';
-HEFIM: 'HEFIM';
-HEPEAR: 'HEPEAR';
-HO1HOT: 'HO1HOT';
-
-HESB: 'HESB';
-HOSB: 'HOSB';
-HELR: 'HELR';
-HEKMS: 'HEKMS';
-HELNR: 'HELNR';
-HOLR: 'HOLR';
+HE_TRAIN: 'HE_TRAIN';
+HO_TRAIN: 'HO_TRAIN';
+HE_FEATURE: 'HE_FEATURE';
+HO_FEATURE: 'HO_FEATURE';
 EVAL: 'EVAL';
-HEPR: 'HEPR';
-HEFTL: 'HEFTL';
-HENN: 'HENN';
-HONN: 'HONN';
+HE_PREDICT: 'HE_PREDICT';
+HO_PREDICT: 'HO_PREDICT';
 
 // NOTE: If you add a new token in the list below, you should update the list of keywords
 // and reserved tag in `docs/sql-ref-ansi-compliance.md#sql-keywords`, and

@@ -925,29 +925,15 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
     public Task parseFederatedLearning(FederatedLearning node) {
         // basic info
-        FederatedLearningExpression expression = node.getParamsList();
+        FederatedLearningExpression expression = node.getExprList();
         Task task = basicTask(String.valueOf(cnt++));
 
         // module
         Module module = new Module();
         module.setModuleName(TaskType.FL.name());
-//        JSONObject moduleParams = new JSONObject(true);
         List<ModuleParam> moduleParams = new ArrayList<ModuleParam>();
-        if (expression.getPsi().size() != 0) {
-            moduleParams.add(new ModuleParam("intersection", parseFLParams(expression.getPsi()).toJSONString()));
-        }
-        if (expression.getFl().size() != 0) {
-            moduleParams.add(new ModuleParam("fl", parseFLParams(expression.getFl()).toJSONString()));
-        }
-
-        if (expression.getFeat().size() != 0) {
-            moduleParams.add(new ModuleParam("feat", parseFLParams(expression.getFeat()).toJSONString()));
-        }
-        if (expression.getModel().size() != 0) {
-            moduleParams.add(new ModuleParam("model", parseFLParams(expression.getModel()).toJSONString()));
-        }
-        if (expression.getEval().size() != 0) {
-            moduleParams.add(new ModuleParam("eval", parseFLParams(expression.getEval()).toJSONString()));
+        if (!expression.getExprs().isEmpty()) {
+            moduleParams.add(new ModuleParam("model", parseFLParams(expression.getExprs()).toJSONString()));
         }
 
         module.setParamList(moduleParams);
@@ -956,10 +942,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         // input
         Input input = new Input();
         List<InputDetail> inputDataList = new ArrayList<>();
-        List<List<FlExpression>> labels = expression.getLabels();
-        for (int i = 0; i < labels.size(); i++) {
-            inputDataList.add(parseFLLabel(labels.get(i)));
-        }
+        List<List<FlExpression>> exprs = expression.getExprs();
+
+
+//        for (int i = 0; i < labels.size(); i++) {
+//            inputDataList.add(parseFLLabel(labels.get(i)));
+//        }
         if (inputDataList.get(0).getRole().equals(inputDataList.get(1).getRole())) {
             if (inputDataList.get(0).getRole().equals("guest")) {
                 inputDataList.get(0).setRole("host");
@@ -969,8 +957,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
         input.setInputDataDetailList(inputDataList);
         input.setTaskId(task.getTaskId());
-//        input.setSrcTaskId(inputDataList.get(0).getTaskSrc());
-//        input.setSrcTaskName(inputDataList.get(0).getTaskSrc());
         task.setInput(input);
 
         // output
@@ -987,7 +973,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         outputData.setFinalResult("Y");
         outputData.setIsFinalResult(true);
         outputDataList.add(outputData);
-//        output.setData(outputDataList);
         task.setOutputList(outputDataList);
 
         // party
@@ -996,52 +981,20 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         return task;
     }
 
-    public InputDetail parseFLLabel(List<FlExpression> label) {
-        String[] constLabels = {"output_format", "namespace", "label_type", "with_label", "table"};
-        InputDetail inputData = new InputDetail();
-        String dataName = "";
-        for (int i = 0; i < label.size(); i++) {
-            FlExpression expr = label.get(i);
-            if (expr.getLeft().toString().equalsIgnoreCase("SOURCE_DATA")) {
-                dataName = expr.getRight().toString();
-                label.remove(i);
-                break;
-            }
-        }
-        inputData.setDataName(dataName);
-        inputData.setDataId(dataName);
-        inputData.setDomainId(metadata.getTableOrgId(dataName));
-        inputData.setDomainName(metadata.getTable(dataName).getOrgName());
-        JSONObject params = parseFLParams(label);
-        for (String l : constLabels) {
-            if (!params.containsKey(l)) {
-                params.put(l, null);
-            }
-        }
-        params.put("table", dataName);
-        inputData.setParams(params);
-        inputData.setTaskSrc("");
-        if (inputData.getParams().get("with_label").toString().equals("true")) {
-            inputData.setRole("guest");
-        } else {
-            inputData.setRole("host");
-        }
-        return inputData;
-    }
-
-    public JSONObject parseFLParams(List<FlExpression> params) {
+    public JSONObject parseFLParams(List<List<FlExpression>> params) {
         JSONObject object = new JSONObject();
-        for (int i = 0; i < params.size(); i++) {
-            FlExpression expression = params.get(i);
-            String key = expression.getLeft().toString();
-            String value = expression.getRight().toString();
-            if (!key.contains(".")) {
-                object.put(key, value);
-            } else {
+//
+//        for (int i = 0; i < params.size(); i++) {
+//            FlExpression expression = params.get(i);
+//            String key = expression.getLeft().toString();
+//            String value = expression.getRight().toString();
+//            if (!key.contains(".")) {
 //                object.put(key, value);
-                parseSubParams(key, value, object);
-            }
-        }
+//            } else {
+////                object.put(key, value);
+//                parseSubParams(key, value, object);
+//            }
+//        }
         return object;
     }
 

@@ -823,58 +823,21 @@ namedExpression
 
 namedExpressionSeq
     : namedExpression (COMMA namedExpression)*                        #federatedQueryExpression
-    | flType LEFT_BRACKET flExpressionSeq (COMMA flLabelSeq)+ (COMMA flPSISeq)* (COMMA flFeatSeq)* (COMMA flModelSeq)* (COMMA flEvalSeq)* RIGHT_BRACKET   #federatedLearningExpression
+    | flType LEFT_PAREN (flModelSeq) RIGHT_PAREN   #federatedLearningExpression
     ;
 
-// task type(federated learning)
 flType
-    : FL
+    : SEQUENCE
     ;
 
-// TRANSFORM(dataIO)
-flLabelSeq
-    :flLabel (COMMA flLabel)*
-    ;
-
-flLabel
-    : FLLABEL LEFT_BRACKET flExpressionSeq RIGHT_BRACKET
-    ;
-
-// psi
-flPSISeq
-    : flPSI (COMMA flPSI)*
-    ;
-
-flPSI
-    : INTERSECTION* LEFT_BRACKET flExpressionSeq RIGHT_BRACKET
-    ;
-
-// feature engineer
-flFeatSeq
-    : flFeat (COMMA flFeat)*
-    ;
-
-flFeat
-    : feat=(HEFSL |HEFB | HOFB | HEFSC | HEFSP | HEFIM | HEPEAR | HO1HOT | HEDS) LEFT_BRACKET flExpressionSeq RIGHT_BRACKET
-    ;
-
-// model
 flModelSeq
     : flModel (COMMA flModel)*
     ;
 
 flModel
-    : model=(HESB | HOSB | HELR | HEKMS | HELNR | HOLR | HEPR | HEFTL | HONN | HENN)  LEFT_BRACKET flExpressionSeq RIGHT_BRACKET
+    : model=(HE_TRAIN | HO_TRAIN | HE_FEATURE | HO_FEATURE | EVAL | HE_PREDICT | HO_PREDICT)  LEFT_PAREN flExpressionSeq RIGHT_PAREN
     ;
 
-// evaluation
-flEvalSeq
-    : flEval (COMMA flEval)*
-    ;
-
-flEval
-    : EVAL LEFT_BRACKET flExpressionSeq RIGHT_BRACKET
-    ;
 
 flExpressionSeq
     : flExpression (COMMA flExpression)*

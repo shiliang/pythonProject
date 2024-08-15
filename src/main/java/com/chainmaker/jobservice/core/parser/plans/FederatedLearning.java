@@ -6,16 +6,16 @@ import org.apache.calcite.rel.RelNode;
 import java.util.List;
 
 public class FederatedLearning extends XPCPlan {
-    private final FederatedLearningExpression paramsList;
+    private final FederatedLearningExpression exprList;
     private final List<XPCPlan> children;
 
-    public FederatedLearning(FederatedLearningExpression paramsList, List<XPCPlan> children) {
-        this.paramsList = paramsList;
+    public FederatedLearning(FederatedLearningExpression exprList, List<XPCPlan> children) {
+        this.exprList = exprList;
         this.children = children;
     }
 
-    public FederatedLearningExpression getParamsList() {
-        return paramsList;
+    public FederatedLearningExpression getExprList() {
+        return exprList;
     }
 
     @Override
@@ -25,7 +25,7 @@ public class FederatedLearning extends XPCPlan {
 
     @Override
     public String toString() {
-        return "FederatedLearning " + paramsList.toString();
+        return "FederatedLearning " + exprList.toString();
     }
 
     @Override

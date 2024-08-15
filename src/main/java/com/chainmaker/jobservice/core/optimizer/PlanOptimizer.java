@@ -4,8 +4,6 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
-import com.chainmaker.jobservice.core.optimizer.model.FL.FateModel;
-import com.chainmaker.jobservice.core.optimizer.model.FL.FlInputData;
 import com.chainmaker.jobservice.core.optimizer.model.InputData;
 import com.chainmaker.jobservice.core.optimizer.model.OutputData;
 import com.chainmaker.jobservice.core.optimizer.model.SpdzInputData;
@@ -57,8 +55,8 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         for (XPCPlan child: node.getChildren()) {
             child.accept(this);
         }
-        FederatedLearningExpression expression = node.getParamsList();
-        buildFate(expression);
+        FederatedLearningExpression expression = node.getExprList();
+//        buildFate(expression);
     }
     public void visit(XPCProject node) {
 
@@ -246,67 +244,67 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         }
     }
 
-    private void buildFate(FederatedLearningExpression expression) {
-        Fate fate = new Fate();
-        fate.setId(count);
-        count += 1;
-        HashSet<String> parties = new HashSet<>();
-
-        JSONObject fl = listFlExpressionHandler(expression.getFl());
-        JSONObject eval = listFlExpressionHandler(expression.getEval());
-        JSONObject model = listFlExpressionHandler(expression.getModel());
-        JSONObject intersection = listFlExpressionHandler(expression.getPsi());
-        FateModel fateModel = new FateModel();
-        fateModel.setFl(fl);
-        fateModel.setModel(model);
-        fateModel.setIntersection(intersection);
-        fateModel.setEval(eval);
-        fate.setFateModel(fateModel);
-
-        String outputDomainID = "";
-        List<PhysicalPlan> parents = new ArrayList<>();
-        List<InputData> flInputDataList = new ArrayList<>();
-        for (int i=0; i<expression.getLabels().size(); i++) {
-            JSONObject label = listFlExpressionHandler(expression.getLabels().get(i));
-            FlInputData flInputData = new FlInputData();
-            flInputData.setTableName(label.getString("SOURCE_DATA"));
-            flInputData.setLabel_type(label.getString("LABEL_TYPE"));
-            flInputData.setWith_label(label.getString("WITH_LABEL"));
-            flInputData.setOutput_format(label.getString("OUTPUT_FORMAT"));
-            flInputData.setNamespace(label.getString("NAMESPACE"));
-
-            PhysicalPlan parent = tableLastMap.get(flInputData.getTableName());
-            parents.add(parent);
-            String tableName = flInputData.getTableName();
-            flInputData.setDomainID(tableOwnerMap.get(tableName));
-            TableInfo tableInfo = metaData.get(tableName);
-            flInputData.setDomainName(tableInfo.getOrgName());
-            parties.add(flInputData.getDomainID());
-            flInputData.setNodeSrc(parent.getId());
-            if (flInputData.getWith_label().equals("FALSE")) {
-                flInputData.setRole("HOST");
-                outputDomainID = flInputData.getDomainID();
-            } else {
-                flInputData.setRole("GUEST");
-            }
-            flInputDataList.add(flInputData);
-        }
-        fate.setInputDataList(flInputDataList);
-
-        List<OutputData> outputDataList = new ArrayList<>();
-        OutputData outputData = new OutputData();
-
-        outputData.setTableName("FL");
-        outputData.setOutputSymbol("FL");
-        outputData.setDomainID(outputDomainID);
-        outputDataList.add(outputData);
-        fate.setOutputDataList(outputDataList);
-        fate.setParties(new ArrayList<>(parties));
-        for (PhysicalPlan plan: parents) {
-            dag.addEdge(plan, fate);
-        }
-
-    }
+//    private void buildFate(FederatedLearningExpression expression) {
+//        Fate fate = new Fate();
+//        fate.setId(count);
+//        count += 1;
+//        HashSet<String> parties = new HashSet<>();
+//
+//        JSONObject fl = listFlExpressionHandler(expression.getFl());
+//        JSONObject eval = listFlExpressionHandler(expression.getEval());
+//        JSONObject model = listFlExpressionHandler(expression.getModel());
+//        JSONObject intersection = listFlExpressionHandler(expression.getPsi());
+//        FateModel fateModel = new FateModel();
+//        fateModel.setFl(fl);
+//        fateModel.setModel(model);
+//        fateModel.setIntersection(intersection);
+//        fateModel.setEval(eval);
+//        fate.setFateModel(fateModel);
+//
+//        String outputDomainID = "";
+//        List<PhysicalPlan> parents = new ArrayList<>();
+//        List<InputData> flInputDataList = new ArrayList<>();
+//        for (int i=0; i<expression.getLabels().size(); i++) {
+//            JSONObject label = listFlExpressionHandler(expression.getLabels().get(i));
+//            FlInputData flInputData = new FlInputData();
+//            flInputData.setTableName(label.getString("SOURCE_DATA"));
+//            flInputData.setLabel_type(label.getString("LABEL_TYPE"));
+//            flInputData.setWith_label(label.getString("WITH_LABEL"));
+//            flInputData.setOutput_format(label.getString("OUTPUT_FORMAT"));
+//            flInputData.setNamespace(label.getString("NAMESPACE"));
+//
+//            PhysicalPlan parent = tableLastMap.get(flInputData.getTableName());
+//            parents.add(parent);
+//            String tableName = flInputData.getTableName();
+//            flInputData.setDomainID(tableOwnerMap.get(tableName));
+//            TableInfo tableInfo = metaData.get(tableName);
+//            flInputData.setDomainName(tableInfo.getOrgName());
+//            parties.add(flInputData.getDomainID());
+//            flInputData.setNodeSrc(parent.getId());
+//            if (flInputData.getWith_label().equals("FALSE")) {
+//                flInputData.setRole("HOST");
+//                outputDomainID = flInputData.getDomainID();
+//            } else {
+//                flInputData.setRole("GUEST");
+//            }
+//            flInputDataList.add(flInputData);
+//        }
+//        fate.setInputDataList(flInputDataList);
+//
+//        List<OutputData> outputDataList = new ArrayList<>();
+//        OutputData outputData = new OutputData();
+//
+//        outputData.setTableName("FL");
+//        outputData.setOutputSymbol("FL");
+//        outputData.setDomainID(outputDomainID);
+//        outputDataList.add(outputData);
+//        fate.setOutputDataList(outputDataList);
+//        fate.setParties(new ArrayList<>(parties));
+//        for (PhysicalPlan plan: parents) {
+//            dag.addEdge(plan, fate);
+//        }
+//
+//    }
 
 
     private void buildProject(DereferenceExpression expression, String alias) {

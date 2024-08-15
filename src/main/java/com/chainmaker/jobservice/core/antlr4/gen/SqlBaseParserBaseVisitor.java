@@ -1,4 +1,4 @@
-// Generated from D:/chainmaker-job-service/src/main/java/com/chainmaker/jobservice/core/antlr4\SqlBaseParser.g4 by ANTLR 4.10.1
+// Generated from D:/chainweaver/mira-job-service/src/main/java/com/chainmaker/jobservice/core/antlr4/SqlBaseParser.g4 by ANTLR 4.13.1
 package com.chainmaker.jobservice.core.antlr4.gen;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
@@ -10,6 +10,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  * @param <T> The return type of the visit operation. Use {@link Void} for
  * operations with no return type.
  */
+@SuppressWarnings("CheckReturnValue")
 public class SqlBaseParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements SqlBaseParserVisitor<T> {
 	/**
 	 * {@inheritDoc}
@@ -1487,48 +1488,6 @@ public class SqlBaseParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> imp
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitFlLabelSeq(SqlBaseParser.FlLabelSeqContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitFlLabel(SqlBaseParser.FlLabelContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitFlPSISeq(SqlBaseParser.FlPSISeqContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitFlPSI(SqlBaseParser.FlPSIContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitFlFeatSeq(SqlBaseParser.FlFeatSeqContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitFlFeat(SqlBaseParser.FlFeatContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
 	@Override public T visitFlModelSeq(SqlBaseParser.FlModelSeqContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
@@ -1537,20 +1496,6 @@ public class SqlBaseParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> imp
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public T visitFlModel(SqlBaseParser.FlModelContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitFlEvalSeq(SqlBaseParser.FlEvalSeqContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitFlEval(SqlBaseParser.FlEvalContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
