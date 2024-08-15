@@ -932,8 +932,17 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         Module module = new Module();
         module.setModuleName(TaskType.FL.name());
         List<ModuleParam> moduleParams = new ArrayList<ModuleParam>();
-        if (!expression.getExprs().isEmpty()) {
-            moduleParams.add(new ModuleParam("model", parseFLParams(expression.getExprs()).toJSONString()));
+        List<List<FlExpression>> exprs = expression.getExprs();
+        for(List<FlExpression> flExpressions : exprs){
+            String key = null;
+            for(FlExpression expr: flExpressions){
+                String left =expr.getLeft().toString();
+                if(left.equalsIgnoreCase("model_name")){
+                    key = expr.getRight().toString();
+                }
+
+            }
+            moduleParams.add(new ModuleParam(key, parseFLParams(flExpressions).toJSONString()));
         }
 
         module.setParamList(moduleParams);
@@ -942,7 +951,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         // input
         Input input = new Input();
         List<InputDetail> inputDataList = new ArrayList<>();
-        List<List<FlExpression>> exprs = expression.getExprs();
 
 
 //        for (int i = 0; i < labels.size(); i++) {
@@ -981,20 +989,20 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         return task;
     }
 
-    public JSONObject parseFLParams(List<List<FlExpression>> params) {
+    public JSONObject parseFLParams(List<FlExpression> params) {
         JSONObject object = new JSONObject();
-//
-//        for (int i = 0; i < params.size(); i++) {
-//            FlExpression expression = params.get(i);
-//            String key = expression.getLeft().toString();
-//            String value = expression.getRight().toString();
-//            if (!key.contains(".")) {
+
+        for (int i = 0; i < params.size(); i++) {
+            FlExpression expression = params.get(i);
+            String key = expression.getLeft().toString();
+            String value = expression.getRight().toString();
+            if (!key.contains(".")) {
+                object.put(key, value);
+            } else {
 //                object.put(key, value);
-//            } else {
-////                object.put(key, value);
-//                parseSubParams(key, value, object);
-//            }
-//        }
+                parseSubParams(key, value, object);
+            }
+        }
         return object;
     }
 
