@@ -22,6 +22,7 @@ import com.chainmaker.jobservice.core.parser.plans.*;
 import com.chainmaker.jobservice.core.parser.tree.*;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.plan.volcano.RelSubset;
@@ -36,6 +37,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -938,6 +940,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         List<List<FlExpression>> exprs = expression.getExprs();
         Set<String> assets = new HashSet<>();
         String labelAsset = null;
+        Map<String, AtomicInteger> stageGroup = Maps.newHashMap();
         for(List<FlExpression> flExpressions : exprs){
             String key = null;
             for(FlExpression expr: flExpressions){
@@ -958,10 +961,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             if(childPlan instanceof XPCJoin){
                XPCJoin joinNode = (XPCJoin) childPlan;
                String joinCondition= joinNode.getCondition().toString();
-               Identifier ids = new Identifier("ids2");
+               Identifier ids = new Identifier("ids");
                Identifier vals = new Identifier("[" + joinCondition.replace("==", ",") + "]");
                flExpressions.add(new FlExpression(ids, vals, FlExpression.Operator.EQUAL));
             }
+            stageGroup.putIfAbsent(key, new AtomicInteger(0));
+            key = key + "_" + stageGroup.get(key).getAndIncrement();
             moduleParams.add(new ModuleParam(key, parseFLParams(flExpressions).toJSONString()));
         }
 
@@ -973,11 +978,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         List<InputDetail> inputDataList = new ArrayList<>();
         for (String asset: assets){
             InputDetail inputData = new InputDetail();
-            String dataName = CalciteUtil.getTableName(asset);
-            inputData.setDataName(dataName);
-            inputData.setDataId(dataName);
-            inputData.setDomainId(metadata.getTableOrgId(dataName));
-            inputData.setDomainName(metadata.getTable(dataName).getOrgName());
+            String assetName = CalciteUtil.getTableName(asset);
+            inputData.setAssetName(assetName);
+            inputData.setDataName(assetName);
+            inputData.setDataId(assetName);
+            inputData.setDomainId(metadata.getTableOrgId(assetName));
+            inputData.setDomainName(metadata.getTable(assetName).getOrgName());
             if(tasks.isEmpty()) {
                 inputData.setTaskSrc("");
             }else {
@@ -985,7 +991,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             }
             if(labelAsset != null) {
                 String guestAsset = CalciteUtil.getTableName(labelAsset);
-                if (dataName.equals(guestAsset)) {
+                if (assetName.equals(guestAsset)) {
                     inputData.setRole("guest");
                 } else {
                     inputData.setRole("host");

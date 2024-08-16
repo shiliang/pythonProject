@@ -80,17 +80,20 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         List<NamedExpression> namedExpressionList = node.getProjectList().getValues();
 
         for (int i=0; i<namedExpressionList.size(); i++) {
-            if (namedExpressionList.get(i).getExpression() instanceof DereferenceExpression) {
-                buildProject((DereferenceExpression) namedExpressionList.get(i).getExpression(), namedExpressionList.get(i).getIdentifier().toString());
-            } else if(namedExpressionList.get(i).getExpression() instanceof ArithmeticBinaryExpression) {
-                buildMpc((ArithmeticBinaryExpression) namedExpressionList.get(i).getExpression(), null, namedExpressionList.get(i).getIdentifier().toString());
-            } else if (namedExpressionList.get(i).getExpression() instanceof FunctionCallExpression) {
+            NamedExpression namedExpression = namedExpressionList.get(i);
+            Expression expr = namedExpression.getExpression();
+            String alias = namedExpression.getIdentifier() == null? null: namedExpression.getIdentifier().toString();
+            if (expr instanceof DereferenceExpression) {
+                buildProject((DereferenceExpression) expr, alias);
+            } else if(expr instanceof ArithmeticBinaryExpression) {
+                buildMpc((ArithmeticBinaryExpression) expr, null, alias);
+            } else if (expr instanceof FunctionCallExpression) {
                 if (modelType == 0 && isStream == 0){
-                    List<Expression> expressions = ((FunctionCallExpression) namedExpressionList.get(i).getExpression()).getExpressions();
-                    String function = ((FunctionCallExpression) namedExpressionList.get(i).getExpression()).getFunction();
+                    List<Expression> expressions = ((FunctionCallExpression) expr).getExpressions();
+                    String function = ((FunctionCallExpression) expr).getFunction();
                     for (Expression expression: expressions) {
                         if (expression instanceof ArithmeticBinaryExpression) {
-                            buildMpc((ArithmeticBinaryExpression) expression, function, namedExpressionList.get(i).getIdentifier().toString());
+                            buildMpc((ArithmeticBinaryExpression) expression, function, alias);
                         } else if (expression instanceof Identifier) {
                             System.out.println("*");
                         } else {
@@ -98,11 +101,11 @@ public class PlanOptimizer extends LogicalPlanVisitor {
                         }
                     }
                 } else if (modelType == 2) {
-                    buildTee((FunctionCallExpression) namedExpressionList.get(i).getExpression(), namedExpressionList.get(i).getIdentifier().toString());
+                    buildTee((FunctionCallExpression) expr, alias);
                 } else {
                     throw new ParserException("todo");
                 }
-            } else if (namedExpressionList.get(i).getExpression() instanceof Identifier) {
+            } else if (expr instanceof Identifier) {
                 System.out.println("*");
             } else {
                 throw new ParserException("暂不支持");

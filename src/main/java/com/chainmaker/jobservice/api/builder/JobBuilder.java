@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.api.builder;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.Constant;
@@ -32,9 +33,7 @@ import java.util.stream.Collectors;
  */
 
 public class JobBuilder extends PhysicalPlanVisitor {
-//    private enum JobType {
-//        FQ, FQS, FL, FLS, CC, CCS, TEE, MPC
-//    }
+
     private enum TaskType {
         QUERY, PSI, MPC, TEE, FL
     }
@@ -73,25 +72,9 @@ public class JobBuilder extends PhysicalPlanVisitor {
     }
 
     public void build() {
-//        String jobStatus = "WAITING";
         Integer jobStatus = 10;
         String taskDAG = "taskDAG";
-        Integer jobType = null;
-//        if (modelType == 0 && isStream == 0) {
-//            jobType = JobType.FQ.name();
-//        } else if (modelType == 0 && isStream == 1) {
-//            jobType = JobType.CCS.name();
-//        } else if (modelType == 1 && isStream == 0) {
-//            jobType = JobType.FL.name();
-//        } else if (modelType == 1 && isStream == 1) {
-//            jobType = JobType.FLS.name();
-//        } else if (modelType == 2 && isStream == 0) {
-//            jobType = JobType.CC.name();
-//        } else if (modelType == 2 && isStream == 1) {
-//            jobType = JobType.CCS.name();
-//        } else {
-//            throw new ParserException("暂不支持的任务类型");
-//        }
+        Integer jobType;
         if (this.sql.contains("FL")) {
             jobType = JobType.FL.getValue();
         }else if (this.sql.contains("TEE")) {
@@ -349,9 +332,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
         List<ModuleParam> moduleParams = new ArrayList<>();
         moduleParams.add(new ModuleParam("expression", JSONObject.toJSONString(plan.getExpression())));
         moduleParams.add(new ModuleParam("aggregate", plan.getAggregateType()));
-//        JSONObject param = new JSONObject();
-//        param.put("expression", plan.getExpression());
-//        param.put("aggregate", plan.getAggregateType());
+
         module.setParamList(moduleParams);
         task.setModule(module);
 
@@ -540,25 +521,20 @@ public class JobBuilder extends PhysicalPlanVisitor {
         }
         input.setInputDataDetailList(taskInputDataList);
         input.setTaskId(taskName);
-//        input.setSrcTaskId(srcTaskName);
-//        input.setSrcTaskId(srcTaskName);
         task.setInput(input);
-//        Output output = new Output();
         List<Output> taskOutputDataList = new ArrayList<>();
         for (int i=0; i<plan.getOutputDataList().size(); i++) {
             OutputData outputData = plan.getOutputDataList().get(i);
             Output taskOutputData = new Output();
-            taskOutputData.setDataName(outputData.getTableName().toLowerCase() + "-" + plan.getId());
+            if(StrUtil.isNotEmpty(outputData.getTableName())) {
+                taskOutputData.setDataName(outputData.getTableName().toLowerCase() + "-" + plan.getId());
+            }
             taskOutputData.setDomainId(outputData.getDomainID());
-//            taskOutputData.setType(outputData.getOutputSymbol());
-//            taskOutputData.setColumnName(outputData.getDomainID());
-//            taskOutputData.setLength(outputData.);
             if (plan.isFinalResult()) {
                 taskOutputData.setFinalResult("Y");
             }
             taskOutputDataList.add(taskOutputData);
         }
-//        output.setData(taskOutputDataList);
         task.setOutputList(taskOutputDataList);
 
         List<Party> parties = new ArrayList<>();
@@ -576,10 +552,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
     private ServiceVo teeTemplateToService(String templateType, int id) {
         ServiceVo serviceTee = ServiceVo.templateToServiceVo(String.valueOf(templateId), templateType);
         String serviceVersion = "1.0.0";
-        String serviceStatus = "WAITING";
         serviceTee.setServiceId(String.valueOf(id));
         serviceTee.setVersion(serviceVersion);
-//        serviceTee.setStatus(serviceStatus);
         serviceTee.setStatus(Constant.SERVICE_STATUS);
         serviceTee.setCreateTime(createTime);
         serviceTee.setUpdateTime(createTime);

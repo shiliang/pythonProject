@@ -86,10 +86,10 @@ public class TestMPCPql {
         for(String pql: pqls){
             SqlVo sqlVo = JSONObject.parseObject(req, SqlVo.class, Feature.OrderedField);
             sqlVo.setSqltext(pql);
-            log.info(JSON.toJSONString(sqlVo, SerializerFeature.PrettyFormat));
+            log.info("request: " + JSON.toJSONString(sqlVo, SerializerFeature.PrettyFormat));
             try {
                 Job job = jobParser.jobPreview(sqlVo);
-                log.info(JSON.toJSONString(job, SerializerFeature.PrettyFormat,SerializerFeature.DisableCircularReferenceDetect));
+                log.info("result: " + JSON.toJSONString(job, SerializerFeature.PrettyFormat,SerializerFeature.DisableCircularReferenceDetect));
             }catch (Exception e){
                 log.error(e.getMessage(), e);
             }
