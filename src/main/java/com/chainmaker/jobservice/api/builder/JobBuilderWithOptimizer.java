@@ -970,6 +970,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                Identifier vals = new Identifier("[" + joinCondition.replace("==", ",") + "]");
                flExpressions.add(new FlExpression(ids, vals, FlExpression.Operator.EQUAL));
             }
+            flExpressions.add(new FlExpression(new Identifier("params"), new Identifier("{}"), FlExpression.Operator.EQUAL));
             stageGroup.putIfAbsent(key, new AtomicInteger(0));
             key = key + "_" + stageGroup.get(key).getAndIncrement();
             moduleParams.add(new ModuleParam(key, parseFLParams(flExpressions).toJSONString()));
