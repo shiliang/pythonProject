@@ -56,6 +56,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
     private SqlVo sqlVo;
 
+    private List<Pair> setClausePair;
+
     public JobBuilder(Integer modelType, Integer isStream, DAG<PhysicalPlan> dag, OrgInfo orgInfo, String sql) {
         this.modelType = modelType;
         this.isStream = isStream;
@@ -68,8 +70,16 @@ public class JobBuilder extends PhysicalPlanVisitor {
     }
 
     public JobBuilder(SqlVo sqlVo, DAG<PhysicalPlan> dag) {
-        this(sqlVo.getModelType(), sqlVo.getIsStream(), dag, sqlVo.getOrgInfo(), sqlVo.getExecuteSql());
         this.sqlVo = sqlVo;
+        this.setClausePair = SetClauseParser.clauses2Pairs(sqlVo.getSetClauses());
+        this.modelType = sqlVo.getModelType();
+        this.isStream = sqlVo.getIsStream();
+        this.dag = dag;
+        this.createTime = String.valueOf(System.currentTimeMillis());
+        this.jobID = UUID.randomUUID().toString().replace("-", "").toLowerCase();
+        this.orgID = sqlVo.getOrgInfo().getOrgId();
+        this.orgName = sqlVo.getOrgInfo().getOrgName();
+        this.sql = sqlVo.getExecuteSql();
     }
 
     public Job getJob() {
@@ -152,6 +162,14 @@ public class JobBuilder extends PhysicalPlanVisitor {
                     dataSourse.put("key", inputData.getColumn());
                     if (plan.getProject() != null ) {
                         dataSourse.put("column", plan.getProject().get(inputData.getAssetName()).toString());
+                    }
+                    String condition = plan.getCondition().toString();
+                    for(Pair pair: setClausePair){
+                        String key = pair.getKey();
+                        String value = pair.getValue();
+                        if(value.equalsIgnoreCase("?") && condition.contains(key)){
+                            dataSourse.put("variable", key);
+                        }
                     }
                     pirParams.add(dataSourse);
                 }
@@ -522,8 +540,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
             if (inputData.getColumn() != null) {
                 inputParam.put("field", inputData.getColumn().toLowerCase());
             }
-            List<Pair> pairs = SetClauseParser.clauses2Pairs(sqlVo.getSetClauses());
-            for(Pair pair: pairs){
+            for(Pair pair: setClausePair){
                 String key = pair.getKey();
                 if(key.contains("noise")){
                     String table = key.split("\\.")[0];
@@ -532,9 +549,6 @@ public class JobBuilder extends PhysicalPlanVisitor {
                         inputParam.put("noise", pair.getValue());
                     }
 
-                }
-                if(pair.getValue().equals("?")){
-                    inputParam.put("variable", pair.getKey());
                 }
             }
 

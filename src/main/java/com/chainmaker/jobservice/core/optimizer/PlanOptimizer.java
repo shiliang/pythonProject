@@ -208,6 +208,7 @@ public class PlanOptimizer extends LogicalPlanVisitor {
             dealPir(((ComparisonExpression) node.getCondition()).getLeft(), inputDataList, outputDataList, parties);
             pirFilter.setInputDataList(inputDataList);
             pirFilter.setOutputDataList(outputDataList);
+            pirFilter.setCondition(node.getCondition());
             pirFilter.setParties(new ArrayList<>(parties));
 //            }
 

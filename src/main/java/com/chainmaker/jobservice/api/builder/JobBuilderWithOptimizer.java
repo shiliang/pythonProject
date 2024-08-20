@@ -939,7 +939,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         List<ModuleParam> moduleParams = new ArrayList<ModuleParam>();
         List<List<FlExpression>> exprs = expression.getExprs();
         Set<String> assets = new HashSet<>();
-        String labelAsset = null;
+        String labelQualifiedField = null;
+        String guestAsset = null;
         Map<String, AtomicInteger> stageGroup = Maps.newHashMap();
         for(List<FlExpression> flExpressions : exprs){
             String key = null;
@@ -954,7 +955,11 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                     assets.addAll(eleAssets);
                 }
                 if(left.equalsIgnoreCase("label")){
-                    labelAsset = expr.getRight().toString();
+                    labelQualifiedField = expr.getRight().toString();
+                }
+
+                if(left.equalsIgnoreCase("model_guest")){
+                    guestAsset = expr.getRight().toString();
                 }
             }
             XPCPlan childPlan = node.getChildren().get(0);
@@ -989,9 +994,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             }else {
                 inputData.setTaskSrc(tasks.get(0).getTaskId());
             }
-            if(labelAsset != null) {
-                String guestAsset = CalciteUtil.getTableName(labelAsset);
-                if (assetName.equals(guestAsset)) {
+            if(labelQualifiedField != null) {
+                String labelAsset = CalciteUtil.getTableName(labelQualifiedField);
+                if (assetName.equalsIgnoreCase(labelAsset) || assetName.equalsIgnoreCase(guestAsset)) {
                     inputData.setRole("guest");
                 } else {
                     inputData.setRole("host");

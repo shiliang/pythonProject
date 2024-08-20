@@ -2,6 +2,9 @@ package com.chainmaker.jobservice.core.optimizer.plans;
 
 import com.chainmaker.jobservice.core.optimizer.model.InputData;
 import com.chainmaker.jobservice.core.optimizer.model.OutputData;
+import com.chainmaker.jobservice.core.parser.tree.Expression;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.HashMap;
 import java.util.List;
@@ -12,91 +15,25 @@ import java.util.List;
  * @description:
  * @version:
  */
+@EqualsAndHashCode(callSuper = true)
+@Data
 public class PirFilter extends PhysicalPlan {
+
     private Integer id;
-    private String condition;
+
+    private Expression condition;
+
     private HashMap<String, List<String>> project;
+
     private String nodeName = "filter";
+
     private List<InputData> inputDataList;
+
     private List<OutputData> outputDataList;
+
     private boolean finalResult;
+
     private List<String> parties;
-
-    public HashMap<String, List<String>> getProject() {
-        return project;
-    }
-
-    public void setProject(HashMap<String, List<String>> project) {
-        this.project = project;
-    }
-
-    @Override
-    public Integer getId() {
-        return id;
-    }
-
-    @Override
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public String getCondition() {
-        return condition;
-    }
-
-    public void setCondition(String condition) {
-        this.condition = condition;
-    }
-
-    @Override
-    public String getNodeName() {
-        return nodeName;
-    }
-
-    @Override
-    public void setNodeName(String nodeName) {
-        this.nodeName = nodeName;
-    }
-
-    @Override
-    public List<InputData> getInputDataList() {
-        return inputDataList;
-    }
-
-    @Override
-    public void setInputDataList(List<InputData> inputDataList) {
-        this.inputDataList = inputDataList;
-    }
-
-    @Override
-    public List<OutputData> getOutputDataList() {
-        return outputDataList;
-    }
-
-    @Override
-    public void setOutputDataList(List<OutputData> outputDataList) {
-        this.outputDataList = outputDataList;
-    }
-
-    @Override
-    public boolean isFinalResult() {
-        return finalResult;
-    }
-
-    @Override
-    public void setFinalResult(boolean finalResult) {
-        this.finalResult = finalResult;
-    }
-
-    @Override
-    public List<String> getParties() {
-        return parties;
-    }
-
-    @Override
-    public void setParties(List<String> parties) {
-        this.parties = parties;
-    }
 
     @Override
     public String toString() {
