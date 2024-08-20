@@ -54,6 +54,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
     private Integer templateId = 1;
     private String sql;
 
+    private SqlVo sqlVo;
+
     public JobBuilder(Integer modelType, Integer isStream, DAG<PhysicalPlan> dag, OrgInfo orgInfo, String sql) {
         this.modelType = modelType;
         this.isStream = isStream;
@@ -63,6 +65,11 @@ public class JobBuilder extends PhysicalPlanVisitor {
         this.orgID = orgInfo.getOrgId();
         this.orgName = orgInfo.getOrgName();
         this.sql = sql;
+    }
+
+    public JobBuilder(SqlVo sqlVo, DAG<PhysicalPlan> dag) {
+        this(sqlVo.getModelType(), sqlVo.getIsStream(), dag, sqlVo.getOrgInfo(), sqlVo.getExecuteSql());
+        this.sqlVo = sqlVo;
     }
 
     public Job getJob() {
@@ -515,6 +522,22 @@ public class JobBuilder extends PhysicalPlanVisitor {
             if (inputData.getColumn() != null) {
                 inputParam.put("field", inputData.getColumn().toLowerCase());
             }
+            List<Pair> pairs = SetClauseParser.clauses2Pairs(sqlVo.getSetClauses());
+            for(Pair pair: pairs){
+                String key = pair.getKey();
+                if(key.contains("noise")){
+                    String table = key.split("\\.")[0];
+                    String field = key.split("\\.")[1];
+                    if(table.equals(inputData.getTableName().toLowerCase()) && field.equals(inputData.getColumn().toLowerCase())){
+                        inputParam.put("noise", pair.getValue());
+                    }
+
+                }
+                if(pair.getValue().equals("?")){
+                    inputParam.put("variable", pair.getKey());
+                }
+            }
+
             taskInputData.setParams(inputParam);
             taskInputData.setDomainId(inputData.getDomainID());
             taskInputDataList.add(taskInputData);

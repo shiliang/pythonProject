@@ -108,7 +108,7 @@ public class JobParserServiceImpl implements JobParserService {
         String executeSql = sqlVo.getExecuteSql();
         SqlParser sqlParser = new SqlParser(executeSql, sqlVo.getIsStream(), sqlVo.getModelType(), sqlVo.getAssetInfoList(), sqlVo.getModelParams());
         if (sqlVo.getIsStream() == 1) {
-            JobBuilder jobBuilder = new JobBuilder(sqlVo.getModelType(), sqlVo.getIsStream(), sqlParser.parser(), sqlVo.getOrgInfo(), sqlParser.getSql());
+            JobBuilder jobBuilder = new JobBuilder(sqlVo, sqlParser.parser());
             jobBuilder.build();
             JobMissionDetail jobMissionDetail = new JobMissionDetail();
             jobMissionDetail.setJob(jobBuilder.getJob());

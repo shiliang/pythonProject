@@ -204,12 +204,12 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         List<InputData> inputDataList = new ArrayList<>();
         List<OutputData> outputDataList = new ArrayList<>();
         if (node.getCondition() instanceof ComparisonExpression) {
-            if (((ComparisonExpression) node.getCondition()).getRight().toString().equals("?")) {
-                dealPir(((ComparisonExpression) node.getCondition()).getLeft(), inputDataList, outputDataList, parties);
-                pirFilter.setInputDataList(inputDataList);
-                pirFilter.setOutputDataList(outputDataList);
-                pirFilter.setParties(new ArrayList<>(parties));
-            }
+//            if (((ComparisonExpression) node.getCondition()).getRight().toString().equals("?")) {
+            dealPir(((ComparisonExpression) node.getCondition()).getLeft(), inputDataList, outputDataList, parties);
+            pirFilter.setInputDataList(inputDataList);
+            pirFilter.setOutputDataList(outputDataList);
+            pirFilter.setParties(new ArrayList<>(parties));
+//            }
 
         }
         for (InputData inputData : pirFilter.getInputDataList()) {
