@@ -973,7 +973,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             flExpressions.add(new FlExpression(new Identifier("params"), new Identifier("{}"), FlExpression.Operator.EQUAL));
             stageGroup.putIfAbsent(key, new AtomicInteger(0));
             key = key + "_" + stageGroup.get(key).getAndIncrement();
-            moduleParams.add(new ModuleParam(key, parseFLParams(flExpressions).toJSONString()));
+            moduleParams.add(new ModuleParam(key, parseFLParams(flExpressions)));
         }
 
         module.setParamList(moduleParams);
@@ -1921,7 +1921,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 //        JSONObject moduleparams = new JSONObject(true);
         List<ModuleParam> moduleParams = new ArrayList<ModuleParam>();
 
-        moduleParams.add(new ModuleParam("operator", cond.getOperator().toString()));
+        moduleParams.add(new ModuleParam("operator", cond.getOperator()));
         RexLiteral constant;
         RexInputRef field;
         if (cond.getOperands().get(0) instanceof RexLiteral) {
@@ -2023,8 +2023,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         String moduleName = "";
 //        JSONObject moduleparams = new JSONObject(true);
         List<ModuleParam> moduleParams = new ArrayList<ModuleParam>();
-        moduleParams.add(new ModuleParam("joinType", phyPlan.getJoinType().toString()));
-        moduleParams.add(new ModuleParam("operator", cond.getOperator().toString()));
+        moduleParams.add(new ModuleParam("joinType", phyPlan.getJoinType()));
+        moduleParams.add(new ModuleParam("operator", cond.getOperator()));
         module.setParamList(moduleParams);
 
         if (hint != null) {

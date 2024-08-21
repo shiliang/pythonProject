@@ -1,8 +1,11 @@
 package com.chainmaker.jobservice.api.builder;
 
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializeConfig;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.chainmaker.jobservice.api.Constant;
 import com.chainmaker.jobservice.api.enums.JobType;
 import com.chainmaker.jobservice.api.model.*;
@@ -18,6 +21,8 @@ import com.chainmaker.jobservice.core.optimizer.model.OutputData;
 import com.chainmaker.jobservice.core.optimizer.nodes.DAG;
 import com.chainmaker.jobservice.core.optimizer.nodes.Node;
 import com.chainmaker.jobservice.core.optimizer.plans.*;
+import com.google.common.collect.Lists;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 
@@ -101,6 +106,33 @@ public class JobBuilder extends PhysicalPlanVisitor {
         }
         for (Node<PhysicalPlan> next : dag.getNodes()) {
             next.getObject().accept(this);
+        }
+
+
+        if(!tasks.isEmpty()){
+            Value value1 = new Value("inputParams", StringEscapeUtils.unescapeJson(JSON.toJSONString(tasks.get(0).getInput())));
+            List<String> idParams = services.stream()
+                    .map(x -> x.getExposeEndpointList().get(0).getValueList().get(0).getValue())
+                    .map(x -> {
+                        JSONObject obj = JSONObject.parseObject(x.toString());
+                        obj.remove("asset_en_name");
+                        obj.put("field", obj.get("key"));
+                        obj.remove("key");
+                        return obj.toJSONString();
+                    })
+                    .collect(Collectors.toList());
+            Value value2 = new Value("idParams", StringEscapeUtils.unescapeJson(JSON.toJSONString(idParams)));
+            Value value3 = new Value("mpcParams", StringEscapeUtils.unescapeJson(JSON.toJSONString(tasks.get(0).getModule())));
+            List<Value> valueLists = Lists.newArrayList(value1, value2, value3);
+            String serviceStr = JSON.toJSONString(services);
+            String newServiceStr = serviceStr.replace("PirClient", "MpcClient").replace("PirServer", "MpcServer");
+            services = JSONObject.parseArray(newServiceStr, Service.class);
+            for(Service service: services){
+                service.setServiceName(service.getServiceClass());
+                service.setServiceLabel(service.getServiceClass());
+                service.getExposeEndpointList().get(0).setValueList(valueLists);
+            }
+            tasks.clear();
         }
 
         job.setJobId(jobID);
@@ -355,7 +387,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
         Module module = new Module();
         module.setModuleName(moduleName);
         List<ModuleParam> moduleParams = new ArrayList<>();
-        moduleParams.add(new ModuleParam("expression", JSONObject.toJSONString(plan.getExpression())));
+        moduleParams.add(new ModuleParam("expression", plan.getExpression()));
         moduleParams.add(new ModuleParam("aggregate", plan.getAggregateType()));
 
         module.setParamList(moduleParams);
@@ -468,10 +500,10 @@ public class JobBuilder extends PhysicalPlanVisitor {
         Module module = new Module();
         module.setModuleName(moduleName);
         List<ModuleParam> moduleParams = new ArrayList<>();
-        moduleParams.add(new ModuleParam("FL", plan.getFateModel().getFl().toJSONString()));
-        moduleParams.add(new ModuleParam("EVAL", plan.getFateModel().getEval().toJSONString()));
-        moduleParams.add(new ModuleParam("MODEL", plan.getFateModel().getEval().toJSONString()));
-        moduleParams.add(new ModuleParam("INTERSECTION", plan.getFateModel().getIntersection().toJSONString()));
+        moduleParams.add(new ModuleParam("FL", plan.getFateModel().getFl()));
+        moduleParams.add(new ModuleParam("EVAL", plan.getFateModel().getEval()));
+        moduleParams.add(new ModuleParam("MODEL", plan.getFateModel().getEval()));
+        moduleParams.add(new ModuleParam("INTERSECTION", plan.getFateModel().getIntersection()));
 //        param.put("FL", plan.getFateModel().getFl());
 //        param.put("EVAL", plan.getFateModel().getEval());
 //        param.put("MODEL", plan.getFateModel().getModel());
@@ -546,7 +578,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
                     String table = key.split("\\.")[0];
                     String field = key.split("\\.")[1];
                     if(table.equals(inputData.getTableName().toLowerCase()) && field.equals(inputData.getColumn().toLowerCase())){
-                        inputParam.put("noise", pair.getValue());
+                        inputParam.put("noise", JSON.parseObject(pair.getValue()));
                     }
 
                 }

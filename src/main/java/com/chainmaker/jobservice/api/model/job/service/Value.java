@@ -1,5 +1,11 @@
 package com.chainmaker.jobservice.api.model.job.service;
 
+import com.alibaba.fastjson.annotation.JSONField;
+import com.chainmaker.jobservice.api.serdeser.Obj2StrSerializer;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 /**
  * @author gaokang
  * @date 2022-10-10 20:00
@@ -7,23 +13,14 @@ package com.chainmaker.jobservice.api.model.job.service;
  * @version: 1.0
  */
 
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Value {
     private String key;
-    private String value;
 
-    public String getKey() {
-        return key;
-    }
+    @JSONField(serializeUsing = Obj2StrSerializer.class)
+    private Object value;
 
-    public void setKey(String key) {
-        this.key = key;
-    }
 
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
-    }
 }
