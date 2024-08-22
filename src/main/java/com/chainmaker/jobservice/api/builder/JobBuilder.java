@@ -42,8 +42,6 @@ public class JobBuilder extends PhysicalPlanVisitor {
     }
     private final String orgID;
     private final String orgName;
-
-    private final Integer modelType;
     private final Integer isStream;
     private final DAG<PhysicalPlan> dag;
     private final String createTime, jobID;
@@ -61,21 +59,10 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
     private List<Pair> setClausePair;
 
-    public JobBuilder(Integer modelType, Integer isStream, DAG<PhysicalPlan> dag, OrgInfo orgInfo, String sql) {
-        this.modelType = modelType;
-        this.isStream = isStream;
-        this.dag = dag;
-        this.createTime = String.valueOf(System.currentTimeMillis());
-        this.jobID = UUID.randomUUID().toString().replace("-", "").toLowerCase();
-        this.orgID = orgInfo.getOrgId();
-        this.orgName = orgInfo.getOrgName();
-        this.sql = sql;
-    }
 
     public JobBuilder(SqlVo sqlVo, DAG<PhysicalPlan> dag) {
         this.sqlVo = sqlVo;
         this.setClausePair = SetClauseParser.clauses2Pairs(sqlVo.getSetClauses());
-        this.modelType = sqlVo.getModelType();
         this.isStream = sqlVo.getIsStream();
         this.dag = dag;
         this.createTime = String.valueOf(System.currentTimeMillis());
@@ -152,7 +139,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
     @Override
     public void visit(Project plan) {
-        if (isStream != 1) {
+        if (sqlVo.getIsStream() != 1) {
             String moduleName = TaskType.QUERY.name();
             Task task = basePlanToTask(plan);
             Module module = new Module();
@@ -168,7 +155,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
     }
     @Override
     public void visit(PirFilter plan) {
-        if (modelType == 0) {
+        if (sqlVo.getModelType() == 0) {
             templateId = 2;
             String defaultOdgDID = plan.getInputDataList().get(0).getDomainID();
             String defaultOrgName = plan.getInputDataList().get(0).getDomainName();
@@ -396,7 +383,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
     }
     @Override
     public void visit(TeeMpc plan) {
-        if (isStream == 0) {
+        if (sqlVo.getIsStream() == 0) {
             String moduleName = TaskType.TEE.name();
             Task task = basePlanToTask(plan);
 

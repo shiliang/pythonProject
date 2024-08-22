@@ -5,6 +5,7 @@ import com.chainmaker.jobservice.api.model.AssetInfo;
 import com.chainmaker.jobservice.api.model.DataInfo;
 import com.chainmaker.jobservice.api.model.SaveTableColumnItem;
 import com.chainmaker.jobservice.api.model.vo.ModelParamsVo;
+import com.chainmaker.jobservice.api.model.vo.SqlVo;
 import com.chainmaker.jobservice.core.analyzer.catalog.MissionDetailVO;
 import com.chainmaker.jobservice.core.calcite.adapter.LogicPlanAdapter;
 import com.chainmaker.jobservice.core.calcite.optimizer.OptimizerPlanner;
@@ -41,9 +42,10 @@ import java.util.List;
 @Data
 @Slf4j
 public class SqlParser {
-    private final String sql;
-    private final Integer isStream;
-    private final Integer modelType;
+
+    private  SqlVo sqlVo;
+
+    private  String sql;
 
     private List<AssetInfo> assetInfoList;
 
@@ -60,18 +62,16 @@ public class SqlParser {
     private static final String TEE_PARTY_KEY = "TEE-PARTY";
     private static final String TEE_PARTY = "69vkhy6org.cm-5w2wtw3afr";
 
-    public SqlParser(String sql, Integer isStream, Integer modelType,
-                     List<AssetInfo> assetInfoList,
-                     List<ModelParamsVo> modelParamsVos) {
-        this.sql = sql;
-        this.isStream = isStream;
-        this.modelType = modelType;
-        this.assetInfoList = assetInfoList;
-        if(modelType == 2) {
-            this.modelParamsVos = modelParamsVos;
-        }
-    }
 
+    public SqlParser(SqlVo sqlVo){
+        this.sqlVo = sqlVo;
+        this.sql = sqlVo.getExecuteSql();
+        this.assetInfoList = sqlVo.getAssetInfoList();
+        if(sqlVo.getModelType() == 2) {
+            this.modelParamsVos = sqlVo.getModelParams();
+        }
+
+    }
 
     public HashMap<String, String> buildMetaData(List<AssetInfo> dataCatalogInfoList){
         HashMap<String, String> tableOwnerMap = new HashMap<>();
@@ -144,7 +144,7 @@ public class SqlParser {
             metadata.put(assetInfo.getAssetEnName(), tableInfo);
         }
 
-        PlanOptimizer optimizer = new PlanOptimizer(this.modelType, this.isStream, tableOwnerMap, metadata);
+        PlanOptimizer optimizer = new PlanOptimizer(this.sqlVo, tableOwnerMap, metadata);
         optimizer.visit(logicalPlan);
         DAG<PhysicalPlan> planDag = optimizer.getDag();
         return planDag;
@@ -169,7 +169,7 @@ public class SqlParser {
         //检查sql是否可执行？
         // 之前的sqlparser约用时1500ms
         // 接入Calcite    3000ms
-        LogicPlanAdapter planAdapter = new LogicPlanAdapter(this.sql.toUpperCase(), logicalPlan, metadata, modelType);
+        LogicPlanAdapter planAdapter = new LogicPlanAdapter(this.sql.toUpperCase(), logicalPlan, metadata, sqlVo.getModelType());
         planAdapter.CastToRelNode(); //核心步骤，将LogicalPlan转换为Calcite的RelNode
         // 查询优化部分   300ms
         RelNode root = planAdapter.getRoot();

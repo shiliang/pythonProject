@@ -2,6 +2,7 @@ package com.chainmaker.jobservice.core.optimizer;
 
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
+import com.chainmaker.jobservice.api.model.vo.SqlVo;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
 import com.chainmaker.jobservice.core.optimizer.model.InputData;
@@ -24,7 +25,9 @@ import java.util.*;
  */
 
 public class PlanOptimizer extends LogicalPlanVisitor {
-    private Integer modelType, isStream;
+
+    private SqlVo sqlVo;
+
     public DAG<PhysicalPlan> dag = new DAG<>();
     private HashMap<String, String> tableOwnerMap;
     private HashMap<String, PhysicalPlan> tableLastMap = new HashMap<>();
@@ -33,9 +36,8 @@ public class PlanOptimizer extends LogicalPlanVisitor {
 
     private HashMap<String, List<String>> kvMap = new HashMap<>();
 
-    public PlanOptimizer(Integer modelType, Integer isStream, HashMap<String, String> tableOwnerMap, HashMap<String, TableInfo> metaData) {
-        this.modelType = modelType;
-        this.isStream = isStream;
+    public PlanOptimizer(SqlVo sqlVo,  HashMap<String, String> tableOwnerMap, HashMap<String, TableInfo> metaData) {
+        this.sqlVo = sqlVo;
         this.tableOwnerMap = tableOwnerMap;
         this.metaData = metaData;
     }
@@ -49,6 +51,13 @@ public class PlanOptimizer extends LogicalPlanVisitor {
     }
     public void visit(XPCPlan plan) {
         plan.accept(this);
+    }
+
+    public void visit(XPCHint plan) {
+        sqlVo.setModelType(2);
+        for(XPCPlan child: plan.getChildren()){
+            child.accept(this);
+        }
     }
 
     public void visit(FederatedLearning node) {
@@ -88,7 +97,7 @@ public class PlanOptimizer extends LogicalPlanVisitor {
             } else if(expr instanceof ArithmeticBinaryExpression) {
                 buildMpc((ArithmeticBinaryExpression) expr, null, alias);
             } else if (expr instanceof FunctionCallExpression) {
-                if (modelType == 0 && isStream == 0){
+                if (sqlVo.getModelType() == 0 && sqlVo.getIsStream() == 0){
                     List<Expression> expressions = ((FunctionCallExpression) expr).getExpressions();
                     String function = ((FunctionCallExpression) expr).getFunction();
                     for (Expression expression: expressions) {
@@ -100,7 +109,7 @@ public class PlanOptimizer extends LogicalPlanVisitor {
                             throw new ParserException("暂不支持");
                         }
                     }
-                } else if (modelType == 2) {
+                } else if (sqlVo.getModelType() == 2) {
                     buildTee((FunctionCallExpression) expr, alias);
                 } else {
                     throw new ParserException("todo");
@@ -380,7 +389,7 @@ public class PlanOptimizer extends LogicalPlanVisitor {
                 parties.add(inputData.getDomainID());
                 inputDataList.add(inputData);
             } else {
-                throw new ParserException("TEE语法错误");
+                throw new ParserException("TEE语法错误, ");
             }
         }
         List<OutputData> outputDataList = new ArrayList<>();

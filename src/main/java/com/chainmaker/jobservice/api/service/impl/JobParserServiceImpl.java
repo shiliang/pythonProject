@@ -99,14 +99,8 @@ public class JobParserServiceImpl implements JobParserService {
 
     @Override
     public JobMissionDetail parserSql(SqlVo sqlVo) {
-//        String sqltext = sqlVo.getSqltext().replace("\"", "");
-//        if (sqltext.contains("/*+ FILTER(TEE) */".replace("\\s", ""))){
-//            sqlVo.setModelType(2);
-//        }
-//        sqltext = sqltext.replace("/*+ FILTER(TEE) */".replace("\\s", ""), "");
         dealSqlText(sqlVo);
-        String executeSql = sqlVo.getExecuteSql();
-        SqlParser sqlParser = new SqlParser(executeSql, sqlVo.getIsStream(), sqlVo.getModelType(), sqlVo.getAssetInfoList(), sqlVo.getModelParams());
+        SqlParser sqlParser = new SqlParser(sqlVo);
         if (sqlVo.getIsStream() == 1) {
             JobBuilder jobBuilder = new JobBuilder(sqlVo, sqlParser.parser());
             jobBuilder.build();
