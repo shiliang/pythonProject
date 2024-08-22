@@ -2,6 +2,7 @@ package com.chainmaker.jobservice.api.builder;
 
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.Constant;
 import com.chainmaker.jobservice.api.enums.JobType;
@@ -10,6 +11,8 @@ import com.chainmaker.jobservice.api.model.job.Job;
 import com.chainmaker.jobservice.api.model.job.service.Service;
 import com.chainmaker.jobservice.api.model.job.task.*;
 import com.chainmaker.jobservice.api.model.job.task.Module;
+import com.chainmaker.jobservice.api.model.vo.ExposeFormVo;
+import com.chainmaker.jobservice.api.model.vo.ServiceVo;
 import com.chainmaker.jobservice.api.model.vo.SqlVo;
 import com.chainmaker.jobservice.api.sqlrewrite.CalciteRelOps;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.FieldInfo;
@@ -944,6 +947,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         Map<String, AtomicInteger> stageGroup = Maps.newHashMap();
         for(List<FlExpression> flExpressions : exprs){
             String key = null;
+            String modelName = null;
             for(FlExpression expr: flExpressions){
                 String left =expr.getLeft().toString();
                 if(left.equalsIgnoreCase("stage")){
@@ -961,6 +965,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 if(left.equalsIgnoreCase("model_guest")){
                     guestAsset = expr.getRight().toString();
                 }
+
+                if(left.equalsIgnoreCase("model_name")){
+                    modelName = expr.getRight().toString().replace("'", "");
+                }
             }
             XPCPlan childPlan = node.getChildren().get(0);
             if(childPlan instanceof XPCJoin){
@@ -970,10 +978,16 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                Identifier vals = new Identifier("[" + joinCondition.replace("==", ",") + "]");
                flExpressions.add(new FlExpression(ids, vals, FlExpression.Operator.EQUAL));
             }
-            flExpressions.add(new FlExpression(new Identifier("params"), new Identifier("{}"), FlExpression.Operator.EQUAL));
+            JSONObject moduleJson = parseFLParams(flExpressions);
+            ServiceVo vo = ServiceVo.fromTemplateFile("FL",  modelName);
+            List<ExposeFormVo> params = Lists.newArrayList();
+            if(vo != null){
+                params = vo.getExposeEndpoints().get(0).getForm();
+            }
+            moduleJson.put("params", params);
             stageGroup.putIfAbsent(key, new AtomicInteger(0));
             key = key + "_" + stageGroup.get(key).getAndIncrement();
-            moduleParams.add(new ModuleParam(key, parseFLParams(flExpressions)));
+            moduleParams.add(new ModuleParam(key, moduleJson));
         }
 
         module.setParamList(moduleParams);

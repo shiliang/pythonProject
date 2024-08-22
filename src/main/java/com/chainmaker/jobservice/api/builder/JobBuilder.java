@@ -4,8 +4,6 @@ import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.serializer.SerializeConfig;
-import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.chainmaker.jobservice.api.Constant;
 import com.chainmaker.jobservice.api.enums.JobType;
 import com.chainmaker.jobservice.api.model.*;
@@ -14,10 +12,10 @@ import com.chainmaker.jobservice.api.model.job.service.*;
 import com.chainmaker.jobservice.api.model.job.task.*;
 import com.chainmaker.jobservice.api.model.job.task.Module;
 import com.chainmaker.jobservice.api.model.vo.*;
-import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.core.optimizer.model.FL.FlInputData;
 import com.chainmaker.jobservice.core.optimizer.model.InputData;
 import com.chainmaker.jobservice.core.optimizer.model.OutputData;
+import com.chainmaker.jobservice.core.optimizer.model.SpdzInputData;
 import com.chainmaker.jobservice.core.optimizer.nodes.DAG;
 import com.chainmaker.jobservice.core.optimizer.nodes.Node;
 import com.chainmaker.jobservice.core.optimizer.plans.*;
@@ -40,7 +38,7 @@ import java.util.stream.Collectors;
 public class JobBuilder extends PhysicalPlanVisitor {
 
     private enum TaskType {
-        QUERY, PSI, MPC, TEE, FL
+        QUERY, PSI, MPC, TEE, FL, MPCEXP
     }
     private final String orgID;
     private final String orgName;
@@ -112,9 +110,11 @@ public class JobBuilder extends PhysicalPlanVisitor {
         if(!tasks.isEmpty()){
             Value value1 = new Value("inputParams", StringEscapeUtils.unescapeJson(JSON.toJSONString(tasks.get(0).getInput())));
             List<String> idParams = services.stream()
-                    .map(x -> x.getExposeEndpointList().get(0).getValueList().get(0).getValue())
-                    .map(x -> {
-                        JSONObject obj = JSONObject.parseObject(x.toString());
+                    .map(x ->{
+                        Object val = x.getExposeEndpointList().get(0).getValueList().get(0).getValue();
+                        JSONObject obj = JSONObject.parseObject(val.toString());
+                        obj.put("domain_id", x.getPartyId());
+                        obj.put("domain_name", x.getPartyName());
                         obj.remove("asset_en_name");
                         obj.put("field", obj.get("key"));
                         obj.remove("key");
@@ -137,7 +137,6 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
         job.setJobId(jobID);
         job.setModelType(jobType);
-//        job.setStatus(jobStatus);
         job.setStatus(Constant.JOB_STATUS);
         job.setCreateTime(createTime);
         job.setUpdateTime(createTime);
@@ -185,7 +184,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
                         templateType = "PirServer4Query";
                         break;
                 }
-                ServiceVo serviceVo = teeTemplateToService(templateType, i);
+                ServiceVo serviceVo = TemplateUtils.buildServiceVo(templateId, templateType, i, createTime);
                 JSONArray pirParams = new JSONArray();
                 for (InputData inputData : plan.getInputDataList()) {
                     JSONObject dataSourse = new JSONObject();
@@ -291,7 +290,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
                         templateType = "TeePirServer4Query";
                         break;
                 }
-                ServiceVo serviceVo = teeTemplateToService(templateType, i);
+                ServiceVo serviceVo = TemplateUtils.buildServiceVo(templateId, templateType, i, createTime);
                 JSONArray pirParams = new JSONArray();
                 for (InputData inputData : plan.getInputDataList()) {
                     JSONObject dataSourse = new JSONObject();
@@ -381,7 +380,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
     }
     @Override
     public void visit(SpdzMpc plan) {
-        String moduleName = TaskType.TEE.name();
+        String moduleName = TaskType.MPCEXP.name();
         Task task =  basePlanToTask(plan);
 
         Module module = new Module();
@@ -435,7 +434,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
                         templateType = "FailureDownstream4RISC";
                         break;
                 }
-                ServiceVo serviceVo = teeTemplateToService(templateType, i);
+                ServiceVo serviceVo = TemplateUtils.buildServiceVo(templateId, templateType, i, createTime);
                 map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getServiceId());
                 serviceVos.add(serviceVo);
             }
@@ -564,13 +563,18 @@ public class JobBuilder extends PhysicalPlanVisitor {
             } else {
                 taskInputData.setDataId(inputData.getTableName().toLowerCase());
             }
+            taskInputData.setAssetName(inputData.getAssetName());
 
 
             JSONObject inputParam = new JSONObject();
             inputParam.put("table", inputData.getTableName().toLowerCase());
-            inputParam.put("asset_en_name", inputData.getAssetName());
+//            inputParam.put("asset_en_name", inputData.getAssetName());
             if (inputData.getColumn() != null) {
                 inputParam.put("field", inputData.getColumn().toLowerCase());
+            }
+            if(inputData instanceof SpdzInputData){
+                SpdzInputData spdzInputData = (SpdzInputData) inputData;
+                inputParam.put("index", spdzInputData.getIndex());
             }
             for(Pair pair: setClausePair){
                 String key = pair.getKey();
@@ -617,16 +621,4 @@ public class JobBuilder extends PhysicalPlanVisitor {
         task.setPartyList(parties);
         return task;
     }
-    
-    private ServiceVo teeTemplateToService(String templateType, int id) {
-        ServiceVo serviceTee = ServiceVo.templateToServiceVo(String.valueOf(templateId), templateType);
-        String serviceVersion = "1.0.0";
-        serviceTee.setServiceId(String.valueOf(id));
-        serviceTee.setVersion(serviceVersion);
-        serviceTee.setStatus(Constant.SERVICE_STATUS);
-        serviceTee.setCreateTime(createTime);
-        serviceTee.setUpdateTime(createTime);
-        return serviceTee;
-    }
-
 }

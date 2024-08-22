@@ -1,0 +1,132 @@
+{
+  "id": "",
+  "version": "1.0.0",
+  "orgDID": "",
+  "serviceClass": "HESB4Query",
+  "serviceName": "纵向xgb参数",
+  "nodePort": "",
+  "manual": "false",
+  "exposeEndpoints": [{
+    "name": "HESB",
+    "form": [
+      {
+        "labels":"模型树数量",
+        "key":"num_trees",
+        "types":"INPUT",
+        "values":"3",
+        "placeholder":"",
+        "disabled": false,
+        "options":"",
+        "rules":"",
+        "required": true
+      },
+
+      {
+        "labels":"模型树最大深度",
+        "key":"max_depth",
+        "types":"INPUT",
+        "values":"3",
+        "placeholder":"",
+        "disabled": false,
+        "options":"",
+        "rules":"",
+        "required": true
+      },
+
+      {
+        "labels":"最大分箱数",
+        "key":"max_bin",
+        "types":"INPUT",
+        "values":"32",
+        "placeholder":"",
+        "disabled": false,
+        "options":"",
+        "rules":"",
+        "required": true
+      },
+
+      {
+        "labels":"叶节点样本最小权重",
+        "key":"min_child_weight",
+        "types":"INPUT",
+        "values":"1",
+        "placeholder":"",
+        "disabled": false,
+        "options":"",
+        "rules":"",
+        "required": true
+      },
+
+      {
+        "labels":"节点分裂阈值",
+        "key":"min_impurity_split",
+        "types":"INPUT",
+        "values":"0.01",
+        "placeholder":"",
+        "disabled": false,
+        "options":"",
+        "rules":"",
+        "required": true
+      },
+
+      {
+        "labels":"分裂最小样本数",
+        "key":"min_sample_split",
+        "types":"INPUT",
+        "values":"2",
+        "placeholder":"",
+        "disabled": false,
+        "options":"",
+        "rules":"",
+        "required": true
+      },
+
+      {
+        "labels":"学习率",
+        "key":"learning_rate",
+        "types":"INPUT",
+        "values":"0.3",
+        "placeholder":"",
+        "disabled": true,
+        "options":"",
+        "rules":"",
+        "required": true
+      },
+
+      {
+        "labels":"任务目标",
+        "key":"objective",
+        "types":"SELECT",
+        "values":"binary:bce",
+        "placeholder":"",
+        "disabled": true,
+        "options":[{"value":"binary:bce","text":"binary:bce"}],
+        "rules":"",
+        "required": true
+      }
+    ]
+  }],
+  "referEndpoints": [
+    {
+      "name": "HESB",
+      "referServiceID": "",
+      "referEndpointName": "HESB",
+      "protocol": "HTTP",
+      "serviceCa": "",
+      "serviceCert": ""
+    }
+  ],
+  "values": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "referValues": [
+    {
+      "key": "",
+      "referServiceID": "",
+      "referKey": ""
+    }
+  ]
+}

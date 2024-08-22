@@ -1,0 +1,108 @@
+{
+  "id": "",
+  "version": "1.0.0",
+  "orgDID": "",
+  "serviceClass": "HELR4Query",
+  "serviceName": "纵向lr参数",
+  "nodePort": "",
+  "manual": "false",
+  "exposeEndpoints": [{
+    "name": "HELR",
+    "form": [
+      {
+        "labels":"训练轮次",
+        "key":"epochs",
+        "types":"INPUT",
+        "values":"3",
+        "placeholder":"请输入1~65536的值",
+        "disabled": false,
+        "options":"",
+        "rules":"",
+        "required": true
+      },
+
+      {
+        "labels":"批次大小",
+        "key":"batch_size",
+        "types":"INPUT",
+        "values":"100",
+        "placeholder":"请输入1~65536的值",
+        "disabled": false,
+        "options":"",
+        "rules":"",
+        "required": true
+      },
+
+      {
+        "labels":"提前终止策略",
+        "key":"early_stop",
+        "types":"SELECT",
+        "values":"diff",
+        "placeholder":"",
+        "disabled": false,
+        "options":[{"value":"weight_diff","text":"weight_diff"},{"value":"diff","text":"diff"},{"value":"abs","text":"abs"}],
+        "rules":"",
+        "required": true
+      },
+
+      {
+        "labels":"损失函数差值的容忍度",
+        "key":"tol",
+        "types":"INPUT",
+        "values":"0.0001",
+        "placeholder":"",
+        "disabled": false,
+        "options":"",
+        "rules":"",
+        "required": true
+      },
+
+      {
+        "labels":"学习率",
+        "key":"learning_rate",
+        "types":"INPUT",
+        "values":"0.3",
+        "placeholder":"",
+        "disabled": true,
+        "options":"",
+        "rules":"",
+        "required": true
+      },
+
+      {
+        "labels":"分类阈值",
+        "key":"threshold",
+        "types":"INPUT",
+        "values":"0.5",
+        "placeholder":"请输入0~1的值，保留1-2位小数",
+        "disabled": true,
+        "options":"",
+        "rules":"",
+        "required": true
+      }
+    ]
+  }],
+  "referEndpoints": [
+    {
+      "name": "HELR",
+      "referServiceID": "",
+      "referEndpointName": "HELR",
+      "protocol": "HTTP",
+      "serviceCa": "",
+      "serviceCert": ""
+    }
+  ],
+  "values": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "referValues": [
+    {
+      "key": "",
+      "referServiceID": "",
+      "referKey": ""
+    }
+  ]
+}

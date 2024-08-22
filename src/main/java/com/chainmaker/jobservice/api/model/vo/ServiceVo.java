@@ -48,16 +48,23 @@ public class ServiceVo {
     private String serviceClass;
     /** 服务名称 */
     private String serviceName;
+
     private Integer nodePort;
+
     private List<ExposeEndpointVo> exposeEndpoints;
+
     private List<ReferEndpoint> referEndpoints;
+
     private List<ValueVo> values;
+
     private List<ReferValueVo> referValues;
 
-    public static ServiceVo templateToServiceVo(String templateID, String templateType) {
+    public static ServiceVo fromTemplateFile(String templateID, String templateType) {
         String jsonFilePath = "templates/" + templateID + "/" + templateType + ".json";
         ClassPathResource resource = new ClassPathResource(jsonFilePath);
-
+        if(!resource.exists()){
+            return null;
+        }
         // 获取文件流
         InputStream inputStream = null;
         try {
@@ -78,22 +85,29 @@ public class ServiceVo {
         return JSONObject.parseObject(serviceVoStr, ServiceVo.class);
     }
 
-
-
-    @Override
-    public String toString() {
-        return "ServiceVo{" +
-                "orgDID='" + orgDID + '\'' +
-                ", serviceName='" + serviceName + '\'' +
-                ", serviceClass='" + serviceClass + '\'' +
-                ", id='" + serviceId + '\'' +
-                ", nodePort='" + nodePort + '\'' +
-                ", version='" + version + '\'' +
-                ", manual=" + manual +
-                ", exposeEndpoints=" + exposeEndpoints +
-                ", referEndpoints=" + referEndpoints +
-                ", values=" + values +
-                ", referValues=" + referValues +
-                '}';
+    public static void main(String[] args) {
+        ServiceVo serviceVo1 = ServiceVo.fromTemplateFile("FL", "HELR");
+        ServiceVo serviceVo2 = ServiceVo.fromTemplateFile("FL", "HESB");
+        System.out.println(JSONObject.toJSONString(serviceVo1));
+        System.out.println(JSONObject.toJSONString(serviceVo2));
     }
+
+
+
+//    @Override
+//    public String toString() {
+//        return "ServiceVo{" +
+//                "orgDID='" + orgDID + '\'' +
+//                ", serviceName='" + serviceName + '\'' +
+//                ", serviceClass='" + serviceClass + '\'' +
+//                ", id='" + serviceId + '\'' +
+//                ", nodePort='" + nodePort + '\'' +
+//                ", version='" + version + '\'' +
+//                ", manual=" + manual +
+//                ", exposeEndpoints=" + exposeEndpoints +
+//                ", referEndpoints=" + referEndpoints +
+//                ", values=" + values +
+//                ", referValues=" + referValues +
+//                '}';
+//    }
 }
