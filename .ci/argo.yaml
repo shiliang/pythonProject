@@ -14,4 +14,4 @@ spec:
 
   entrypoint: entry
   workflowTemplateRef:
-    name: java-build-template-v1
+    name: java-ut-template-v1

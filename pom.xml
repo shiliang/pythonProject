@@ -16,8 +16,18 @@
 <properties>
     <java.version>11</java.version>
     <validation-api.version>2.0.1.Final</validation-api.version>
-
-
+    <sonar.host.url>http://docker.oa.com:32100</sonar.host.url>
+    <sonar.projectKey>mira-job-service</sonar.projectKey>
+    <sonar.projectName>mira-job-service</sonar.projectName>
+    <sonar.coverage.jacoco.xmlReportPaths>
+    ./target/jacoco-reports/jacoco.xml
+    </sonar.coverage.jacoco.xmlReportPaths>
+    <sonar.coverage.exclusions>
+    **/antlr4/gen/*.java,
+    </sonar.coverage.exclusions>
+    <sonar.exclusions>
+    **/antlr4/gen/*.java,
+    </sonar.exclusions>
 </properties>
 <dependencies>
     <dependency>
@@ -222,9 +232,8 @@
                 <visitor>true</visitor>
                 <!--<treatWarningsAsErrors>true</treatWarningsAsErrors>-->
             </configuration>
-        </plugin>
-
-        <!-- Jacoco 插件配置 -->
+    </plugin>
+          <!-- Jacoco 插件配置 -->
         <plugin>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
@@ -248,16 +257,14 @@
                 <outputDirectory>${project.build.directory}/jacoco-reports</outputDirectory>
             </configuration>
         </plugin>
-
         <plugin>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
             <version>0.8.4</version>
             <configuration>
                 <!--指定生成 .exec 文件的存放位置-->
-                <destFile>target/coverage-reports/jacoco-unit.exec</destFile>
+                <destFile>target/jacoco.exec</destFile>
                 <!--Jacoco 是根据 .exec 文件生成最终的报告，所以需指定 .exec 的存放路径-->
-                <dataFile>target/coverage-reports/jacoco-unit.exec</dataFile>
                 <excludes>
                     <!-- 排除某个包下的所有类 -->
                     <exclude>proto/**</exclude>
@@ -270,7 +277,7 @@
                     <exclude>com/chainmaker/jobservice/core/antlr4/gen/**</exclude>
                 </excludes>
             </configuration>
-            <executions>
+	    <executions>
                 <execution>
                     <id>jacoco-initialize</id>
                     <goals>
@@ -280,13 +287,19 @@
                 <execution>
                     <id>jacoco-site</id>
                     <phase>test</phase>
-                    <goals>
+		    <goals>
+	                <goal>prepare-agent</goal>
                         <goal>report</goal>
                     </goals>
                 </execution>
-            </executions>
-        </plugin>
-    </plugins>
+	</executions>
+    </plugin>
+    <plugin>
+	 <groupId>org.sonarsource.scanner.maven</groupId>
+         <artifactId>sonar-maven-plugin</artifactId>
+         <version>4.0.0.4121</version>
+     </plugin>
+  </plugins>
 </build>
 
 </project>
