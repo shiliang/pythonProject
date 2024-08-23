@@ -29,7 +29,7 @@ public class ParserController {
             if (sqlVo.getSqltext().contains("?")) {
                 sqlVo.setIsStream(1);
             }
-            JSONObject json = jobParserService.analyzeSql(sqlVo.getSqltext());
+            JSONObject json = jobParserService.analyzeSql(sqlVo);
             return Result.success(json);
         }catch (Exception e){
             log.error(e.getMessage(), e);

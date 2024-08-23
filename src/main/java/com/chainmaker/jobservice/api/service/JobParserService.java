@@ -65,5 +65,5 @@ public interface JobParserService {
     Job jobPreview(SqlVo sqlVo);
 
 
-    JSONObject analyzeSql(String sqltext);
+    JSONObject analyzeSql(SqlVo sqlVo);
 }

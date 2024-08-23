@@ -70,7 +70,9 @@ public class JobParserServiceImpl implements JobParserService {
 
 
 
-    public JSONObject analyzeSql(String sql) {
+    public JSONObject analyzeSql(SqlVo sqlVo) {
+        dealSqlText(sqlVo);
+        String sql = sqlVo.getExecuteSql();
         LogicalPlanBuilderV2 logicalPlanBuilder = new LogicalPlanBuilderV2(sql);
         Map<String, String> tableNames = logicalPlanBuilder.getTableNameMap();
         List<String> modelNames = logicalPlanBuilder.getModelNameList();
