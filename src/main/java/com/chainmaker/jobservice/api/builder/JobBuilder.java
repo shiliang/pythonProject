@@ -377,8 +377,12 @@ public class JobBuilder extends PhysicalPlanVisitor {
         module.setModuleName(moduleName);
         List<ModuleParam> moduleParams = new ArrayList<>();
         moduleParams.add(new ModuleParam("expression", plan.getExpression()));
-        moduleParams.add(new ModuleParam("constants", plan.getConstants()));
-        moduleParams.add(new ModuleParam("variables", plan.getVariables()));
+        if(StrUtil.isNotEmpty(plan.getConstants())) {
+            moduleParams.add(new ModuleParam("constants", plan.getConstants()));
+        }
+        if(StrUtil.isNotEmpty(plan.getVariables())){
+            moduleParams.add(new ModuleParam("variables", plan.getVariables()));
+        }
         if(StrUtil.isNotEmpty(plan.getAggregateType())) {
             moduleParams.add(new ModuleParam("function", plan.getAggregateType()));
         }else{
