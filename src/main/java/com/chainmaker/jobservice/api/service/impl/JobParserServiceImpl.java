@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.builder.JobBuilder;
 import com.chainmaker.jobservice.api.builder.JobBuilderWithOptimizer;
+import com.chainmaker.jobservice.api.builder.SetClauseParser;
 import com.chainmaker.jobservice.api.model.*;
 import com.chainmaker.jobservice.api.model.bo.*;
 import com.chainmaker.jobservice.api.model.graph.*;
@@ -96,6 +97,7 @@ public class JobParserServiceImpl implements JobParserService {
                 .findFirst();
         optional.ifPresent(sqlVo::setExecuteSql);
         sqlVo.setSetClauses(setClauses);
+        sqlVo.setSetPairs(SetClauseParser.clauses2Pairs(sqlVo.getSetClauses()));
 
     }
 

@@ -1567,8 +1567,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             rexNode = rmAsOfRexCall((RexCall)rexNode);
         }
 
-        RexCall node = (RexCall)rexNode;
-        RexNode proj = node.getOperands().get(0);
+        RexNode proj = rexNode;
+//        RexCall node = (RexCall)rexNode;
+//        RexNode proj = node.getOperands().get(0);
         // module信息（即进行什么操作）
         Module module = new Module();
 

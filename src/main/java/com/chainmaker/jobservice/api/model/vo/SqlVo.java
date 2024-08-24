@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.api.model.vo;
 
+import com.chainmaker.jobservice.api.builder.Pair;
 import com.chainmaker.jobservice.api.model.AssetInfo;
 import com.chainmaker.jobservice.api.model.OrgInfo;
 import lombok.Data;
@@ -30,4 +31,6 @@ public class SqlVo {
     private String executeSql;
 
     private List<String> setClauses;
+
+    private List<Pair> setPairs;
 }

@@ -21,16 +21,18 @@ public class TestStreamPql {
 
     public static final List<String> pqls = Lists.newArrayList(
 //            "select atest_1.id, (0.1 * atest_1.a1) + (0.2 * btest_2.b1) + (0.1 * atest_1.a2) + (0.4 * btest_2.b2) from atest_1, btest_2 where atest_1.id=btest_2.id",
-            "select /*+ FUNC(TEE) */ SCORE(0.1, atest_1.a1, 0.2, btest_2.b2, 0.1, atest_1.a2, 0.4, btest_2.b2) from atest_1, btest_2 where atest_1.id=btest_2.id",
-//            "select atest_1.k from atest_1 where atest_1.id=?",
-            "select /*+ FILTER(TEE) */ atest_1.k from atest_1 where atest_1.id=?"
-            ,
+//            "select /*+ FUNC(TEE) */ SCORE(0.1, atest_1.a1, 0.2, btest_2.b2, 0.1, atest_1.a2, 0.4, btest_2.b2) from atest_1, btest_2 where atest_1.id=btest_2.id",
+////            "select atest_1.k from atest_1 where atest_1.id=?",
+//            "select /*+ FILTER(TEE) */ atest_1.k from atest_1 where atest_1.id=?"
+//            ,
+//            "select ((atest_1.k*btest_2.k) +2) + atest_1.a1*btest_2.b1 from atest_1, btest_2 where atest_1.id=btest_2.id",
+//            ,
             "set t1 = ?;\n" +
                     "set t2 = ?;\n" +
                     "set t3 = ?;\n" +
                     "set t3 = ?;\n" +
                     "set atest_1.a1.noise = {\"algo\": \"\", \"epsilon\": \"\", \"sensitivity\": \"\", \"delta\": \"\"};" +
-                    "SELECT  t1 * btest_2.b2 + atest_1.a1 * btest_2.b2 FROM atest_1, btest_2 WHERE atest_1.id = t2 and btest_2.id = atest_1.id;\n"
+                    "SELECT  (2 * t1 * (btest_2.b2 + atest_1.a1) + 2 * (atest_1.a1 +atest_1.a1)) * btest_2.b2 FROM atest_1, btest_2 WHERE atest_1.id = t2 and btest_2.id = atest_1.id;\n"
     );
 
 

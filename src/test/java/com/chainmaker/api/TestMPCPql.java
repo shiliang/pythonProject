@@ -37,7 +37,8 @@ public class TestMPCPql {
             "select /*+ JOIN(TEE) */ atest_1.id from atest_1, btest_2 where atest_1.id=btest_2.id",
             "select atest_1.k from atest_1 where atest_1.id=?",
             "select /*+ FILTER(TEE) */atest_1.k from atest_1 where atest_1.id=?",
-            "select atest_1.k*btest_2.k from atest_1, btest_2 where atest_1.id=btest_2.id",
+            "select 2 * atest_1.k*btest_2.k + 3 * atest_1.a1*btest_2.b1 from atest_1, btest_2 where atest_1.id=btest_2.id"
+            ,
             "select SUM(atest_1.k*btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
             "select AVG(atest_1.k*btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
             "select MAX(atest_1.k*btest_2.k) from atest_1, btest_2 where atest_1.id=btest_2.id",
@@ -86,7 +87,7 @@ public class TestMPCPql {
         for(String pql: pqls){
             SqlVo sqlVo = JSONObject.parseObject(req, SqlVo.class, Feature.OrderedField);
             sqlVo.setSqltext(pql);
-            log.info("request: " + JSON.toJSONString(sqlVo, SerializerFeature.PrettyFormat));
+//            log.info("request: " + JSON.toJSONString(sqlVo, SerializerFeature.PrettyFormat));
             try {
                 Job job = jobParser.jobPreview(sqlVo);
                 log.info("result: " + JSON.toJSONString(job, SerializerFeature.PrettyFormat,SerializerFeature.DisableCircularReferenceDetect));

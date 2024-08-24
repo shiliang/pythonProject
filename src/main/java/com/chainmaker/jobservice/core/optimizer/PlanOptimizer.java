@@ -2,6 +2,7 @@ package com.chainmaker.jobservice.core.optimizer;
 
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
+import com.chainmaker.jobservice.api.builder.Pair;
 import com.chainmaker.jobservice.api.model.vo.SqlVo;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
@@ -14,8 +15,15 @@ import com.chainmaker.jobservice.core.optimizer.nodes.Node;
 import com.chainmaker.jobservice.core.optimizer.plans.*;
 import com.chainmaker.jobservice.core.parser.plans.*;
 import com.chainmaker.jobservice.core.parser.tree.*;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author gaokang
@@ -35,6 +43,9 @@ public class PlanOptimizer extends LogicalPlanVisitor {
     private HashMap<String, TableInfo> metaData;
 
     private HashMap<String, List<String>> kvMap = new HashMap<>();
+
+    private String vTable = "variable|table";
+    private String cTable = "constant|table";
 
     public PlanOptimizer(SqlVo sqlVo,  HashMap<String, String> tableOwnerMap, HashMap<String, TableInfo> metaData) {
         this.sqlVo = sqlVo;
@@ -425,28 +436,29 @@ public class PlanOptimizer extends LogicalPlanVisitor {
     private void buildMpc(ArithmeticBinaryExpression expression, String function, String alias) {
         HashSet<String> parties = new HashSet<>();
         List<String> arithmeticList = new ArrayList<>();
-        HashMap<String, HashMap<String, List<Integer>>> arithmeticIndexMap = new HashMap<>();
-        Integer xCount = 0;
-        arithmeticBinaryExpressionHandler(expression, arithmeticList, arithmeticIndexMap, xCount);
+        HashMap<String, List<Integer>> arithmeticIndexMap = new HashMap<>();
+        Map<String, List<String>> valMap = Maps.newHashMap();
+        AtomicInteger xCount = new AtomicInteger(0);
+        ariBinaExprHandler(expression, arithmeticList, valMap, arithmeticIndexMap, xCount);
 
         List<InputData> inputDataList = new ArrayList<>();
         List<PhysicalPlan> parents = new ArrayList<>();
-        for (String tableName: arithmeticIndexMap.keySet()) {
+        for (String qualifiedName: arithmeticIndexMap.keySet()) {
+            String tableName = qualifiedName.split("\\.")[0];
+            String  column = qualifiedName.split("\\.")[1];
             PhysicalPlan parent = tableLastMap.get(tableName);
             parents.add(parent);
-            for (String column: arithmeticIndexMap.get(tableName).keySet()) {
-                SpdzInputData inputData = new SpdzInputData();
-                inputData.setNodeSrc(parent.getId());
-                inputData.setTableName(tableName);
-                inputData.setColumn(column);
-                inputData.setIndex(arithmeticIndexMap.get(tableName).get(column));
-                inputData.setDomainID(tableOwnerMap.get(tableName));
-                TableInfo tableInfo = metaData.get(tableName);
-                inputData.setAssetName(tableInfo.getAssetName());
-                inputData.setDomainName(tableInfo.getOrgName());
-                parties.add(inputData.getDomainID());
-                inputDataList.add(inputData);
-            }
+            SpdzInputData inputData = new SpdzInputData();
+            inputData.setNodeSrc(parent.getId());
+            inputData.setTableName(tableName);
+            inputData.setColumn(column);
+            inputData.setIndex(arithmeticIndexMap.get(qualifiedName));
+            inputData.setDomainID(tableOwnerMap.get(tableName));
+            TableInfo tableInfo = metaData.get(tableName);
+            inputData.setAssetName(tableInfo.getAssetName());
+            inputData.setDomainName(tableInfo.getOrgName());
+            parties.add(inputData.getDomainID());
+            inputDataList.add(inputData);
         }
         List<OutputData> outputDataList = new ArrayList<>();
         OutputData outputData = new OutputData();
@@ -458,7 +470,11 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         SpdzMpc spdzMpc = new SpdzMpc();
         spdzMpc.setId(count);
         count += 1;
-        spdzMpc.setExpression(arithmeticList);
+        if(!valMap.isEmpty()) {
+            spdzMpc.setConstants(String.join(",", valMap.get(cTable)));
+            spdzMpc.setVariables(String.join(",", valMap.get(vTable)));
+        }
+        spdzMpc.setExpression(String.join("", arithmeticList));
         spdzMpc.setInputDataList(inputDataList);
         spdzMpc.setOutputDataList(outputDataList);
         spdzMpc.setParties(new ArrayList<>(parties));
@@ -471,6 +487,39 @@ public class PlanOptimizer extends LogicalPlanVisitor {
     }
 
 
+    public String dfsRexNode(RexNode proj, List<String> constants) {
+        String expr = "";
+        if (proj instanceof RexCall) {
+            String tmpl = dfsRexNode(((RexCall) proj).getOperands().get(0), constants);
+            if (tmpl.length() > 1 && tmpl.contains("x")) {
+                expr += "(" + tmpl + ")";
+            } else {
+                expr += tmpl;
+            }
+            String tmpOp = ((RexCall) proj).getOperator().toString();
+            if (tmpOp.equals("CAST")) {
+                return expr;
+            } else {
+                expr += tmpOp;
+            }
+            String tmpr = dfsRexNode(((RexCall) proj).getOperands().get(1), constants);
+            if (tmpr.length() > 1 && tmpr.contains("x")) {
+                expr += "(" + tmpr + ")";
+            } else {
+                expr += tmpr;
+            }
+
+        } else if (proj instanceof RexInputRef) {
+            expr += "x";
+        } else if (proj instanceof RexLiteral) {
+            expr += "c";
+            constants.add(((RexLiteral) proj).getValue().toString());
+        } else {
+            ;
+        }
+        return expr;
+    }
+
     /***
      * @description 递归处理算术表达式
      * @param expression
@@ -481,36 +530,57 @@ public class PlanOptimizer extends LogicalPlanVisitor {
      * @author gaokang
      * @date 2022/8/21 21:29
      */
-    private void arithmeticBinaryExpressionHandler(Expression expression, List<String> arithmeticList, HashMap<String, HashMap<String, List<Integer>>> arithmeticIndexMap, Integer xCount) {
-        if (expression instanceof DereferenceExpression) {
-            String x = "x";
-            String tableName = ((DereferenceExpression) expression).getBase().toString();
-            String column = ((DereferenceExpression) expression).getFieldName();
-            arithmeticList.add(x);
-            if (arithmeticIndexMap.containsKey(tableName)) {
-                if (arithmeticIndexMap.get(tableName).containsKey(column)) {
-                    arithmeticIndexMap.get(tableName).get(column).add(xCount);
-                } else {
-                    List<Integer> indexList = new ArrayList<>();
-                    indexList.add(xCount);
-                    arithmeticIndexMap.get(tableName).put(column, indexList);
-                }
-            } else {
-                List<Integer> indexList = new ArrayList<>();
-                indexList.add(xCount);
-                HashMap<String, List<Integer>> indexMap = new HashMap<>();
-                indexMap.put(column, indexList);
-                arithmeticIndexMap.put(tableName, indexMap);
+    private void ariBinaExprHandler(Expression expression,
+                                    List<String> arithmeticList,
+                                    Map<String, List<String>> valMap,
+                                    HashMap<String, List<Integer>> arithmeticIndexMap,
+                                    AtomicInteger xCount) {
+
+        if(expression instanceof ConstantExpression){
+            String c = "c";
+            arithmeticList.add(c);
+            String val = ((ConstantExpression) expression).getValue();
+            if(valMap.containsKey(cTable)){
+                valMap.get(cTable).add(val);
+            }else{
+                valMap.put(cTable, Lists.newArrayList(val));
             }
+        }else if (expression instanceof DereferenceExpression) {
+            String x = "x";
+            DereferenceExpression derefExpr = (DereferenceExpression) expression;
+            String tableName = derefExpr.getBase().toString();
+            String column = derefExpr.getFieldName();
+            String qualifiedName = tableName + "." + column;
+            arithmeticList.add(x);
+            if (arithmeticIndexMap.containsKey(qualifiedName)) {
+                arithmeticIndexMap.get(qualifiedName).add(xCount.get());
+            } else {
+                arithmeticIndexMap.put(qualifiedName, Lists.newArrayList(xCount.get()));
+            }
+            xCount.incrementAndGet();
         } else if (expression instanceof ArithmeticBinaryExpression) {
-            arithmeticBinaryExpressionHandler(((ArithmeticBinaryExpression) expression).getLeft(), arithmeticList, arithmeticIndexMap, xCount);
-            xCount += 1;
-            arithmeticList.add(((ArithmeticBinaryExpression) expression).getOperator().getValue());
-            arithmeticBinaryExpressionHandler(((ArithmeticBinaryExpression) expression).getRight(), arithmeticList, arithmeticIndexMap, xCount);
+            ArithmeticBinaryExpression ariExpr = (ArithmeticBinaryExpression) expression;
+            ariBinaExprHandler(ariExpr.getLeft(), arithmeticList, valMap, arithmeticIndexMap, xCount);
+            arithmeticList.add(ariExpr.getOperator().getValue());
+            ariBinaExprHandler(ariExpr.getRight(), arithmeticList,valMap, arithmeticIndexMap, xCount);
         } else if (expression instanceof ParenthesizedExpression) {
-            arithmeticList.add(((ParenthesizedExpression) expression).getLeft());
-            arithmeticBinaryExpressionHandler(((ParenthesizedExpression) expression).getExpression(), arithmeticList, arithmeticIndexMap, xCount);
-            arithmeticList.add(((ParenthesizedExpression) expression).getRight());
+            ParenthesizedExpression parenExpr = (ParenthesizedExpression) expression;
+            arithmeticList.add(parenExpr.getLeft());
+            ariBinaExprHandler(parenExpr.getExpression(), arithmeticList, valMap, arithmeticIndexMap, xCount);
+            arithmeticList.add(parenExpr.getRight());
+        } else {
+            for(Pair pair: sqlVo.getSetPairs()){
+                if (pair.getKey().equals(expression.toString())) {
+                    String v = "v";
+                    arithmeticList.add(v);;
+                    String val = expression.toString();
+                    if(valMap.containsKey(vTable)){
+                        valMap.get(vTable).add(val);
+                    }else{
+                        valMap.put(vTable, Lists.newArrayList(val));
+                    }
+                }
+            }
         }
     }
 

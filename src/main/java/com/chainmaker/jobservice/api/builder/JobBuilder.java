@@ -96,18 +96,21 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
         if(!tasks.isEmpty()){
             Value value1 = new Value("inputParams", StringEscapeUtils.unescapeJson(JSON.toJSONString(tasks.get(0).getInput())));
-            List<String> idParams = services.stream()
+            List<ExposeEndpoint> exposeEndpoints = services.get(0).getExposeEndpointList();
+            String partyId = exposeEndpoints.get(0).getPartyId();
+            String partyName = exposeEndpoints.get(0).getPartyName();
+            Set<String> idParams = exposeEndpoints.get(0).getValueList().stream()
                     .map(x ->{
-                        Object val = x.getExposeEndpointList().get(0).getValueList().get(0).getValue();
+                        Object val = x.getValue();
                         JSONObject obj = JSONObject.parseObject(val.toString());
-                        obj.put("domain_id", x.getPartyId());
-                        obj.put("domain_name", x.getPartyName());
+                        obj.put("domain_id", partyId);
+                        obj.put("domain_name", partyName);
                         obj.remove("asset_en_name");
                         obj.put("field", obj.get("key"));
                         obj.remove("key");
                         return obj.toJSONString();
                     })
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toSet());
             Value value2 = new Value("idParams", StringEscapeUtils.unescapeJson(JSON.toJSONString(idParams)));
             Value value3 = new Value("mpcParams", StringEscapeUtils.unescapeJson(JSON.toJSONString(tasks.get(0).getModule())));
             List<Value> valueLists = Lists.newArrayList(value1, value2, value3);
@@ -374,7 +377,13 @@ public class JobBuilder extends PhysicalPlanVisitor {
         module.setModuleName(moduleName);
         List<ModuleParam> moduleParams = new ArrayList<>();
         moduleParams.add(new ModuleParam("expression", plan.getExpression()));
-        moduleParams.add(new ModuleParam("aggregate", plan.getAggregateType()));
+        moduleParams.add(new ModuleParam("constants", plan.getConstants()));
+        moduleParams.add(new ModuleParam("variables", plan.getVariables()));
+        if(StrUtil.isNotEmpty(plan.getAggregateType())) {
+            moduleParams.add(new ModuleParam("function", plan.getAggregateType()));
+        }else{
+            moduleParams.add(new ModuleParam("function", "base"));
+        }
 
         module.setParamList(moduleParams);
         task.setModule(module);
@@ -568,8 +577,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
                 if(key.contains("noise")){
                     String table = key.split("\\.")[0];
                     String field = key.split("\\.")[1];
-                    if(table.equals(inputData.getTableName().toLowerCase()) && field.equals(inputData.getColumn().toLowerCase())){
-                        inputParam.put("noise", JSON.parseObject(pair.getValue()));
+                    if(table.equalsIgnoreCase(inputData.getTableName()) && field.equalsIgnoreCase(inputData.getColumn())){
+                        inputParam.put("noise", JSON.parseObject(StringEscapeUtils.unescapeJson(pair.getValue())));
                     }
 
                 }
