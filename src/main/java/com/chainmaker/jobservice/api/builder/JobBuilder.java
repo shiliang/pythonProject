@@ -338,8 +338,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
             BeanUtils.copyProperties(serviceVo, service);
             int idx = Math.min(serviceVos.indexOf(serviceVo), parties.size() -1);
             Party party = parties.get(idx);
-            service.setPartyName(party.getPartyId());
-            service.setPartyId(party.getPartyName());
+            service.setPartyId(party.getPartyId());
+            service.setPartyName(party.getPartyName());
             List<ReferExposeEndpoint> referExposeEndpointList = getReferExposeEndpoints(serviceVo, map);
             List<ExposeEndpoint> exposeEndpointList = getExposeEndpoints(serviceVo, service.getPartyId(), service.getPartyName());
             service.setExposeEndpointList(exposeEndpointList);

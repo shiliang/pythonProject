@@ -938,6 +938,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         }
     }
 
+
+    //首先是获取model_guest的资产，如果没有，再去去label对应的资产。然后再添加其他资产。
     public Task parseFederatedLearning(FederatedLearning node) {
         // basic info
         FederatedLearningExpression expression = node.getExprList();
@@ -948,9 +950,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         module.setModuleName(TaskType.FL.name());
         List<ModuleParam> moduleParams = new ArrayList<ModuleParam>();
         List<List<FlExpression>> exprs = expression.getExprs();
-        Set<String> assets = new HashSet<>();
+        Set<String> assets = new LinkedHashSet<>();
         String labelQualifiedField = null;
         String guestAsset = null;
+        String labelAsset = null;
         Map<String, AtomicInteger> stageGroup = Maps.newHashMap();
         for(List<FlExpression> flExpressions : exprs){
             String key = null;
@@ -960,17 +963,23 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 if(left.equalsIgnoreCase("stage")){
                     key = expr.getRight().toString();
                 }
-                if(left.equalsIgnoreCase("features")){
-                    String value = expr.getRight().toString();
-                    List<String> eleAssets = Arrays.stream(value.split(",")).map(s -> StrUtil.strip(s, "[", "]")).collect(Collectors.toList());
-                    assets.addAll(eleAssets);
-                }
-                if(left.equalsIgnoreCase("label")){
-                    labelQualifiedField = expr.getRight().toString();
-                }
 
                 if(left.equalsIgnoreCase("model_guest")){
                     guestAsset = expr.getRight().toString();
+                }
+
+                if(left.equalsIgnoreCase("label")){
+                    labelQualifiedField = expr.getRight().toString();
+                    labelAsset = CalciteUtil.getTableName(labelQualifiedField);
+                }
+
+                if(left.equalsIgnoreCase("features")){
+                    String value = expr.getRight().toString();
+                    List<String> eleAssets = Arrays.stream(value.split(","))
+                            .map(s -> StrUtil.strip(s, "[", "]"))
+                            .map(CalciteUtil::getTableName)
+                            .collect(Collectors.toList());
+                    assets.addAll(eleAssets);
                 }
 
                 if(left.equalsIgnoreCase("model_name")){
@@ -1000,12 +1009,21 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         module.setParamList(moduleParams);
         task.setModule(module);
 
+
         // input
         Input input = new Input();
         List<InputDetail> inputDataList = new ArrayList<>();
-        for (String asset: assets){
+        Set<String> linkedAssets = new LinkedHashSet<String>();
+        if(guestAsset != null) {
+            linkedAssets.add(guestAsset);
+        }
+        if(labelAsset != null) {
+            linkedAssets.add(labelAsset);
+        }
+        linkedAssets.addAll(assets);
+        log.info("assets order: " + JSON.toJSONString(assets));
+        for (String assetName: linkedAssets){
             InputDetail inputData = new InputDetail();
-            String assetName = CalciteUtil.getTableName(asset);
             inputData.setAssetName(assetName);
             inputData.setDataName(assetName);
             inputData.setDataId(assetName);
@@ -1016,8 +1034,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             }else {
                 inputData.setTaskSrc(tasks.get(0).getTaskId());
             }
-            if(labelQualifiedField != null) {
-                String labelAsset = CalciteUtil.getTableName(labelQualifiedField);
+            if(labelAsset != null) {
                 if (assetName.equalsIgnoreCase(labelAsset) || assetName.equalsIgnoreCase(guestAsset)) {
                     inputData.setRole("guest");
                 } else {
