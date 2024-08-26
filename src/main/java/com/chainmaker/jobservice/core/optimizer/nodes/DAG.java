@@ -2,6 +2,7 @@ package com.chainmaker.jobservice.core.optimizer.nodes;
 
 import com.chainmaker.jobservice.core.optimizer.CycleFoundException;
 import com.chainmaker.jobservice.core.optimizer.plans.PhysicalPlan;
+import lombok.Data;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -12,6 +13,8 @@ import java.util.function.Consumer;
  * @description:
  * @version:
  */
+
+@Data
 public class DAG<T> {
 
     private Map<T, Node<T>> nodes;

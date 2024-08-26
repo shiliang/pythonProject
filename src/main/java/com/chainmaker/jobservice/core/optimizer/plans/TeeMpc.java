@@ -3,6 +3,7 @@ package com.chainmaker.jobservice.core.optimizer.plans;
 import com.chainmaker.jobservice.core.optimizer.model.InputData;
 import com.chainmaker.jobservice.core.optimizer.model.OutputData;
 import com.chainmaker.jobservice.core.optimizer.model.TeeModel;
+import lombok.Data;
 
 import java.util.List;
 
@@ -13,9 +14,16 @@ import java.util.List;
  * @version: 1.0.0
  */
 
+@Data
 public class TeeMpc extends PhysicalPlan {
     private Integer id;
     private TeeModel teeModel;
+
+    private String expression;
+
+    private String constants;
+
+    private String variables;
     private String nodeName = "mpc-tee";
     private List<InputData> inputDataList;
     private List<OutputData> outputDataList;

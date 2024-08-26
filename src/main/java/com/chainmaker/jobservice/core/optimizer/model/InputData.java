@@ -15,6 +15,7 @@ public class InputData {
     private Integer nodeSrc;
     private String tableName;
     private String column;
+    private List<Integer> index;
     private String domainID;
     private String domainName;
     private String assetName;

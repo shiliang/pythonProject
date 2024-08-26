@@ -32,7 +32,16 @@ public class TestStreamPql {
                     "set t3 = ?;\n" +
                     "set t3 = ?;\n" +
                     "set atest_1.a1.noise = {\"algo\": \"\", \"epsilon\": \"\", \"sensitivity\": \"\", \"delta\": \"\"};" +
-                    "SELECT  (2 * t1 * (btest_2.b2 + atest_1.a1) + 2 * (atest_1.a1 +atest_1.a1)) * btest_2.b2 FROM atest_1, btest_2 WHERE atest_1.id = t2 and btest_2.id = atest_1.id;\n"
+                    "SELECT  (2 * t1 * (btest_2.b2 + atest_1.a1) + 2 * (atest_1.a1 +atest_1.a1)) * btest_2.b2 FROM atest_1, btest_2 WHERE atest_1.id = t2 and btest_2.id = atest_1.id;\n",
+""
+//            "set t1 = ?;\n" +
+//                    "set t2 = ?;\n" +
+//                    "SELECT /*+ FULLY_COV(TEE) */ atest_1.a1 + t1 FROM atest_1 WHERE atest_1.id=t2",
+//            "set t1 = ?; \n" +
+//                    "select /*+ FULLY_COV(TEE) */ \n" +
+//                    "JSB01(atest_1.a1,btest_2.b2) \n" +
+//                    "FROM atest_1,btest_2 \n" +
+//                    "WHERE atest_1.id = btest_2.id and btest_2.k = t1"
     );
 
 
@@ -49,7 +58,7 @@ public class TestStreamPql {
         for(String pql: pqls){
             SqlVo sqlVo = JSONObject.parseObject(req, SqlVo.class, Feature.OrderedField);
             sqlVo.setSqltext(pql);
-            log.info("request: " + JSON.toJSONString(sqlVo, SerializerFeature.PrettyFormat));
+//            log.info("request: " + JSON.toJSONString(sqlVo, SerializerFeature.PrettyFormat));
             try {
                 Job job = jobParser.jobPreview(sqlVo);
                 log.info("result: " + JSON.toJSONString(job, SerializerFeature.PrettyFormat,SerializerFeature.DisableCircularReferenceDetect));

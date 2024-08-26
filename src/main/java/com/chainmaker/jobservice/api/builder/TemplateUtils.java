@@ -12,6 +12,7 @@ public class TemplateUtils {
     public static ServiceVo buildServiceVo(String templateId, String templateType, int serviceId, String serviceTime) {
         ServiceVo serviceVo = ServiceVo.fromTemplateFile(String.valueOf(templateId), templateType);
         String serviceVersion = "1.0.0";
+
         serviceVo.setServiceId(String.valueOf(serviceId));
         serviceVo.setVersion(serviceVersion);
         serviceVo.setStatus(Constant.SERVICE_STATUS);

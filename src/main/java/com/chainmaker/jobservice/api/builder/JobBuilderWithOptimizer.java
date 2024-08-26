@@ -3,23 +3,26 @@ package com.chainmaker.jobservice.api.builder;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.Constant;
 import com.chainmaker.jobservice.api.enums.JobType;
 import com.chainmaker.jobservice.api.model.OrgInfo;
 import com.chainmaker.jobservice.api.model.job.Job;
+import com.chainmaker.jobservice.api.model.job.service.ExposeEndpoint;
+import com.chainmaker.jobservice.api.model.job.service.ReferExposeEndpoint;
 import com.chainmaker.jobservice.api.model.job.service.Service;
+import com.chainmaker.jobservice.api.model.job.service.Value;
 import com.chainmaker.jobservice.api.model.job.task.*;
 import com.chainmaker.jobservice.api.model.job.task.Module;
-import com.chainmaker.jobservice.api.model.vo.ExposeFormVo;
-import com.chainmaker.jobservice.api.model.vo.ServiceVo;
-import com.chainmaker.jobservice.api.model.vo.SqlVo;
+import com.chainmaker.jobservice.api.model.vo.*;
 import com.chainmaker.jobservice.api.sqlrewrite.CalciteRelOps;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.FieldInfo;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.MPCMetadata;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
 import com.chainmaker.jobservice.core.calcite.relnode.*;
 import com.chainmaker.jobservice.core.calcite.utils.ParserWithOptimizerReturnValue;
+import com.chainmaker.jobservice.core.optimizer.model.InputData;
 import com.chainmaker.jobservice.core.optimizer.plans.*;
 import com.chainmaker.jobservice.core.parser.plans.*;
 import com.chainmaker.jobservice.core.parser.tree.*;
@@ -38,6 +41,8 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -102,6 +107,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private String orgID;
     private String orgName;
     private String sql;
+
+    private String sqlVo;
 
     private Map<String, RelNode> tableOriginTableMap = new HashMap<>();
 
@@ -2196,5 +2203,104 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             parties = parties.stream().filter(StreamUtils.distinctByKey(Party::getPartyId)).collect(Collectors.toList());
             tasks.get(flag).setPartyList(parties);
         }
+    }
+
+    public List<Party> partiesFromMap(){
+        Set<String> assetNames = this.tableOriginTableMap.values().stream().map(x -> x.getTable().getQualifiedName().get(0)).collect(Collectors.toSet());
+        List<Party> parties = assetNames.stream().map(x -> {
+            TableInfo info = MPCMetadata.getInstance().getTable(x);
+            Party party = new Party();
+            party.setPartyId(info.getOrgDId());
+            party.setPartyName(info.getOrgName());
+            return party;
+        }).collect(Collectors.toList());
+        return parties;
+    }
+
+    public void buildSerivce(){
+        List<Party> parties = partiesFromMap();
+        String defaultOrgId = orgID;
+        String defaultOrgName = orgName;
+        if(parties.size() < 2){
+//            throw new RuntimeException("PirFilter must have at least two parties");
+        }else {
+            Party defaultParty = parties.stream().filter(x -> !x.getPartyId().equals(orgID)).findAny().get();
+            defaultOrgId = defaultParty.getPartyId();
+            defaultOrgName = defaultParty.getPartyName();
+        }
+        if (modelType == 0) {
+            Integer templateId = 2;
+            HashMap<String, String> map = new HashMap<>();
+            List<ServiceVo> serviceVos = new ArrayList<>();
+            for (int i = 0; i < 2; i++) {
+                String templateType = "";
+                switch (i) {
+                    case 0:
+                        templateType = "PirClient4Query";
+                        break;
+                    case 1:
+                        templateType = "PirServer4Query";
+                        break;
+                }
+                ServiceVo serviceVo = TemplateUtils.buildServiceVo(templateId, templateType, i, createTime);
+                map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getServiceId());
+                serviceVos.add(serviceVo);
+            }
+            for (ServiceVo serviceVo : serviceVos) {
+                Service service = new Service();
+                BeanUtils.copyProperties(serviceVo, service);
+                if (serviceVo.getServiceClass().equals("PirClient4Query")) {
+                    service.setPartyId(orgID);
+                    service.setPartyName(orgName);
+                } else {
+                    service.setPartyId(defaultOrgId);
+                    service.setPartyName(defaultOrgName);
+                }
+                List<ReferExposeEndpoint> referExposeEndpointList = new ArrayList<>();
+                for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
+                    referEndpoint.setReferServiceID(map.get(referEndpoint.getName()));
+                    ReferExposeEndpoint referExposeEndpoint = new ReferExposeEndpoint();
+                    referExposeEndpoint.setReferServiceId(map.get(referEndpoint.getName()));
+                    referExposeEndpoint.setReferEndpointName(referEndpoint.getReferEndpointName());
+                    referExposeEndpoint.setProtocol(referEndpoint.getProtocol());
+                    referExposeEndpoint.setId(referEndpoint.getName());
+                    referExposeEndpoint.setName(referEndpoint.getName());
+                    referExposeEndpointList.add(referExposeEndpoint);
+                }
+                List<ExposeEndpoint> exposeEndpointList = new ArrayList<>();
+                for (ExposeEndpointVo exposeEndpointVo : serviceVo.getExposeEndpoints()) {
+                    ExposeEndpoint exposeEndpoint = new ExposeEndpoint();
+                    HashMap<String, String> exposeEndpointFormMap = new HashMap<>();
+                    for (ExposeFormVo exposeFormVo : exposeEndpointVo.getForm()) {
+                        exposeEndpointFormMap.put(exposeFormVo.getKey(), exposeFormVo.getValues());
+                    }
+                    exposeEndpoint.setPartyId(service.getPartyId());
+                    exposeEndpoint.setPartyName(service.getPartyName());
+                    exposeEndpoint.setDescription(exposeEndpointFormMap.get("description"));
+                    exposeEndpoint.setTlsEnabled(Boolean.valueOf(exposeEndpointFormMap.get("tlsEnabled")));
+                    exposeEndpoint.setServiceCa(exposeEndpointFormMap.get("serviceCa"));
+                    exposeEndpoint.setServiceCert(exposeEndpointFormMap.get("serviceCert"));
+                    exposeEndpoint.setServiceKey(exposeEndpointFormMap.get("serviceKey"));
+                    exposeEndpoint.setProtocol(exposeEndpointFormMap.get("protocol"));
+                    exposeEndpoint.setMethod(exposeEndpointFormMap.get("method"));
+                    exposeEndpoint.setAddress(exposeEndpointFormMap.get("address"));
+                    exposeEndpoint.setPath(exposeEndpointFormMap.get("path"));
+                    exposeEndpoint.setName(exposeEndpointVo.getName());
+                    exposeEndpoint.setServiceClass(serviceVo.getServiceClass());
+                    List<Value> valueList = Lists.newArrayList(new Value("taskLists",tasks));
+                    exposeEndpoint.setValueList(valueList);
+                    exposeEndpointList.add(exposeEndpoint);
+                }
+                service.setServiceLabel(service.getServiceName() + "(" + service.getPartyName() + ")");
+                service.setReferExposeEndpointList(referExposeEndpointList);
+                service.setExposeEndpointList(exposeEndpointList);
+                services.add(service);
+            }
+            Map<String, String> model_method = new HashMap<>();
+            model_method.put("method_name", "pir");
+            job.setCommon(model_method);
+            tasks.clear();
+        }
+
     }
 }

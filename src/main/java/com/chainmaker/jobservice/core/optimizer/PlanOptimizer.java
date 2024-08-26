@@ -3,6 +3,7 @@ package com.chainmaker.jobservice.core.optimizer;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.builder.Pair;
+import com.chainmaker.jobservice.api.model.job.task.Input;
 import com.chainmaker.jobservice.api.model.vo.SqlVo;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
@@ -24,6 +25,7 @@ import org.apache.calcite.rex.RexNode;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * @author gaokang
@@ -43,6 +45,8 @@ public class PlanOptimizer extends LogicalPlanVisitor {
     private HashMap<String, TableInfo> metaData;
 
     private HashMap<String, List<String>> kvMap = new HashMap<>();
+
+    private List<Pair> hints = Lists.newArrayList();
 
     private String vTable = "variable|table";
     private String cTable = "constant|table";
@@ -65,10 +69,21 @@ public class PlanOptimizer extends LogicalPlanVisitor {
     }
 
     public void visit(XPCHint plan) {
+        List<Pair> list = plan.getValues().stream().map(x -> {
+            String key = x.getKey();
+            Object val = x.getValues();
+            return new Pair(key ,val);
+        }).collect(Collectors.toList());
+        hints.addAll(list);
         sqlVo.setModelType(2);
         for(XPCPlan child: plan.getChildren()){
             child.accept(this);
         }
+    }
+
+    public boolean isTee(){
+        return hints.stream()
+                .map(x -> JSONObject.toJSONString(x.getValue())).anyMatch(x -> x.contains("TEE"));
     }
 
     public void visit(FederatedLearning node) {
@@ -106,7 +121,11 @@ public class PlanOptimizer extends LogicalPlanVisitor {
             if (expr instanceof DereferenceExpression) {
                 buildProject((DereferenceExpression) expr, alias);
             } else if(expr instanceof ArithmeticBinaryExpression) {
-                buildMpc((ArithmeticBinaryExpression) expr, null, alias);
+                if(isTee()) {
+                    buildTee(expr, alias);
+                }else{
+                    buildMpc((ArithmeticBinaryExpression) expr, null, alias);
+                }
             } else if (expr instanceof FunctionCallExpression) {
                 if (sqlVo.getModelType() == 0 && sqlVo.getIsStream() == 0){
                     List<Expression> expressions = ((FunctionCallExpression) expr).getExpressions();
@@ -369,60 +388,118 @@ public class PlanOptimizer extends LogicalPlanVisitor {
     }
     /***
      * @description 解析自定义函数，生成TEE计算节点
-     * @param expression
+     * @param expression0
      * @return void
      * @author gaokang
      * @date 2022/8/21 21:30
      */
-    private void buildTee(FunctionCallExpression expression, String alias) {
-        String teePartyKey = "TEE-PARTY";
-        HashSet<String> parties = new HashSet<>();
-        TeeModel teeModel = new TeeModel();
-        teeModel.setMethodName(expression.getFunction());
-        teeModel.setDomainID(tableOwnerMap.get(teePartyKey));
-        parties.add(teeModel.getDomainID());
+    private void buildTee(Expression expression0, String alias) {
+        if(expression0 instanceof FunctionCallExpression){
+            FunctionCallExpression expression = (FunctionCallExpression)expression0;
+            String teePartyKey = "TEE-PARTY";
+            HashSet<String> parties = new HashSet<>();
+            TeeModel teeModel = new TeeModel();
+            teeModel.setMethodName(expression.getFunction());
+            teeModel.setDomainID(tableOwnerMap.get(teePartyKey));
+            parties.add(teeModel.getDomainID());
 
-        List<InputData> inputDataList = new ArrayList<>();
-        List<Expression> expressions = expression.getExpressions();
-        List<PhysicalPlan> parents = new ArrayList<>();
-        for (Expression value: expressions) {
-            if (value instanceof DereferenceExpression) {
-                PhysicalPlan parent = tableLastMap.get(((DereferenceExpression) value).getBase().toString());
+            List<InputData> inputDataList = new ArrayList<>();
+            List<Expression> expressions = expression.getExpressions();
+            List<PhysicalPlan> parents = new ArrayList<>();
+            for (Expression value: expressions) {
+                if (value instanceof DereferenceExpression) {
+                    PhysicalPlan parent = tableLastMap.get(((DereferenceExpression) value).getBase().toString());
+                    parents.add(parent);
+                    InputData inputData = new InputData();
+                    String assetName = ((DereferenceExpression) value).getBase().toString();
+                    TableInfo tableInfo = metaData.get(assetName);
+                    inputData.setTableName(tableInfo.getName());
+                    inputData.setAssetName(assetName);
+                    inputData.setColumn(((DereferenceExpression) value).getFieldName());
+                    inputData.setDomainID(tableOwnerMap.get(((DereferenceExpression) value).getBase().toString()));
+                    inputData.setNodeSrc(parent.getId());
+                    parties.add(inputData.getDomainID());
+                    inputDataList.add(inputData);
+                } else {
+                    throw new ParserException("TEE语法错误, ");
+                }
+            }
+            List<OutputData> outputDataList = new ArrayList<>();
+            OutputData outputData = new OutputData();
+            if (Objects.equals(alias, "")) {
+                alias = expression.getFunction();
+            }
+            outputData.setTableName(alias);
+            outputData.setOutputSymbol(alias);
+            outputData.setDomainID(teeModel.getDomainID());
+            outputDataList.add(outputData);
+
+            TeeMpc teeMpc = new TeeMpc();
+            teeMpc.setId(count);
+            count += 1;
+            teeMpc.setTeeModel(teeModel);
+            teeMpc.setInputDataList(inputDataList);
+            teeMpc.setOutputDataList(outputDataList);
+            teeMpc.setParties(new ArrayList<>(parties));
+            for (PhysicalPlan plan: parents) {
+                dag.addEdge(plan, teeMpc);
+            }
+        }else if (expression0 instanceof ArithmeticBinaryExpression){
+            ArithmeticBinaryExpression expression = (ArithmeticBinaryExpression) expression0;
+            HashSet<String> parties = new HashSet<>();
+            List<String> arithmeticList = new ArrayList<>();
+            HashMap<String, List<Integer>> arithmeticIndexMap = new HashMap<>();
+            Map<String, List<String>> valMap = Maps.newHashMap();
+            AtomicInteger xCount = new AtomicInteger(0);
+            ariBinaExprHandler(expression, arithmeticList, valMap, arithmeticIndexMap, xCount);
+
+            List<InputData> inputDataList = new ArrayList<>();
+            List<PhysicalPlan> parents = new ArrayList<>();
+            for (String qualifiedName: arithmeticIndexMap.keySet()) {
+                String tableName = qualifiedName.split("\\.")[0];
+                String  column = qualifiedName.split("\\.")[1];
+                PhysicalPlan parent = tableLastMap.get(tableName);
                 parents.add(parent);
                 InputData inputData = new InputData();
-                String assetName = ((DereferenceExpression) value).getBase().toString();
-                TableInfo tableInfo = metaData.get(assetName);
-                inputData.setTableName(tableInfo.getName());
-                inputData.setAssetName(assetName);
-                inputData.setColumn(((DereferenceExpression) value).getFieldName());
-                inputData.setDomainID(tableOwnerMap.get(((DereferenceExpression) value).getBase().toString()));
                 inputData.setNodeSrc(parent.getId());
+                inputData.setTableName(tableName);
+                inputData.setColumn(column);
+                inputData.setIndex(arithmeticIndexMap.get(qualifiedName));
+                inputData.setDomainID(tableOwnerMap.get(tableName));
+                TableInfo tableInfo = metaData.get(tableName);
+                inputData.setAssetName(tableInfo.getAssetName());
+                inputData.setDomainName(tableInfo.getOrgName());
                 parties.add(inputData.getDomainID());
                 inputDataList.add(inputData);
-            } else {
-                throw new ParserException("TEE语法错误, ");
+            }
+            List<OutputData> outputDataList = new ArrayList<>();
+            OutputData outputData = new OutputData();
+            outputData.setTableName(alias);
+            outputData.setOutputSymbol(alias);
+            outputData.setDomainID(inputDataList.get(0).getDomainID());
+            outputData.setDomainName(inputDataList.get(0).getDomainName());
+            outputDataList.add(outputData);
+            TeeMpc teeMpc= new TeeMpc();
+            teeMpc.setId(count);
+            count += 1;
+            if(!valMap.isEmpty()) {
+                if(valMap.containsKey(cTable)) {
+                    teeMpc.setConstants(String.join(",", valMap.get(cTable)));
+                }
+                if(valMap.containsKey(vTable)) {
+                    teeMpc.setVariables(String.join(",", valMap.get(vTable)));
+                }
+            }
+            teeMpc.setExpression(String.join("", arithmeticList));
+            teeMpc.setInputDataList(inputDataList);
+            teeMpc.setOutputDataList(outputDataList);
+            teeMpc.setParties(new ArrayList<>(parties));
+
+            for (PhysicalPlan plan: parents) {
+                dag.addEdge(plan, teeMpc);
             }
         }
-        List<OutputData> outputDataList = new ArrayList<>();
-        OutputData outputData = new OutputData();
-        if (Objects.equals(alias, "")) {
-            alias = expression.getFunction();
-        }
-        outputData.setTableName(alias);
-        outputData.setOutputSymbol(alias);
-        outputData.setDomainID(teeModel.getDomainID());
-        outputDataList.add(outputData);
 
-        TeeMpc teeMpc = new TeeMpc();
-        teeMpc.setId(count);
-        count += 1;
-        teeMpc.setTeeModel(teeModel);
-        teeMpc.setInputDataList(inputDataList);
-        teeMpc.setOutputDataList(outputDataList);
-        teeMpc.setParties(new ArrayList<>(parties));
-        for (PhysicalPlan plan: parents) {
-            dag.addEdge(plan, teeMpc);
-        }
     }
 
     /***
@@ -471,8 +548,12 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         spdzMpc.setId(count);
         count += 1;
         if(!valMap.isEmpty()) {
-            spdzMpc.setConstants(String.join(",", valMap.get(cTable)));
-            spdzMpc.setVariables(String.join(",", valMap.get(vTable)));
+            if(valMap.containsKey(cTable)) {
+                spdzMpc.setConstants(String.join(",", valMap.get(cTable)));
+            }
+            if(valMap.containsKey(vTable)) {
+                spdzMpc.setVariables(String.join(",", valMap.get(vTable)));
+            }
         }
         spdzMpc.setExpression(String.join("", arithmeticList));
         spdzMpc.setInputDataList(inputDataList);
