@@ -100,8 +100,10 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
         //支持工行项目的专用版
         if (sql.contains("TEE")) {
-            Value value = new Value("taskLists", tasks);
+            List<Task> serviceTasks = Lists.newArrayList(tasks);
+            Value value = new Value("taskLists", serviceTasks);
             services.forEach(x -> x.getExposeEndpointList().get(0).setValueList(Lists.newArrayList(value)));
+            tasks.clear();
         } else if (!tasks.isEmpty()) {
             supportGonghang();
         }
