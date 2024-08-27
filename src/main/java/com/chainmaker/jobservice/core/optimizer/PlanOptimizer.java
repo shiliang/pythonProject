@@ -229,7 +229,6 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         for (XPCPlan child: node.getChildren()) {
             child.accept(this);
         }
-        System.out.println("Filter");
         // 目前只处理pir
         PirFilter pirFilter = new PirFilter();
         pirFilter.setId(count);
@@ -253,6 +252,7 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         }
         for (InputData inputData : pirFilter.getInputDataList()) {
             PhysicalPlan parent = tableLastMap.get(inputData.getAssetName());
+            inputData.setNodeSrc(parent.getId());
             dag.addEdge(parent, pirFilter);
         }
 

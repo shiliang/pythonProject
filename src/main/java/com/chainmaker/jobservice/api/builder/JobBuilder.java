@@ -78,11 +78,14 @@ public class JobBuilder extends PhysicalPlanVisitor {
     }
 
     public boolean isPir(){
-        if(tasks.size() == 1){
-            Task task = tasks.get(0);
-            return task.getModule().getModuleName().equals(TaskType.PIR.name());
+        List<String> pirTaskTypes = Lists.newArrayList(TaskType.PIR.name(), TaskType.QUERY.name());
+        for(Task task: tasks){
+            String taskType = task.getModule().getModuleName();
+            if(!pirTaskTypes.contains(taskType)){
+                return false;
+            }
         }
-        return false;
+        return true;
     }
 
 
@@ -177,19 +180,18 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
     @Override
     public void visit(Project plan) {
-        if (sqlVo.getIsStream() != 1) {
-            String moduleName = TaskType.QUERY.name();
-            Task task = basePlanToTask(plan);
-            Module module = new Module();
-            module.setModuleName(moduleName);
+        String moduleName = TaskType.QUERY.name();
+        Task task = basePlanToTask(plan);
+        Module module = new Module();
+        module.setModuleName(moduleName);
+        String alias = plan.getOutputDataList().get(0).getOutputSymbol();
+        if(alias != null) {
             List<ModuleParam> moduleParams = new ArrayList<>();
-            moduleParams.add(new ModuleParam("alias", plan.getOutputDataList().get(0).getOutputSymbol()));
-//            JSONObject param = new JSONObject();
-//            param.put("alias", plan.getOutputDataList().get(0).getOutputSymbol());
+            moduleParams.add(new ModuleParam("alias", alias));
             module.setParamList(moduleParams);
-            task.setModule(module);
-            tasks.add(task);
         }
+        task.setModule(module);
+        tasks.add(task);
     }
     @Override
     public void visit(PirFilter plan) {
