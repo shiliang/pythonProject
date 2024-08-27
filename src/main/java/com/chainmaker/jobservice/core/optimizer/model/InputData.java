@@ -1,5 +1,7 @@
 package com.chainmaker.jobservice.core.optimizer.model;
 
+import com.alibaba.fastjson.annotation.JSONField;
+import com.chainmaker.jobservice.api.serdeser.Obj2StrSerializer;
 import lombok.Data;
 
 import java.util.List;
@@ -13,10 +15,16 @@ import java.util.List;
 @Data
 public class InputData {
     private Integer nodeSrc;
+
     private String tableName;
+
     private String column;
-    private List<Integer> index;
+
+    private String index;
+
     private String domainID;
+
     private String domainName;
+
     private String assetName;
 }

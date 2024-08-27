@@ -1,15 +1,14 @@
 package com.chainmaker.jobservice.core.optimizer;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.chainmaker.jobservice.api.builder.Pair;
-import com.chainmaker.jobservice.api.model.job.task.Input;
 import com.chainmaker.jobservice.api.model.vo.SqlVo;
 import com.chainmaker.jobservice.api.response.ParserException;
 import com.chainmaker.jobservice.core.calcite.optimizer.metadata.TableInfo;
 import com.chainmaker.jobservice.core.optimizer.model.InputData;
 import com.chainmaker.jobservice.core.optimizer.model.OutputData;
-import com.chainmaker.jobservice.core.optimizer.model.SpdzInputData;
 import com.chainmaker.jobservice.core.optimizer.model.TeeModel;
 import com.chainmaker.jobservice.core.optimizer.nodes.DAG;
 import com.chainmaker.jobservice.core.optimizer.nodes.Node;
@@ -464,7 +463,7 @@ public class PlanOptimizer extends LogicalPlanVisitor {
                 inputData.setNodeSrc(parent.getId());
                 inputData.setTableName(tableName);
                 inputData.setColumn(column);
-                inputData.setIndex(arithmeticIndexMap.get(qualifiedName));
+                inputData.setIndex(JSON.toJSONString(arithmeticIndexMap.get(qualifiedName)));
                 inputData.setDomainID(tableOwnerMap.get(tableName));
                 TableInfo tableInfo = metaData.get(tableName);
                 inputData.setAssetName(tableInfo.getAssetName());
@@ -525,11 +524,11 @@ public class PlanOptimizer extends LogicalPlanVisitor {
             String  column = qualifiedName.split("\\.")[1];
             PhysicalPlan parent = tableLastMap.get(tableName);
             parents.add(parent);
-            SpdzInputData inputData = new SpdzInputData();
+            InputData inputData = new InputData();
             inputData.setNodeSrc(parent.getId());
             inputData.setTableName(tableName);
             inputData.setColumn(column);
-            inputData.setIndex(arithmeticIndexMap.get(qualifiedName));
+            inputData.setIndex(JSON.toJSONString(arithmeticIndexMap.get(qualifiedName)));
             inputData.setDomainID(tableOwnerMap.get(tableName));
             TableInfo tableInfo = metaData.get(tableName);
             inputData.setAssetName(tableInfo.getAssetName());

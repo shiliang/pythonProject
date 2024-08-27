@@ -2,11 +2,9 @@ package com.chainmaker.jobservice.api.builder;
 
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.Constant;
 import com.chainmaker.jobservice.api.enums.JobType;
-import com.chainmaker.jobservice.api.model.*;
 import com.chainmaker.jobservice.api.model.job.Job;
 import com.chainmaker.jobservice.api.model.job.service.*;
 import com.chainmaker.jobservice.api.model.job.task.*;
@@ -15,7 +13,6 @@ import com.chainmaker.jobservice.api.model.vo.*;
 import com.chainmaker.jobservice.core.optimizer.model.FL.FlInputData;
 import com.chainmaker.jobservice.core.optimizer.model.InputData;
 import com.chainmaker.jobservice.core.optimizer.model.OutputData;
-import com.chainmaker.jobservice.core.optimizer.model.SpdzInputData;
 import com.chainmaker.jobservice.core.optimizer.model.TeeModel;
 import com.chainmaker.jobservice.core.optimizer.nodes.DAG;
 import com.chainmaker.jobservice.core.optimizer.nodes.Node;
@@ -40,7 +37,7 @@ import java.util.stream.Collectors;
 public class JobBuilder extends PhysicalPlanVisitor {
 
     private enum TaskType {
-        QUERY, PIR, PSI, MPC, TEE, FL, MPCEXP
+        QUERY, PIR, TEE, FL, MPCEXP
     }
     private final String orgID;
     private final String orgName;
@@ -80,6 +77,13 @@ public class JobBuilder extends PhysicalPlanVisitor {
         return job;
     }
 
+    public boolean isPir(){
+        if(tasks.size() == 1){
+            Task task = tasks.get(0);
+            return task.getModule().getModuleName().equals(TaskType.PIR.name());
+        }
+        return false;
+    }
 
 
     public void build() {
@@ -99,7 +103,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
         buildService();
 
         //支持工行项目的专用版
-        if (sql.contains("TEE")) {
+        if (sql.contains("TEE") || isPir()) {
             List<Task> serviceTasks = Lists.newArrayList(tasks);
             Value value = new Value("taskLists", serviceTasks);
             services.forEach(x -> x.getExposeEndpointList().get(0).setValueList(Lists.newArrayList(value)));
@@ -125,7 +129,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
     public void supportGonghang(){
         Task mpcTask = tasks.stream().filter(x -> x.getModule().getModuleName().equals(TaskType.MPCEXP.name())).findAny().get();
         Task pirTask = tasks.stream().filter(x -> x.getModule().getModuleName().equals(TaskType.PIR.name())).findAny().get();
-        Value value1 = new Value("inputParams", StringEscapeUtils.unescapeJson(JSON.toJSONString(mpcTask.getInput())));
+        Value value1 = new Value("inputParams", JSON.toJSONString(mpcTask.getInput()));
         List<JSONObject> idParams = pirTask.getInput().getInputDataDetailList()
                 .stream()
                 .map(x -> {
@@ -137,8 +141,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
                     obj.put("domainName", x.getDomainName());
                     return obj;
                 }).collect(Collectors.toList());
-        Value value2 = new Value("idParams", StringEscapeUtils.unescapeJson(JSON.toJSONString(idParams)));
-        Value value3 = new Value("mpcParams", StringEscapeUtils.unescapeJson(JSON.toJSONString(mpcTask.getModule())));
+        Value value2 = new Value("idParams", JSON.toJSONString(idParams));
+        Value value3 = new Value("mpcParams", JSON.toJSONString(mpcTask.getModule()));
         List<Value> valueLists = Lists.newArrayList(value1, value2, value3);
         String serviceStr = JSON.toJSONString(services);
         String newServiceStr = serviceStr.replace("PirClient", "MpcClient").replace("PirServer", "MpcServer");
@@ -333,13 +337,23 @@ public class JobBuilder extends PhysicalPlanVisitor {
 
     private void vo2Service(List<ServiceVo> serviceVos, HashMap<String, String> map) {
         List<Party> parties = partiesFromDag();
+        Party clientParty = new Party();
+        clientParty.setPartyId(orgID);
+        clientParty.setPartyName(orgName);
         for (ServiceVo serviceVo : serviceVos) {
             Service service = new Service();
             BeanUtils.copyProperties(serviceVo, service);
-            int idx = Math.min(serviceVos.indexOf(serviceVo), parties.size() -1);
-            Party party = parties.get(idx);
-            service.setPartyId(party.getPartyId());
-            service.setPartyName(party.getPartyName());
+//            int idx = Math.min(serviceVos.indexOf(serviceVo), parties.size() -1);
+            if(service.getServiceClass().contains("Client")){
+                service.setPartyId(clientParty.getPartyId());
+                service.setPartyName(clientParty.getPartyName());
+            }else{
+                Party party= parties.stream().filter(x -> !x.getPartyId().equals(orgID)).findAny().orElse(clientParty);
+                service.setPartyId(party.getPartyId());
+                service.setPartyName(party.getPartyName());
+            }
+
+
             List<ReferExposeEndpoint> referExposeEndpointList = getReferExposeEndpoints(serviceVo, map);
             List<ExposeEndpoint> exposeEndpointList = getExposeEndpoints(serviceVo, service.getPartyId(), service.getPartyName());
             service.setExposeEndpointList(exposeEndpointList);

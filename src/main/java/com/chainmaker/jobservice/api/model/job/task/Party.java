@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.api.model.job.task;
 
+import lombok.Builder;
 import lombok.Data;
 
 /**

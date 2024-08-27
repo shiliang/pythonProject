@@ -1009,7 +1009,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         module.setParamList(moduleParams);
         task.setModule(module);
 
-
         // input
         Input input = new Input();
         List<InputDetail> inputDataList = new ArrayList<>();
@@ -1027,12 +1026,20 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             inputData.setAssetName(assetName);
             inputData.setDataName(assetName);
             inputData.setDataId(assetName);
-            inputData.setDomainId(metadata.getTableOrgId(assetName));
-            inputData.setDomainName(metadata.getTable(assetName).getOrgName());
+            String domainId = metadata.getTable(assetName).getOrgDId();
+            String domainName = metadata.getTable(assetName).getOrgName();
+            inputData.setDomainId(domainId);
+            inputData.setDomainName(domainName);
             if(tasks.isEmpty()) {
                 inputData.setTaskSrc("");
             }else {
-                inputData.setTaskSrc(tasks.get(0).getTaskId());
+                Task srcTask = tasks.get(tasks.size() - 1);
+                inputData.setTaskSrc(srcTask.getTaskId());
+                for(Output output: srcTask.getOutputList()){
+                    if(output.getDomainId().equals(domainId)) {
+                        inputData.setDataName(output.getDataName());
+                    }
+                }
             }
             if(labelAsset != null) {
                 if (assetName.equalsIgnoreCase(labelAsset) || assetName.equalsIgnoreCase(guestAsset)) {
