@@ -1,5 +1,6 @@
 package com.chainmaker.jobservice.api.serdeser;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.JSONSerializer;
 import com.alibaba.fastjson.serializer.ObjectSerializer;
 import com.alibaba.fastjson.serializer.SerializeWriter;
@@ -13,8 +14,10 @@ public class Obj2StrSerializer implements ObjectSerializer {
         SerializeWriter out = serializer.getWriter();
         if (object == null) {
             out.writeNull();
+        } else if(object instanceof String) {
+            out.writeString((String) object);
         } else {
-            out.writeString(object.toString());
+            out.writeString(JSON.toJSONString(object));
         }
     }
 }
