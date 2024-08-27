@@ -17,6 +17,7 @@ import com.chainmaker.jobservice.core.optimizer.model.TeeModel;
 import com.chainmaker.jobservice.core.optimizer.nodes.DAG;
 import com.chainmaker.jobservice.core.optimizer.nodes.Node;
 import com.chainmaker.jobservice.core.optimizer.plans.*;
+import com.chainmaker.jobservice.core.parser.tree.ComparisonExpression;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -202,6 +203,12 @@ public class JobBuilder extends PhysicalPlanVisitor {
         }
         String moduleName = TaskType.PIR.name();
         Task task = basePlanToTask(plan);
+        List<InputDetail> list = task.getInput().getInputDataDetailList();
+        ComparisonExpression expression = (ComparisonExpression) plan.getCondition();
+        for(InputDetail inputDetail: list){
+            String qualifiedName = expression.getLeft().toString();
+            inputDetail.setColumnName(CalciteUtil.getColumnName(qualifiedName));
+        }
         Module module = new Module();
         module.setModuleName(moduleName);
         task.setModule(module);

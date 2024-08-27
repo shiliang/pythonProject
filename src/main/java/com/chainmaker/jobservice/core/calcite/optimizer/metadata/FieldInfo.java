@@ -32,6 +32,10 @@ public class FieldInfo {
             type = "INTEGER";
         }else if(type.toUpperCase().contains("TEXT")){
             type = "VARCHAR";
+        }else if(type.toUpperCase().contains("VARCHAR2")){
+            type = "VARCHAR";
+        }else if(type.toUpperCase().contains("DATETIME")){
+            type = "VARCHAR";
         }
         fieldType = SqlTypeName.get(type.toUpperCase());
         this.maxValue = maxValue;
