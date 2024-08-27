@@ -20,7 +20,7 @@ import java.util.List;
 public class TestStreamPql {
 
     public static final List<String> pqls = Lists.newArrayList(
-//            "select atest_1.k from atest_1 where atest_1.id= ? ",
+            "select atest_1.k, atest_1.a1 from atest_1 where atest_1.id= ? ",
 //            "select /*+ FILTER(TEE) */ atest_1.k from atest_1 where atest_1.id= ? ",
 //            "select /*+ FUNC(TEE) */ SCORE(atest_1.a1, btest_2.b2) from atest_1, btest_2 where atest_1.id = btest_2.id ",
 

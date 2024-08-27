@@ -202,14 +202,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
     public void build() {
         String taskDAG = "taskDAG";
-        Integer jobType;
-        if (this.sql.contains("FL")) {
-            jobType = JobType.FL.getValue();
-        }else if (this.sql.contains("TEE")) {
-            jobType = JobType.TEE.getValue();
-        }else {
-            jobType = JobType.MPC.getValue();
-        }
 
         HashMap<RelNode, List<Task>> phyTaskMap = new HashMap<>();
         // 生成tasks
@@ -263,6 +255,20 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             String partyId = outputs.get(0).getDomainId();
             for (ModuleParam param : task.getModule().getParamList()) {
                 param.setPartyId(partyId);
+            }
+        }
+
+        Integer jobType;
+        if (this.sql.contains("TEE")) {
+            jobType = JobType.TEE.getValue();
+        }else {
+            Optional<Task> optionalTask =  tasks.stream()
+                    .filter(x -> x.getModule().getModuleName().equals(TaskType.FL.name()))
+                    .findAny();
+            if(optionalTask.isPresent()) {
+                jobType = JobType.FL.getValue();
+            }else {
+                jobType = JobType.MPC.getValue();
             }
         }
 
@@ -2239,92 +2245,5 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             return party;
         }).collect(Collectors.toList());
         return parties;
-    }
-
-    public void buildSerivce(){
-        List<Party> parties = partiesFromMap();
-        String defaultOrgId = orgID;
-        String defaultOrgName = orgName;
-        if(parties.size() < 2){
-//            throw new RuntimeException("PirFilter must have at least two parties");
-        }else {
-            Party defaultParty = parties.stream().filter(x -> !x.getPartyId().equals(orgID)).findAny().get();
-            defaultOrgId = defaultParty.getPartyId();
-            defaultOrgName = defaultParty.getPartyName();
-        }
-        if (modelType == 0) {
-            Integer templateId = 2;
-            HashMap<String, String> map = new HashMap<>();
-            List<ServiceVo> serviceVos = new ArrayList<>();
-            for (int i = 0; i < 2; i++) {
-                String templateType = "";
-                switch (i) {
-                    case 0:
-                        templateType = "PirClient4Query";
-                        break;
-                    case 1:
-                        templateType = "PirServer4Query";
-                        break;
-                }
-                ServiceVo serviceVo = TemplateUtils.buildServiceVo(templateId, templateType, i, createTime);
-                map.put(serviceVo.getExposeEndpoints().get(0).getName(), serviceVo.getServiceId());
-                serviceVos.add(serviceVo);
-            }
-            for (ServiceVo serviceVo : serviceVos) {
-                Service service = new Service();
-                BeanUtils.copyProperties(serviceVo, service);
-                if (serviceVo.getServiceClass().equals("PirClient4Query")) {
-                    service.setPartyId(orgID);
-                    service.setPartyName(orgName);
-                } else {
-                    service.setPartyId(defaultOrgId);
-                    service.setPartyName(defaultOrgName);
-                }
-                List<ReferExposeEndpoint> referExposeEndpointList = new ArrayList<>();
-                for (ReferEndpoint referEndpoint : serviceVo.getReferEndpoints()) {
-                    referEndpoint.setReferServiceID(map.get(referEndpoint.getName()));
-                    ReferExposeEndpoint referExposeEndpoint = new ReferExposeEndpoint();
-                    referExposeEndpoint.setReferServiceId(map.get(referEndpoint.getName()));
-                    referExposeEndpoint.setReferEndpointName(referEndpoint.getReferEndpointName());
-                    referExposeEndpoint.setProtocol(referEndpoint.getProtocol());
-                    referExposeEndpoint.setId(referEndpoint.getName());
-                    referExposeEndpoint.setName(referEndpoint.getName());
-                    referExposeEndpointList.add(referExposeEndpoint);
-                }
-                List<ExposeEndpoint> exposeEndpointList = new ArrayList<>();
-                for (ExposeEndpointVo exposeEndpointVo : serviceVo.getExposeEndpoints()) {
-                    ExposeEndpoint exposeEndpoint = new ExposeEndpoint();
-                    HashMap<String, String> exposeEndpointFormMap = new HashMap<>();
-                    for (ExposeFormVo exposeFormVo : exposeEndpointVo.getForm()) {
-                        exposeEndpointFormMap.put(exposeFormVo.getKey(), exposeFormVo.getValues());
-                    }
-                    exposeEndpoint.setPartyId(service.getPartyId());
-                    exposeEndpoint.setPartyName(service.getPartyName());
-                    exposeEndpoint.setDescription(exposeEndpointFormMap.get("description"));
-                    exposeEndpoint.setTlsEnabled(Boolean.valueOf(exposeEndpointFormMap.get("tlsEnabled")));
-                    exposeEndpoint.setServiceCa(exposeEndpointFormMap.get("serviceCa"));
-                    exposeEndpoint.setServiceCert(exposeEndpointFormMap.get("serviceCert"));
-                    exposeEndpoint.setServiceKey(exposeEndpointFormMap.get("serviceKey"));
-                    exposeEndpoint.setProtocol(exposeEndpointFormMap.get("protocol"));
-                    exposeEndpoint.setMethod(exposeEndpointFormMap.get("method"));
-                    exposeEndpoint.setAddress(exposeEndpointFormMap.get("address"));
-                    exposeEndpoint.setPath(exposeEndpointFormMap.get("path"));
-                    exposeEndpoint.setName(exposeEndpointVo.getName());
-                    exposeEndpoint.setServiceClass(serviceVo.getServiceClass());
-                    List<Value> valueList = Lists.newArrayList(new Value("taskLists",tasks));
-                    exposeEndpoint.setValueList(valueList);
-                    exposeEndpointList.add(exposeEndpoint);
-                }
-                service.setServiceLabel(service.getServiceName() + "(" + service.getPartyName() + ")");
-                service.setReferExposeEndpointList(referExposeEndpointList);
-                service.setExposeEndpointList(exposeEndpointList);
-                services.add(service);
-            }
-            Map<String, String> model_method = new HashMap<>();
-            model_method.put("method_name", "pir");
-            job.setCommon(model_method);
-            tasks.clear();
-        }
-
     }
 }
