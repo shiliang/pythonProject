@@ -438,7 +438,8 @@ public class PlanOptimizer extends LogicalPlanVisitor {
                     inputData.setAssetName(assetName);
                     inputData.setIndex(String.valueOf(index));
                     inputData.setColumn(((DereferenceExpression) value).getFieldName());
-                    inputData.setDomainID(tableOwnerMap.get(((DereferenceExpression) value).getBase().toString()));
+                    inputData.setDomainID(tableInfo.getOrgDId());
+                    inputData.setDomainName(tableInfo.getOrgName());
                     inputData.setNodeSrc(parent.getId());
                     parties.add(inputData.getDomainID());
                     inputDataList.add(inputData);
@@ -556,17 +557,17 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         List<InputData> inputDataList = new ArrayList<>();
         List<PhysicalPlan> parents = new ArrayList<>();
         for (String qualifiedName: arithmeticIndexMap.keySet()) {
-            String tableName = qualifiedName.split("\\.")[0];
+            String assetName = qualifiedName.split("\\.")[0];
             String  column = qualifiedName.split("\\.")[1];
-            PhysicalPlan parent = tableLastMap.get(tableName);
+            PhysicalPlan parent = tableLastMap.get(assetName);
             parents.add(parent);
             InputData inputData = new InputData();
             inputData.setNodeSrc(parent.getId());
-            inputData.setTableName(tableName);
             inputData.setColumn(column);
             inputData.setIndex(JSON.toJSONString(arithmeticIndexMap.get(qualifiedName)));
-            inputData.setDomainID(tableOwnerMap.get(tableName));
-            TableInfo tableInfo = metaData.get(tableName);
+            inputData.setDomainID(tableOwnerMap.get(assetName));
+            TableInfo tableInfo = metaData.get(assetName);
+            inputData.setTableName(tableInfo.getName());
             inputData.setAssetName(tableInfo.getAssetName());
             inputData.setDomainName(tableInfo.getOrgName());
             parties.add(inputData.getDomainID());

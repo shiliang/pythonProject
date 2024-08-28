@@ -72,29 +72,42 @@ public class TestMPCPql {
 
     );
 
-
-    public static void main(String[] args) {
+    public static void doSomething4log(){
         Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         rootLogger.setLevel(Level.INFO);
 
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
         Logger calciteLogger = context.getLogger("org.apache.calcite");
         calciteLogger.setLevel(Level.INFO);
+    }
 
+    public static void main(String[] args) {
+        doSomething4log();
         String req = "{\"assetInfoList\":[{\"holderCompany\":\"ida1\",\"dataInfo\":{\"dbName\":\"asset\",\"itemList\":[{\"dataLength\":0,\"dataType\":\"int\",\"name\":\"k\",\"description\":\"\",\"isPrimaryKey\":1,\"privacyQuery\":1},{\"dataLength\":0,\"dataType\":\"int\",\"name\":\"a1\",\"description\":\"名称\",\"isPrimaryKey\":0,\"privacyQuery\":1},{\"dataLength\":0,\"dataType\":\"int\",\"name\":\"a2\",\"description\":\"地址\",\"isPrimaryKey\":0,\"privacyQuery\":1},{\"dataLength\":255,\"dataType\":\"varchar\",\"name\":\"id\",\"description\":\"联系方式\",\"isPrimaryKey\":0,\"privacyQuery\":1}],\"tableName\":\"atest\"},\"scale\":\"2000条\",\"txId\":\"17bbaf383ac09a28ca60731891c3be39ef04b3fc414648eeab71fb4e9d6bf080\",\"cycle\":\"1分\",\"assetType\":1,\"assetNumber\":\"120240311000014376\",\"assetId\":\"37\",\"intro\":\"atest\",\"assetName\":\"atest_1\",\"uploadedAt\":\"2024-03-11 18:31:56\",\"assetEnName\":\"atest_1\",\"timeSpan\":\"2024/03/01 ~ 2024/03/31\"},{\"holderCompany\":\"ida2\",\"dataInfo\":{\"dbName\":\"asset\",\"itemList\":[{\"dataLength\":0,\"dataType\":\"int\",\"name\":\"k\",\"description\":\"\",\"isPrimaryKey\":1,\"privacyQuery\":1},{\"dataLength\":0,\"dataType\":\"int\",\"name\":\"b1\",\"description\":\"名称\",\"isPrimaryKey\":0,\"privacyQuery\":1},{\"dataLength\":0,\"dataType\":\"int\",\"name\":\"b2\",\"description\":\"地址\",\"isPrimaryKey\":0,\"privacyQuery\":1},{\"dataLength\":255,\"dataType\":\"varchar\",\"name\":\"id\",\"description\":\"联系方式\",\"isPrimaryKey\":0,\"privacyQuery\":1}],\"tableName\":\"btest\"},\"scale\":\"2000条\",\"txId\":\"17bbaf122cd2116cca2135fa7ee19dd565cb6f8aabe84a658c14997bde054372\",\"cycle\":\"1分\",\"assetType\":1,\"assetNumber\":\"320240311000015941\",\"assetId\":\"36\",\"intro\":\"btest\",\"assetName\":\"btest_2\",\"uploadedAt\":\"2024-03-11 18:29:37\",\"assetEnName\":\"btest_2\",\"timeSpan\":\"2024/03/01 ~ 2024/03/31\"}],\"sqltext\":\" select whh_enterprise_3.balance, tmp_table.socialid from whh_enterprise_3, whh_security_1,(select tmp_inner.* from (select * from whh_security_1 ) tmp_inner ) tmp_table where whh_enterprise_3.socialid\\u003d whh_security_1.socialid and tmp_table.socialid\\u003d whh_security_1.socialid\",\"isStream\":0,\"modelType\":0,\"orgInfo\":{\"orgId\":\"1\",\"orgName\":\"1-c\"}}";
-//        log.info("request: " + JSONObject.parseObject(req).toString(SerializerFeature.PrettyFormat));
         JobParserServiceImpl jobParser = new JobParserServiceImpl();
         for(String pql: pqls){
             SqlVo sqlVo = JSONObject.parseObject(req, SqlVo.class, Feature.OrderedField);
             sqlVo.setSqltext(pql);
-//            log.info("request: " + JSON.toJSONString(sqlVo, SerializerFeature.PrettyFormat));
+            Job job = new Job();
             try {
-                Job job = jobParser.jobPreview(sqlVo);
+                job = jobParser.jobPreview(sqlVo);
                 log.info("result: " + JSON.toJSONString(job, SerializerFeature.PrettyFormat,SerializerFeature.DisableCircularReferenceDetect));
             }catch (Exception e){
                 log.error(e.getMessage(), e);
             }
+            String storeKey = pql.replace("\n","");
+            CustomDelimiterKVStore.put(storeKey, JSON.toJSONString(job.getServiceList()));
         }
+        CustomDelimiterKVStore.saveToFile(getStoreInstantFile());
+    }
 
+    public static String getStoreInstantFile(){
+        String time = CustomDelimiterKVStore.formatTimestamp(System.currentTimeMillis());
+        String localFile = "store_batch";
+        return localFile + "_" + time + ".txt";
+    }
+
+    public static String getStoreBaseFile(){
+        return "store_batch.txt";
     }
 }

@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 public class JobBuilder extends PhysicalPlanVisitor {
 
     private enum TaskType {
-        QUERY, PSI, PIR, TEE, FL, MPCEXP
+        QUERY, TEEPSI, PIR, TEE, FL, MPCEXP
     }
     private final String orgID;
     private final String orgName;
@@ -202,7 +202,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
         }else{
             templateId = 2;
         }
-        String moduleName = TaskType.PSI.name();
+        String moduleName = TaskType.TEEPSI.name();
         Task task = basePlanToTask(plan);
         List<InputDetail> inputDetailList = task.getInput().getInputDataDetailList();
         List<Output> outputList = task.getOutputList();
@@ -340,20 +340,26 @@ public class JobBuilder extends PhysicalPlanVisitor {
         module.setModuleName(moduleName);
         List<ModuleParam> moduleParams = new ArrayList<>();
         TeeModel teeModel = plan.getTeeModel();
+        JSONObject params = new JSONObject();
         if(teeModel != null) {
 //            Map<String, String> model_method = new HashMap<>();
 //            model_method.put("method_name", plan.getTeeModel().getMethodName());
 //            job.setCommon(model_method);
             moduleParams.add(new ModuleParam("expression", plan.getExpression()));
+            params.put("expression", plan.getExpression());
             if(StrUtil.isNotEmpty(plan.getConstants())) {
                 moduleParams.add(new ModuleParam("constants", plan.getConstants()));
+                params.put("constants", plan.getConstants());
             }
             if(StrUtil.isNotEmpty(plan.getVariables())){
                 moduleParams.add(new ModuleParam("variables", plan.getVariables()));
+                params.put("variables", plan.getVariables());
             }
             moduleParams.add(new ModuleParam("function", plan.getTeeModel().getMethodName()));
+            params.put("methodName", plan.getTeeModel().getMethodName());
         }
         module.setParamList(moduleParams);
+        module.setParams(params);
         task.setModule(module);
         tasks.add(task);
     }
@@ -468,6 +474,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
                 inputDetail.setDataId(assetName);
             }
             inputDetail.setAssetName(inputData.getAssetName());
+            inputDetail.setTableName(inputData.getTableName());
             inputDetail.setColumnName(inputData.getColumn());
             JSONObject inputParam = new JSONObject();
             inputParam.put("table", assetName);

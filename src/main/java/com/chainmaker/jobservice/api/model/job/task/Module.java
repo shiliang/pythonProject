@@ -17,6 +17,8 @@ public class Module {
     private String moduleName;
     private List<ModuleParam> paramList;
 
+    private Object params;
+
     public Object getValueByKey(String key){
         for (ModuleParam moduleParam : paramList) {
             if (moduleParam.getKey().equals(key)){

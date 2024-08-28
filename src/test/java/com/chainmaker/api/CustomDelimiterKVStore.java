@@ -22,10 +22,10 @@ public class CustomDelimiterKVStore {
         put("key2", "中文");
 
         // 保存到文件
-        saveToFile();
+        saveToFile(DEFAULT_DB_PATH);
 
         // 从文件加载
-        loadFromFile(null);
+        loadFromFile(DEFAULT_DB_PATH);
 
         // 获取键值对
         String value1 = get("key2");
@@ -33,7 +33,7 @@ public class CustomDelimiterKVStore {
 
         // 删除键值对
         delete("key2");
-        saveToFile();
+        saveToFile(DEFAULT_DB_PATH);
     }
 
 
@@ -43,14 +43,11 @@ public class CustomDelimiterKVStore {
         store.setProperty(key, value);
     }
 
-    private static String formatTimestamp(long timestamp) {
+    public static String formatTimestamp(long timestamp) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault()).format(formatter);
     }
     public static String get(String key) {
-        if(store.isEmpty()){
-            loadFromFile(DEFAULT_DB_PATH);
-        }
         return store.getProperty(key);
     }
 
@@ -58,9 +55,8 @@ public class CustomDelimiterKVStore {
         store.remove(key);
     }
 
-    public static void saveToFile() {
-        ;
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(DB_PATH, StandardCharsets.UTF_8, false))) {
+    public static void saveToFile(String fileName) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, StandardCharsets.UTF_8, false))) {
             // 自定义分隔符
             for (String key : store.stringPropertyNames()) {
                 writer.write(key + DELIMITER + store.getProperty(key) + "\n");
@@ -70,11 +66,8 @@ public class CustomDelimiterKVStore {
         }
     }
 
-    public static void loadFromFile(String filePath) {
-        if(StrUtil.isEmpty(filePath)){
-            filePath = DB_PATH;
-        }
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+    public static void loadFromFile(String fileName) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
             store.clear();
             String line;
             while ((line = reader.readLine()) != null) {
