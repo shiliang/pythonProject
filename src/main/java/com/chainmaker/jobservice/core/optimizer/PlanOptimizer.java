@@ -225,42 +225,61 @@ public class PlanOptimizer extends LogicalPlanVisitor {
 
     }
 
+    public boolean isFullyCov(){
+        if(!hints.isEmpty()){
+            return hints.stream().anyMatch(x ->
+                    x.getKey().equalsIgnoreCase("FULLY_COV") &&
+                    x.getValue().toString().contains("TEE")
+            );
+        }
+        return false;
+    }
+
     public void visit(XPCFilter node) {
         for (XPCPlan child: node.getChildren()) {
             child.accept(this);
         }
-        // 目前只处理pir
-        PirFilter pirFilter = new PirFilter();
-        pirFilter.setId(count);
-        if (!kvMap.isEmpty()) {
-            pirFilter.setProject(kvMap);
-        }
-        count += 1;
-
         HashSet<String> parties = new HashSet<>();
         List<InputData> inputDataList = new ArrayList<>();
         List<OutputData> outputDataList = new ArrayList<>();
         if (node.getCondition() instanceof ComparisonExpression) {
-//            if (((ComparisonExpression) node.getCondition()).getRight().toString().equals("?")) {
-            dealPir(((ComparisonExpression) node.getCondition()).getLeft(), inputDataList, outputDataList, parties);
+            dealFilter(((ComparisonExpression) node.getCondition()).getLeft(), inputDataList, outputDataList, parties);
+        }
+        if(isFullyCov()) {
+            TeePSI teePSI = new TeePSI();
+            teePSI.setId(count);
+            teePSI.setInputDataList(inputDataList);
+            teePSI.setOutputDataList(outputDataList);
+            teePSI.setCondition(node.getCondition());
+            teePSI.setParties(new ArrayList<>(parties));
+            for (InputData inputData : teePSI.getInputDataList()) {
+                PhysicalPlan parent = tableLastMap.get(inputData.getAssetName());
+                inputData.setNodeSrc(parent.getId());
+                dag.addEdge(parent, teePSI);
+            }
+        }else{// 目前只处理pir
+            PirFilter pirFilter = new PirFilter();
+            pirFilter.setId(count);
+            if (!kvMap.isEmpty()) {
+                pirFilter.setProject(kvMap);
+            }
             pirFilter.setInputDataList(inputDataList);
             pirFilter.setOutputDataList(outputDataList);
             pirFilter.setCondition(node.getCondition());
             pirFilter.setParties(new ArrayList<>(parties));
-//            }
-
+            for (InputData inputData : pirFilter.getInputDataList()) {
+                PhysicalPlan parent = tableLastMap.get(inputData.getAssetName());
+                inputData.setNodeSrc(parent.getId());
+                dag.addEdge(parent, pirFilter);
+            }
         }
-        for (InputData inputData : pirFilter.getInputDataList()) {
-            PhysicalPlan parent = tableLastMap.get(inputData.getAssetName());
-            inputData.setNodeSrc(parent.getId());
-            dag.addEdge(parent, pirFilter);
-        }
+        count++;
 
     }
-    private void dealPir(Expression condition, List<InputData> inputDataList, List<OutputData> outputDataList, HashSet<String> parties) {
+    private void dealFilter(Expression condition, List<InputData> inputDataList, List<OutputData> outputDataList, HashSet<String> parties) {
         if (condition instanceof ComparisonExpression) {
-            dealPir(((ComparisonExpression) condition).getLeft(), inputDataList, outputDataList, parties);
-            dealPir(((ComparisonExpression) condition).getRight(), inputDataList, outputDataList, parties);
+            dealFilter(((ComparisonExpression) condition).getLeft(), inputDataList, outputDataList, parties);
+            dealFilter(((ComparisonExpression) condition).getRight(), inputDataList, outputDataList, parties);
         } else if (condition instanceof DereferenceExpression) {
             DereferenceExpression expression = (DereferenceExpression) condition;
             PhysicalPlan parent = tableLastMap.get(expression.getBase().toString());
@@ -405,6 +424,9 @@ public class PlanOptimizer extends LogicalPlanVisitor {
             List<InputData> inputDataList = new ArrayList<>();
             List<Expression> expressions = expression.getExpressions();
             List<PhysicalPlan> parents = new ArrayList<>();
+            List<String> expr = Lists.newArrayList();
+            List<String> variables = Lists.newArrayList();
+            int index = 0;
             for (Expression value: expressions) {
                 if (value instanceof DereferenceExpression) {
                     PhysicalPlan parent = tableLastMap.get(((DereferenceExpression) value).getBase().toString());
@@ -414,12 +436,24 @@ public class PlanOptimizer extends LogicalPlanVisitor {
                     TableInfo tableInfo = metaData.get(assetName);
                     inputData.setTableName(tableInfo.getName());
                     inputData.setAssetName(assetName);
+                    inputData.setIndex(String.valueOf(index));
                     inputData.setColumn(((DereferenceExpression) value).getFieldName());
                     inputData.setDomainID(tableOwnerMap.get(((DereferenceExpression) value).getBase().toString()));
                     inputData.setNodeSrc(parent.getId());
                     parties.add(inputData.getDomainID());
                     inputDataList.add(inputData);
-                } else {
+                    expr.add("x");
+                    index++;
+                } else if(value instanceof Identifier) {
+                    InputData inputData = new InputData();
+                    inputData.setColumn(((Identifier) value).getIdentifier());
+                    inputData.setDomainID(sqlVo.getOrgInfo().getOrgId());
+                    inputData.setDomainName(sqlVo.getOrgInfo().getOrgName());
+                    parties.add(inputData.getDomainID());
+                    inputDataList.add(inputData);
+                    expr.add("v");
+                    variables.add(((Identifier) value).getIdentifier());
+                }else{
                     throw new ParserException("TEE语法错误, ");
                 }
             }
@@ -439,6 +473,8 @@ public class PlanOptimizer extends LogicalPlanVisitor {
             teeMpc.setTeeModel(teeModel);
             teeMpc.setInputDataList(inputDataList);
             teeMpc.setOutputDataList(outputDataList);
+            teeMpc.setExpression(String.join(",", expr));
+            teeMpc.setVariables(String.join(",", variables));
             teeMpc.setParties(new ArrayList<>(parties));
             for (PhysicalPlan plan: parents) {
                 dag.addEdge(plan, teeMpc);
@@ -564,40 +600,6 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         for (PhysicalPlan plan: parents) {
             dag.addEdge(plan, spdzMpc);
         }
-    }
-
-
-    public String dfsRexNode(RexNode proj, List<String> constants) {
-        String expr = "";
-        if (proj instanceof RexCall) {
-            String tmpl = dfsRexNode(((RexCall) proj).getOperands().get(0), constants);
-            if (tmpl.length() > 1 && tmpl.contains("x")) {
-                expr += "(" + tmpl + ")";
-            } else {
-                expr += tmpl;
-            }
-            String tmpOp = ((RexCall) proj).getOperator().toString();
-            if (tmpOp.equals("CAST")) {
-                return expr;
-            } else {
-                expr += tmpOp;
-            }
-            String tmpr = dfsRexNode(((RexCall) proj).getOperands().get(1), constants);
-            if (tmpr.length() > 1 && tmpr.contains("x")) {
-                expr += "(" + tmpr + ")";
-            } else {
-                expr += tmpr;
-            }
-
-        } else if (proj instanceof RexInputRef) {
-            expr += "x";
-        } else if (proj instanceof RexLiteral) {
-            expr += "c";
-            constants.add(((RexLiteral) proj).getValue().toString());
-        } else {
-            ;
-        }
-        return expr;
     }
 
     /***

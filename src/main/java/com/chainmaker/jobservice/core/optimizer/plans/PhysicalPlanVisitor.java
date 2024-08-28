@@ -16,4 +16,6 @@ public abstract class PhysicalPlanVisitor {
     public void visit(TeeMpc node){}
     public void visit(Fate node){}
 
+    public void visit(TeePSI node){}
+
 }

@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 public class JobBuilder extends PhysicalPlanVisitor {
 
     private enum TaskType {
-        QUERY, PIR, TEE, FL, MPCEXP
+        QUERY, PSI, PIR, TEE, FL, MPCEXP
     }
     private final String orgID;
     private final String orgName;
@@ -194,6 +194,41 @@ public class JobBuilder extends PhysicalPlanVisitor {
         task.setModule(module);
         tasks.add(task);
     }
+
+
+    public void visit(TeePSI plan){
+        if(sql.contains("TEE")) {
+            templateId = 3;
+        }else{
+            templateId = 2;
+        }
+        String moduleName = TaskType.PSI.name();
+        Task task = basePlanToTask(plan);
+        List<InputDetail> inputDetailList = task.getInput().getInputDataDetailList();
+        List<Output> outputList = task.getOutputList();
+        ComparisonExpression expression = (ComparisonExpression) plan.getCondition();
+        String right = expression.getRight().toString();
+        InputDetail rightInputDetail = new InputDetail();
+        rightInputDetail.setAssetName("");
+        rightInputDetail.setDataName("");
+        rightInputDetail.setDataId("");
+        rightInputDetail.setDomainId(orgID);
+        rightInputDetail.setDomainName(orgName);
+        rightInputDetail.setColumnName(right);
+
+        inputDetailList.add(rightInputDetail);
+
+        Output rightOutput = new Output();
+        rightOutput.setDomainId(orgID);
+        rightOutput.setDomainName(orgName);
+
+        outputList.add(rightOutput);
+
+        Module module = new Module();
+        module.setModuleName(moduleName);
+        task.setModule(module);
+        tasks.add(task);
+    }
     @Override
     public void visit(PirFilter plan) {
         if(sql.contains("TEE")) {
@@ -306,12 +341,9 @@ public class JobBuilder extends PhysicalPlanVisitor {
         List<ModuleParam> moduleParams = new ArrayList<>();
         TeeModel teeModel = plan.getTeeModel();
         if(teeModel != null) {
-            moduleParams.add(new ModuleParam("methodName", plan.getTeeModel().getMethodName()));
-            moduleParams.add(new ModuleParam("domainID", plan.getTeeModel().getDomainID()));
-            Map<String, String> model_method = new HashMap<>();
-            model_method.put("method_name", plan.getTeeModel().getMethodName());
-            job.setCommon(model_method);
-        }else {
+//            Map<String, String> model_method = new HashMap<>();
+//            model_method.put("method_name", plan.getTeeModel().getMethodName());
+//            job.setCommon(model_method);
             moduleParams.add(new ModuleParam("expression", plan.getExpression()));
             if(StrUtil.isNotEmpty(plan.getConstants())) {
                 moduleParams.add(new ModuleParam("constants", plan.getConstants()));
@@ -319,7 +351,7 @@ public class JobBuilder extends PhysicalPlanVisitor {
             if(StrUtil.isNotEmpty(plan.getVariables())){
                 moduleParams.add(new ModuleParam("variables", plan.getVariables()));
             }
-            moduleParams.add(new ModuleParam("function", "base"));
+            moduleParams.add(new ModuleParam("function", plan.getTeeModel().getMethodName()));
         }
         module.setParamList(moduleParams);
         task.setModule(module);
@@ -426,20 +458,17 @@ public class JobBuilder extends PhysicalPlanVisitor {
         for (int i=0; i<plan.getInputDataList().size(); i++) {
             InputData inputData = plan.getInputDataList().get(i);
             String assetName = inputData.getAssetName();
-//            String assetName = inputData.getTableName().toLowerCase();
-
             InputDetail inputDetail = new InputDetail();
             inputDetail.setDataName(assetName);
             inputDetail.setDomainId(inputData.getDomainID());
             inputDetail.setDomainName(inputData.getDomainName());
             if (inputData.getNodeSrc() != null) {
                 inputDetail.setTaskSrc(String.valueOf(inputData.getNodeSrc()));
-                inputDetail.setDataName(assetName + "-" + inputData.getNodeSrc());
             } else {
                 inputDetail.setDataId(assetName);
             }
             inputDetail.setAssetName(inputData.getAssetName());
-
+            inputDetail.setColumnName(inputData.getColumn());
             JSONObject inputParam = new JSONObject();
             inputParam.put("table", assetName);
             inputParam.put("field", inputData.getColumn().toLowerCase());
@@ -477,9 +506,10 @@ public class JobBuilder extends PhysicalPlanVisitor {
                 taskOutputData.setDataName(outputData.getTableName().toLowerCase() + "-" + plan.getId());
             }
             taskOutputData.setDomainId(outputData.getDomainID());
-            if (plan.isFinalResult()) {
-                taskOutputData.setFinalResult("Y");
-            }
+            taskOutputData.setDomainName(outputData.getDomainName());
+//            if (plan.isFinalResult()) {
+//                taskOutputData.setFinalResult("Y");
+//            }
             taskOutputDataList.add(taskOutputData);
         }
         task.setOutputList(taskOutputDataList);
