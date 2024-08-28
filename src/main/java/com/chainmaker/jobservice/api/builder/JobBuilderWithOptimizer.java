@@ -976,7 +976,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
                 if(left.equalsIgnoreCase("label")){
                     labelQualifiedField = expr.getRight().toString();
-                    labelAsset = CalciteUtil.getTableName(labelQualifiedField);
+                    labelAsset = getTableName(labelQualifiedField);
                 }
 
                 if(left.equalsIgnoreCase("features")){
@@ -1621,7 +1621,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
                 moduleparams.add(new ModuleParam("function", "base"));
                 String expr = dfsRexNode(proj, constantList);
                 moduleparams.add(new ModuleParam("expression", expr));
-            } else {
+            } else if(op.equals(SqlStdOperatorTable.AS)){
+                module.setModuleName(TaskType.QUERY.name());
+            }
+            else {
                 module.setModuleName("AGG");
                 moduleparams.add(new ModuleParam("function", op.toString()));
                 String expr = dfsRexNode(((RexCall) proj).getOperands().get(0), constantList);
@@ -2076,7 +2079,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 //        JSONObject moduleparams = new JSONObject(true);
         List<ModuleParam> moduleParams = new ArrayList<ModuleParam>();
         moduleParams.add(new ModuleParam("joinType", phyPlan.getJoinType()));
-        moduleParams.add(new ModuleParam("operator", cond.getOperator()));
+        moduleParams.add(new ModuleParam("operator", cond.getOperator().toString()));
         module.setParamList(moduleParams);
 
         if (hint != null) {
