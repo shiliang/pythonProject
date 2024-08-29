@@ -17,10 +17,6 @@ import com.chainmaker.jobservice.core.parser.plans.*;
 import com.chainmaker.jobservice.core.parser.tree.*;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexNode;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -112,13 +108,19 @@ public class PlanOptimizer extends LogicalPlanVisitor {
             child.accept(this);
         }
         List<NamedExpression> namedExpressionList = node.getProjectList().getValues();
-
+        List<DereferenceExpression> derefExprs = Lists.newArrayList();
+        List<String> aliases = Lists.newArrayList();
         for (int i=0; i<namedExpressionList.size(); i++) {
             NamedExpression namedExpression = namedExpressionList.get(i);
             Expression expr = namedExpression.getExpression();
             String alias = namedExpression.getIdentifier() == null? null: namedExpression.getIdentifier().toString();
             if (expr instanceof DereferenceExpression) {
-                buildProject((DereferenceExpression) expr, alias);
+                if(isTee()) {
+                    derefExprs.add((DereferenceExpression) expr);
+                    aliases.add(alias);
+                }else {
+                    buildProject((DereferenceExpression) expr, alias);
+                }
             } else if(expr instanceof ArithmeticBinaryExpression) {
                 if(isTee()) {
                     buildTee(expr, alias);
@@ -148,6 +150,9 @@ public class PlanOptimizer extends LogicalPlanVisitor {
             } else {
                 throw new ParserException("暂不支持");
             }
+        }
+        if(!derefExprs.isEmpty()) {
+            buildMultiProject(derefExprs, aliases);
         }
     }
 
@@ -245,7 +250,7 @@ public class PlanOptimizer extends LogicalPlanVisitor {
         if (node.getCondition() instanceof ComparisonExpression) {
             dealFilter(((ComparisonExpression) node.getCondition()).getLeft(), inputDataList, outputDataList, parties);
         }
-        if(isFullyCov()) {
+        if(isTee()) {
             TeePSI teePSI = new TeePSI();
             teePSI.setId(count);
             teePSI.setInputDataList(inputDataList);
@@ -367,6 +372,49 @@ public class PlanOptimizer extends LogicalPlanVisitor {
 //
 //    }
 
+    private void buildMultiProject(List<DereferenceExpression> expressions, List<String> aliases){
+        HashSet<String> parties = new HashSet<>();
+        Project project = new Project();
+        project.setId(count);
+        count += 1;
+        List<InputData> inputDataList = new ArrayList<>();
+        List<OutputData> outputDataList = new ArrayList<>();
+        PhysicalPlan parent = tableLastMap.get(expressions.get(0).getBase().toString());
+        for (int i=0; i<expressions.size(); i++){
+            DereferenceExpression expression = expressions.get(i);
+            String alias = aliases.get(i);
+            String assetName = expression.getBase().toString();
+            TableInfo tableInfo = metaData.get(assetName);
+            parent = tableLastMap.get(assetName);
+
+            InputData inputData = new InputData();
+            OutputData outputData = new OutputData();
+
+            inputData.setNodeSrc(parent.getId());
+            inputData.setTableName(tableInfo.getName());
+            inputData.setAssetName(assetName);
+            inputData.setColumn(expression.getFieldName());
+            inputData.setDomainID(tableInfo.getOrgDId());
+            inputData.setDomainName(tableInfo.getOrgName());
+
+            parties.add(inputData.getDomainID());
+
+            outputData.setTableName(assetName);
+            outputData.setDomainID(tableOwnerMap.get(assetName));
+            outputData.setDomainName(tableInfo.getOrgName());
+            if (Objects.equals(alias, "")) {
+                outputData.setOutputSymbol(assetName + "." + expression.getFieldName());
+            } else {
+                outputData.setOutputSymbol(alias);
+            }
+            inputDataList.add(inputData);
+            outputDataList.add(outputData);
+        }
+        project.setInputDataList(inputDataList);
+        project.setOutputDataList(outputDataList);
+        project.setParties(new ArrayList<>(parties));
+        dag.addEdge(parent, project);
+    }
 
     private void buildProject(DereferenceExpression expression, String alias) {
         HashSet<String> parties = new HashSet<>();

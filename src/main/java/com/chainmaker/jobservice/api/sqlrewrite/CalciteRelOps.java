@@ -172,14 +172,20 @@ public class CalciteRelOps {
     }
 
     public static void dealJoin(SqlJoin join){
-        SqlBasicCall left = (SqlBasicCall) join.getLeft();
-        SqlBasicCall right = (SqlBasicCall) join.getRight();
-        SqlBasicCall cond = (SqlBasicCall)join.getCondition();
-        if(left.getOperandList().stream().anyMatch(x -> x instanceof SqlSelect)){
-            dealSubQuery(left);
+        SqlNode left =  join.getLeft();
+        SqlNode right = join.getRight();
+        SqlBasicCall cond = (SqlBasicCall) join.getCondition();
+        if(left instanceof SqlBasicCall) {
+            SqlBasicCall leftCall = (SqlBasicCall)left;
+            if (leftCall.getOperandList().stream().anyMatch(x -> x instanceof SqlSelect)) {
+                dealSubQuery(leftCall);
+            }
         }
-        if(right.getOperandList().stream().anyMatch(x -> x instanceof SqlSelect)){
-            dealSubQuery(right);
+        if(right instanceof SqlBasicCall){
+            SqlBasicCall rightCall = (SqlBasicCall)right;
+            if(rightCall.getOperandList().stream().anyMatch(x -> x instanceof SqlSelect)){
+                dealSubQuery(rightCall);
+            }
         }
 
         List<SqlNode> nodes = cond.getOperandList();

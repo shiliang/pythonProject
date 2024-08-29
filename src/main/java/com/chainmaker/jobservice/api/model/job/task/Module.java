@@ -17,7 +17,7 @@ public class Module {
     private String moduleName;
     private List<ModuleParam> paramList;
 
-    private Object params;
+    private Object partyParamList;
 
     public Object getValueByKey(String key){
         for (ModuleParam moduleParam : paramList) {

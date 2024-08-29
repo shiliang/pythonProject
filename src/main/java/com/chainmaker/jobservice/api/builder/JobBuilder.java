@@ -2,6 +2,7 @@ package com.chainmaker.jobservice.api.builder;
 
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.chainmaker.jobservice.api.Constant;
 import com.chainmaker.jobservice.api.enums.JobType;
@@ -94,9 +95,10 @@ public class JobBuilder extends PhysicalPlanVisitor {
         Integer jobStatus = 10;
         String taskDAG = "taskDAG";
         Integer jobType;
-        if (this.sql.contains("FL")) {
-            jobType = JobType.FL.getValue();
-        } else if (this.sql.contains("TEE")) {
+        if(this.sql.contains("?")){
+            throw new RuntimeException("语法错误，?只能放在变量设置语句中, example: set var = ? ");
+        }
+        if (this.sql.contains("TEE")) {
             jobType = JobType.TEE.getValue();
         } else {
             jobType = JobType.MPC.getValue();
@@ -340,11 +342,9 @@ public class JobBuilder extends PhysicalPlanVisitor {
         module.setModuleName(moduleName);
         List<ModuleParam> moduleParams = new ArrayList<>();
         TeeModel teeModel = plan.getTeeModel();
+        JSONArray paramList = new JSONArray();
         JSONObject params = new JSONObject();
         if(teeModel != null) {
-//            Map<String, String> model_method = new HashMap<>();
-//            model_method.put("method_name", plan.getTeeModel().getMethodName());
-//            job.setCommon(model_method);
             moduleParams.add(new ModuleParam("expression", plan.getExpression()));
             params.put("expression", plan.getExpression());
             if(StrUtil.isNotEmpty(plan.getConstants())) {
@@ -359,7 +359,8 @@ public class JobBuilder extends PhysicalPlanVisitor {
             params.put("methodName", plan.getTeeModel().getMethodName());
         }
         module.setParamList(moduleParams);
-        module.setParams(params);
+        paramList.add(new JSONObject().fluentPut("partyId", teeModel.getDomainID()).fluentPut("params", params));
+        module.setPartyParamList(paramList);
         task.setModule(module);
         tasks.add(task);
     }
