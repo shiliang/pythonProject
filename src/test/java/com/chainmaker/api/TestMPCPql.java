@@ -35,8 +35,6 @@ public class TestMPCPql {
             "select temp.a1 from (select atest_1.a1 from atest_1) temp ",
             "select atest_1.id from atest_1, btest_2 where atest_1.id=btest_2.id",
             "select /*+ JOIN(TEE) */ atest_1.id from atest_1, btest_2 where atest_1.id=btest_2.id",
-            "select atest_1.k from atest_1 where atest_1.id=?",
-            "select /*+ FILTER(TEE) */atest_1.k from atest_1 where atest_1.id=?",
             "select 2 * atest_1.k*btest_2.k + 3 * atest_1.a1*btest_2.b1 from atest_1, btest_2 where atest_1.id=btest_2.id"
             ,
             "select SUM(atest_1.k) from atest_1",

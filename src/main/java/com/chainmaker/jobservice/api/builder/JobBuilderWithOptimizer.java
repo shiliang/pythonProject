@@ -100,7 +100,6 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private List<Task> mergedTasks = new ArrayList<>();
     private List<Task> taskcp = new ArrayList<>();
     private Set<Party> jobPartySet = Sets.newHashSet();
-    private LinkedHashSet<String> jobParties = new LinkedHashSet<>();
     private XPCPlan originPlan;
     private XPCHint hint;
     private HashMap<String, String> columnInfoMap;
@@ -395,12 +394,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         outputData.setDomainName(inputDetailList.get(0).getDomainName());
         task.setOutputList(List.of(outputData));
 
-        Party party = new Party();
-        party.setPartyId(inputDetailList.get(0).getDomainId());
-        party.setPartyName(inputDetailList.get(0).getDomainName());
-
-        task.setPartyList(List.of(party));
-
+        genParties(input, task);
         phyTaskMap.put(phyPlan, Lists.newArrayList(task));
 
         return task;
