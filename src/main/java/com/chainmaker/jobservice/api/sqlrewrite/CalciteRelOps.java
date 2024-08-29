@@ -3,6 +3,7 @@ package com.chainmaker.jobservice.api.sqlrewrite;
 
 import com.chainmaker.jobservice.api.builder.CalciteUtil;
 import com.chainmaker.jobservice.core.calcite.relnode.MPCTableScan;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -147,6 +148,7 @@ public class CalciteRelOps {
 
         SqlWriterConfig writerConfig = SqlWriterConfig.of()
                 .withDialect(sqlDialect)
+                .withQuoteAllIdentifiers(true)
                 .withAlwaysUseParentheses(true) // 可选配置，控制括号的使用
                 .withSelectListItemsOnSeparateLines(false) // 控制 SELECT 列表的格式
                 ;
@@ -167,6 +169,26 @@ public class CalciteRelOps {
             dealSubQuery((SqlBasicCall) from);
         }else{
 
+        }
+        for(int i = 0; i < node.getSelectList().size(); i++){
+            SqlNode ele = node.getSelectList().get(i);
+            if(ele instanceof SqlIdentifier){
+                SqlIdentifier field = (SqlIdentifier) ele;
+                if(field.names.size() > 1) {
+                    String name1 = field.names.get(0);
+                    String name2 = field.names.get(1);
+                    name2 = CalciteUtil.getColumnName(name2);
+                    field.names = ImmutableList.<String>builder().addAll(Lists.newArrayList(name1, name2)).build();
+                }
+            }else if(ele instanceof SqlBasicCall){
+                SqlBasicCall call = (SqlBasicCall)ele;
+                if(call.getOperator() instanceof SqlAsOperator){
+                    SqlNode operand = call.getOperandList().get(0);
+                    if(operand instanceof SqlBasicCall){
+                        node.getSelectList().set(i, operand);
+                    }
+                }
+            }
         }
         return node;
     }

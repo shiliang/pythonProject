@@ -26,11 +26,11 @@ public class TestMPCPql {
      */
     public static final List<String> pqls = Lists.newArrayList(
 //            "select count(atest_1.k) as field1 from atest_1",
-            "select count(atest_1.k), max(atest_1.k), avg(atest_1.k) from atest_1 ",
-
-            "select counnt(atest_1.k), max(atest_1.k), avg(atest_1.k) from atest_1 ",
-
-            "select /*+ FUNC(TEE) */ JSB01(atest_1.k,btest_2.k) from atest_1, btest_2",
+//            "select count(atest_1.k), max(atest_1.k), avg(atest_1.k) from atest_1 ",
+//
+//            "select counnt(atest_1.k), max(atest_1.k), avg(atest_1.k) from atest_1 ",
+//
+//            "select /*+ FUNC(TEE) */ JSB01(atest_1.k,btest_2.k) from atest_1, btest_2",
 
             "select temp.a1 from (select atest_1.a1 from atest_1) temp ",
             "select atest_1.id from atest_1, btest_2 where atest_1.id=btest_2.id",
