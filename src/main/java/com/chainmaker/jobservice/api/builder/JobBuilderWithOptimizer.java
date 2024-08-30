@@ -91,6 +91,8 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     private Map<Integer, Integer> taskIdLevelMap = new HashMap<>();
 
     private Integer taskMaxLevel = 0;
+
+    private List<Integer> leftTasks = new ArrayList<>();
     private List<Task> mergedTasks = new ArrayList<>();
     private List<Task> taskcp = new ArrayList<>();
     private Set<Party> jobPartySet = Sets.newHashSet();
@@ -156,7 +158,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         notifyPSIOthers();
 
         buildTaskIDLevelMap();
-        List<String> finalTasks = getLeafTasks();
+        List<String> finalTasks = getLeafTasks(phyTaskMap);
         for (Task task : tasks) {
             String taskId = task.getTaskId();
             List<InputDetail> inputs = task.getInput().getInputDataDetailList();
@@ -212,11 +214,9 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         job.setPartyList(new ArrayList<>(jobPartySet));
     }
 
-    public List<String> getLeafTasks(){
-        return taskIdLevelMap.entrySet().stream()
-                .filter(x -> Objects.equals(x.getValue(), taskMaxLevel))
-                .map(x -> x.getKey().toString())
-                .collect(Collectors.toList());
+    public List<String> getLeafTasks(HashMap<RelNode, List<Task>> phyTaskMap){
+        return phyTaskMap.get(phyPlan).stream()
+                .map(Task::getTaskId).collect(Collectors.toList());
     }
 
 
@@ -370,7 +370,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // 输入信息
         Input input = new Input();
-        List<InputDetail> inputDatas = new ArrayList<>();
+        List<InputDetail> inputDataList = new ArrayList<>();
 
         // 此处为临时处理，逻辑基本写死，不可扩展
         // 由于只针对三方PSI，所以需要通知的就是第一次PSI，没有其他情况，所以直接照抄第一次PSI的Task
@@ -385,29 +385,39 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             }
         }
         InputDetail inputData1 = new InputDetail();
+        InputDetail inputDetail = tasks.get(firstIdx).getInput().getInputDataDetailList().get(0);
+        JSONObject params = inputDetail.getParams();
+
         inputData1.setRole("server");
-        inputData1.setDomainId(tasks.get(firstIdx).getInput().getInputDataDetailList().get(0).getDomainId());
-        inputData1.setDomainName(tasks.get(firstIdx).getInput().getInputDataDetailList().get(0).getDomainName());
+
+        inputData1.setDomainId(inputDetail.getDomainId());
+        inputData1.setDomainName(inputDetail.getDomainName());
         inputData1.setDataName(inputData1.getDomainId() + "-" + affectedOutputNames.get(inputData1.getDomainId()));
         inputData1.setTaskSrc(String.valueOf(Integer.parseInt(affectedOutputNames.get(inputData1.getDomainId()))-1));
 //        inputData1.setComments();
         JSONObject inputData1Params = new JSONObject(true);
-        inputData1Params.put("table", tasks.get(firstIdx).getInput().getInputDataDetailList().get(0).getParams().get("table"));
-        inputData1Params.put("field", tasks.get(firstIdx).getInput().getInputDataDetailList().get(0).getParams().get("field"));
+        inputData1Params.put("table", params.get("table"));
+        inputData1Params.put("field", params.get("field"));
+        inputData1.setAssetName(String.valueOf(params.get("table")));
         inputData1.setParams(inputData1Params);
-        inputDatas.add(inputData1);
+        inputDataList.add(inputData1);
 
         InputDetail inputData2 = new InputDetail();
+        InputDetail inputDetail1 = tasks.get(firstIdx).getInput().getInputDataDetailList().get(1);
+        JSONObject params1 = inputDetail1.getParams();
+
         inputData2.setRole("client");
-        inputData2.setDomainId(tasks.get(firstIdx).getInput().getInputDataDetailList().get(1).getDomainId());
-        inputData2.setDomainName(tasks.get(firstIdx).getInput().getInputDataDetailList().get(1).getDomainName());
+        inputData2.setDomainId(inputDetail1.getDomainId());
+        inputData2.setDomainName(inputDetail1.getDomainName());
         inputData2.setDataName(inputData2.getDomainId() + "-" + affectedOutputNames.get(inputData2.getDomainId()));
         inputData2.setTaskSrc(String.valueOf(Integer.parseInt(affectedOutputNames.get(inputData2.getDomainId()))-1));
         JSONObject inputData2Params = new JSONObject(true);
-        inputData2Params.put("table", tasks.get(firstIdx).getInput().getInputDataDetailList().get(1).getParams().get("table"));
-        inputData2Params.put("field", tasks.get(firstIdx).getInput().getInputDataDetailList().get(1).getParams().get("field"));
+        inputData2Params.put("table", params1.get("table"));
+        inputData2Params.put("field", params1.get("field"));
         inputData2.setParams(inputData2Params);
-        inputDatas.add(inputData2);
+        inputData2.setAssetName(String.valueOf(params1.get("table")));
+
+        inputDataList.add(inputData2);
 
         // 确保server是完整的那一方，对output有影响，因为此处只有client方会有输出
         if (Integer.parseInt(affectedOutputNames.get(inputData1.getDomainId())) < Integer.parseInt(affectedOutputNames.get(inputData2.getDomainId()))) {
@@ -415,7 +425,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             inputData2.setRole("server");
         }
 
-        input.setInputDataDetailList(inputDatas);
+        input.setInputDataDetailList(inputDataList);
         input.setTaskId(task.getTaskName());
 //        input.setSrcTaskId(inputData1.getTaskSrc());
 //        input.setSrcTaskName(inputData1.getTaskSrc());
@@ -425,7 +435,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         // 输出信息
 //        Output output = new Output();
         List<Output> outputDatas = new ArrayList<>();
-        for (InputDetail inputData : inputDatas) {
+        for (InputDetail inputData : inputDataList) {
             if (inputData.getRole().equals("server")) {
                 continue;
             }
@@ -444,7 +454,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
 
         // parties信息
         List<Party> parties = new ArrayList<>();
-        for (InputDetail inputData : inputDatas) {
+        for (InputDetail inputData : inputDataList) {
             Party party = new Party();
             party.setServerInfo(null);
             party.setStatus(null);
@@ -1644,7 +1654,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             inputdata.setDomainId(tableInfo.getOrgDId());
             inputdata.setDomainName(tableInfo.getOrgName());
             inputDataParams.put("table",assetName);
-            inputDataParams.put("field", 1);
+            inputDataParams.put("field", "1");
 
         }else if(node instanceof MPCJoin){
             MPCJoin mpcJoin = (MPCJoin)node;
@@ -1654,8 +1664,10 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
             inputdata.setDomainName(output.getDomainName());
 
             InputDetail inputDetail = sourceTask.getInput().getInputDataDetailList().stream().filter(x -> StrUtil.isEmpty(x.getTaskSrc())).findAny().get();
-            inputDataParams.put("table", inputDetail.getAssetName());
-            inputDataParams.put("field", 1);
+            String assetName = inputDetail.getAssetName();
+            inputdata.setAssetName(assetName);
+            inputDataParams.put("table", assetName);
+            inputDataParams.put("field", "1");
         }
         Output output = sourceTask.getOutputList().get(0);
         inputdata.setTaskSrc(sourceTask.getTaskId());
@@ -1737,12 +1749,12 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
     }
 
     public Task generateJoinTask(MPCJoin phyPlan, HashMap<RelNode, List<Task>> phyTaskMap) {
-        Task task = basicTask(String.valueOf(cnt++));
         RexNode condition =phyPlan.getCondition();
         if (condition instanceof RexLiteral){
             return generateCrossJoinTask(phyPlan, phyTaskMap);
         }
         RexCall cond = (RexCall) condition;
+        Task task = basicTask(String.valueOf(cnt++));
 
         // module信息（即进行什么操作）
         task.setModule(checkPSIModule(phyPlan));

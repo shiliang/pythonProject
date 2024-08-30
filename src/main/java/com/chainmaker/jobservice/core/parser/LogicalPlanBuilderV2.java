@@ -160,7 +160,17 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         } else {
             if (whereClauseCtx == null) {
                 List<XPCPlan> fromList = visitFrom(fromClauseCtx);
-                children.addAll(fromList);
+                if(fromList.size() > 2){
+                    throw new RuntimeException("illegal: from tables num > 2, no join condition...");
+                }else if(fromList.size() == 2){
+                    List<XPCTable> froms = fromList.stream().map(x -> (XPCTable)x).collect(Collectors.toList());
+                    ComparisonExpression comparisonExpression = new ComparisonExpression(new ConstantExpression("1"), new ConstantExpression("1"), ComparisonExpression.Operator.EQUAL);
+                    XPCJoin.Type joinType = XPCJoin.Type.INNER;
+                    XPCJoin node = new XPCJoin(comparisonExpression,joinType, froms.get(0), froms.get(1));
+                    children.add(node);
+                }else if(fromList.size() == 1){
+                    children.addAll(fromList);
+                }
             } else {
                 List<XPCPlan> fromList = visitFrom(fromClauseCtx); //搜索出同级别的所有的临时表。因此同样的内部嵌套可能会遍历2遍。
                 XPCPlan node = visitWhere(context);
