@@ -186,6 +186,8 @@ public class CalciteRelOps {
                     SqlNode operand = call.getOperandList().get(0);
                     if(operand instanceof SqlBasicCall){
                         node.getSelectList().set(i, operand);
+                    }else if(operand instanceof SqlIdentifier){
+                        node.getSelectList().set(i, operand);
                     }
                 }
             }
