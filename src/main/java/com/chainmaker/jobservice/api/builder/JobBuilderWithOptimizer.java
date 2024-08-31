@@ -216,7 +216,7 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         notifyPSIOthers();
 
         buildTaskIDLevelMap();
-        List<String> finalTasks = getLeafTasks();
+        List<String> finalTasks = getLeafTasks(phyTaskMap);
         for (Task task : tasks) {
             String taskId = task.getTaskId();
             List<InputDetail> inputs = task.getInput().getInputDataDetailList();
@@ -285,12 +285,16 @@ public class JobBuilderWithOptimizer extends PhysicalPlanVisitor{
         job.setTasksDAG(taskDAG);
         job.setPartyList(new ArrayList<>(jobPartySet));
     }
-    public List<String> getLeafTasks(){
-        return taskIdLevelMap.entrySet().stream()
-                .filter(x -> Objects.equals(x.getValue(), taskMaxLevel))
-                .map(x -> x.getKey().toString())
-                .collect(Collectors.toList());
-    }
+//    public List<String> getLeafTasks(){
+//        return taskIdLevelMap.entrySet().stream()
+//                .filter(x -> Objects.equals(x.getValue(), taskMaxLevel))
+//                .map(x -> x.getKey().toString())
+//                .collect(Collectors.toList());
+//    }
+public List<String> getLeafTasks(HashMap<RelNode, List<Task>> phyTaskMap){
+    return phyTaskMap.get(phyPlan).stream()
+            .map(Task::getTaskId).collect(Collectors.toList());
+}
 
     public void buildTaskIDLevelMap() {
         HashMap<Integer, Set<Integer>> nextMap = new HashMap<>();
