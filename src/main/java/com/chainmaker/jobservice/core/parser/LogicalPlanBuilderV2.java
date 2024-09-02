@@ -39,6 +39,9 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
     private XPCPlan logicalPlan;
     private HashMap<String, XPCPlan> joinCache = new HashMap<>();
     private XPCJoin rootJoin;
+
+    private List<HintExpression> hints = Lists.newArrayList();
+
     private Expression rootFilterExpression;
     private LogicalExpression.Operator currentOp = LogicalExpression.Operator.AND;
 
@@ -123,8 +126,6 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
             if (((RegularQuerySpecificationContext) context.querySpecification()).selectClause().hints.isEmpty()) {
                 return visitRegularQuerySpecification((RegularQuerySpecificationContext) context.querySpecification());
             } else {
-                XPCPlan child = visitRegularQuerySpecification((RegularQuerySpecificationContext) context.querySpecification());
-                List<HintExpression> hintExpressions = new ArrayList<>();
                 for (HintStatementContext hintStatementContext: ((RegularQuerySpecificationContext) context.querySpecification()).selectClause().hint(0).hintStatement()) {
                     List<String> values = new ArrayList<>();
                     String key = hintStatementContext.hintName.getText();
@@ -132,11 +133,10 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
                         values.add(primaryExpressionContext.getText());
                     }
                     HintExpression hintExpression = new HintExpression(key, values);
-                    hintExpressions.add(hintExpression);
+                    hints.add(hintExpression);
                 };
-                List<XPCPlan> children = new ArrayList<>();
-                children.add(child);
-                return new XPCHint(hintExpressions, children);
+                XPCPlan child = visitRegularQuerySpecification((RegularQuerySpecificationContext) context.querySpecification());
+                return new XPCHint(hints, List.of(child));
             }
 
         } else {
@@ -155,33 +155,30 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         AggregationClauseContext aggregationClauseCtx = context.aggregationClause();
         HavingClauseContext havingClauseCtx = context.havingClause();
 
+
         if (fromClauseCtx == null) {
             throw new ParserException(DEFAULT_ERROR + ": " + "缺少From");
         } else {
             if (whereClauseCtx == null) {
                 List<XPCPlan> fromList = visitFrom(fromClauseCtx);
-                if(fromList.size() > 2){
-                    throw new RuntimeException("illegal: from tables num > 2, no join condition...");
-                }else if(fromList.size() == 2){
-                    List<XPCTable> froms = fromList.stream().map(x -> (XPCTable)x).collect(Collectors.toList());
-                    ComparisonExpression comparisonExpression = new ComparisonExpression(new ConstantExpression("1"), new ConstantExpression("1"), ComparisonExpression.Operator.EQUAL);
-                    XPCJoin.Type joinType = XPCJoin.Type.INNER;
-                    XPCJoin node = new XPCJoin(comparisonExpression,joinType, froms.get(0), froms.get(1));
-                    children.add(node);
-                }else if(fromList.size() == 1){
+                if(hints.isEmpty()) {
+                    if (fromList.size() > 2) {
+                        throw new RuntimeException("illegal: from tables num > 2, no join condition...");
+                    } else if (fromList.size() == 2) {
+                        List<XPCTable> froms = fromList.stream().map(x -> (XPCTable) x).collect(Collectors.toList());
+                        ComparisonExpression comparisonExpression = new ComparisonExpression(new ConstantExpression("1"), new ConstantExpression("1"), ComparisonExpression.Operator.EQUAL);
+                        XPCJoin.Type joinType = XPCJoin.Type.INNER;
+                        XPCJoin node = new XPCJoin(comparisonExpression, joinType, froms.get(0), froms.get(1));
+                        children.add(node);
+                    } else if (fromList.size() == 1) {
+                        children.addAll(fromList);
+                    }
+                }else{
                     children.addAll(fromList);
                 }
             } else {
                 List<XPCPlan> fromList = visitFrom(fromClauseCtx); //搜索出同级别的所有的临时表。因此同样的内部嵌套可能会遍历2遍。
                 XPCPlan node = visitWhere(context);
-                if(fromList.size() > joinCache.size()){
-                    List<XPCTable> others = fromList.stream().map(x -> (XPCTable)x).filter(x -> !joinCache.containsKey(x.getTableName())).collect(Collectors.toList());
-                    ComparisonExpression comparisonExpression = new ComparisonExpression(new ConstantExpression("1"), new ConstantExpression("1"), ComparisonExpression.Operator.EQUAL);
-                    XPCJoin.Type joinType = XPCJoin.Type.INNER;
-                    for(XPCTable other: others){
-                        node = new XPCJoin(comparisonExpression,joinType, other, node);
-                    }
-                }
                 children.add(node);
             }
         }
@@ -247,22 +244,53 @@ public class LogicalPlanBuilderV2 extends SqlBaseParserBaseVisitor {
         } else {
             throw new ParserException("暂不支持的where语法");
         }
+        //在读whereClause解析后，获取到rootJoin和rootFilterExpression。
 
-        /**
-         * 在读whereClause解析后，获取到rootJoin和rootFilterExpression。
-         *
-         */
+        List<XPCPlan> froms = visitFrom(context.fromClause());
         if (rootJoin == null) {
-            List<XPCPlan> children = visitFrom(context.fromClause());
-            return new XPCFilter(rootFilterExpression, children);
-        } else if (rootFilterExpression == null) {
-            List<XPCPlan> froms = visitFrom(context.fromClause());
+            if(hints.isEmpty()) {
+                if (froms.size() > 2) {
+                    throw new RuntimeException("illegal: from table num > 2, no join condition, this would cause too many cross join");
+                } else if (froms.size() == 2 && hints.isEmpty()) {
+                    ComparisonExpression comparisonExpression = new ComparisonExpression(new ConstantExpression("1"), new ConstantExpression("1"), ComparisonExpression.Operator.EQUAL);
+                    XPCJoin.Type joinType = XPCJoin.Type.INNER;
+                    rootJoin = new XPCJoin(comparisonExpression, joinType, froms.get(0), froms.get(1));
+                    return new XPCFilter(rootFilterExpression, List.of(rootJoin));
+                }
+            }
+            return new XPCFilter(rootFilterExpression, froms);
+        } else{
+            List<XPCPlan> unused = froms.stream().filter(x -> {
+                String tableName = null;
+                if( x instanceof XPCTable) {
+                    XPCTable table = (XPCTable)x;
+                    tableName = table.getTableName();
+                }else if(x instanceof XPCSubQuery){
+                    XPCSubQuery subQuery = (XPCSubQuery)x;
+                    tableName = subQuery.getAlias();
+                }else{
+                    throw new RuntimeException("unexpected plan type");
+                }
+                return !joinCache.containsKey(tableName);
+            }).collect(Collectors.toList());
+
+            if(hints.isEmpty()) {
+                if (unused.size() > 1) {
+                    throw new RuntimeException("The number of tables not included in the join conditions exceeds 1,this would cause too many cross join");
+                } else if (unused.size() == 1 && hints.isEmpty()) {
+                    ComparisonExpression comparisonExpression = new ComparisonExpression(new ConstantExpression("1"), new ConstantExpression("1"), ComparisonExpression.Operator.EQUAL);
+                    XPCJoin.Type joinType = XPCJoin.Type.INNER;
+                    rootJoin = new XPCJoin(comparisonExpression, joinType, unused.get(0), rootJoin);
+                }
+            }
+
+
+            if (rootFilterExpression != null){
+                List<XPCPlan> children = new ArrayList<>();
+                children.add(rootJoin);
+                return new XPCFilter(rootFilterExpression, children);
+            }
             return rootJoin;
-        } else {
-            List<XPCPlan> froms = visitFrom(context.fromClause());
-            List<XPCPlan> children = new ArrayList<>();
-            children.add(rootJoin);
-            return new XPCFilter(rootFilterExpression, children);
         }
 
     }
