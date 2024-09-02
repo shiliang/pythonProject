@@ -25,10 +25,20 @@ public class TestMPCPql {
      * 在RelNode中，表达式经过转化，变成了RexNode，结构过于繁杂，处理麻烦。
      */
     public static final List<String> pqls = Lists.newArrayList(
-//            "select count(atest_1.k) as field1 from atest_1",
-            "select count(atest_1.k), max(atest_1.k), avg(atest_1.k) from atest_1 ",
+            "select atest_1.k, btest_2.b2 from atest_1, btest_2, ctest_3 ",
+
+            "select 2 * atest_1.k*btest_2.k + 3 * atest_1.a1*ctest_3.c3 from atest_1, btest_2, ctest_3 ",
+
+            "select atest_1.k, btest_2.b2 from atest_1, btest_2, ctest_3 where atest_1.a1 = 1",
+
+            "select 2 * atest_1.k*btest_2.k + 3 * atest_1.a1*ctest_3.c3 from atest_1, btest_2, ctest_3 where atest_1.a1 = 1",
 
             "select counnt(atest_1.k), max(atest_1.k), avg(atest_1.k) from atest_1 ",
+
+            "select atest_1.k from atest_1 where atest_1.a1 = 1",
+
+            "select count(atest_1.k), max(atest_1.k), avg(atest_1.k) from atest_1 ",
+
 
             "select /*+ FUNC(TEE) */ JSB01(atest_1.k,btest_2.k) from atest_1, btest_2",
 
@@ -69,7 +79,19 @@ public class TestMPCPql {
 //            "SELECT /*+ JOIN(FL) */ TRAIN(model_name='HELR',label=btest_2.k, features= [atest_1.*,btest_2.*]) From atest_1, btest_2 WHERE atest_1.id = btest_2.id",
 //            "SELECT TRAIN(model_name='HELR',label=btest_2.k, features= [atest_1.*,btest_2.*]) From atest_1, btest_2 WHERE atest_1.id = btest_2.id",
 
-            "select 2 * atest_1.k*btest_2.k + 3 * atest_1.a1*ctest_3.c3 from atest_1, btest_2,ctest_3 where atest_1.id=btest_2.id"
+            "select 2 * atest_1.k*btest_2.k + 3 * atest_1.a1 from atest_1, btest_2",
+
+            "select 2 * atest_1.k*btest_2.k + 3 * atest_1.a1*ctest_3.c3 from atest_1, btest_2,ctest_3 where atest_1.id=btest_2.id",
+
+            "select atest_1.k, btest_2.b2  from atest_1, btest_2,ctest_3 where atest_1.id = btest_2.id and atest_1.a1 = 1",
+
+            "select 2 * atest_1.k*btest_2.k + 3 * atest_1.a1*ctest_3.c3 from atest_1, btest_2,ctest_3 where atest_1.id = btest_2.id and atest_1.a1 = 1",
+
+            "select atest_1.k, btest_2.b2  from atest_1, btest_2,ctest_3 where atest_1.id = btest_2.id and btest_2.id = ctest_3.id and atest_1.a1 = 1",
+
+            "select 2 * atest_1.k*btest_2.k + 3 * atest_1.a1*ctest_3.c3 from atest_1, btest_2,ctest_3 where atest_1.id = btest_2.id and btest_2.id = ctest_3.id and atest_1.a1 = 1",
+
+            ""
 
 
     );
