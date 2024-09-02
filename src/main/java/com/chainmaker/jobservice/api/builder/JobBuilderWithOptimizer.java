@@ -523,30 +523,41 @@ public List<String> getLeafTasks(HashMap<RelNode, List<Task>> phyTaskMap){
                 break;
             }
         }
+
         InputDetail inputData1 = new InputDetail();
         inputData1.setRole("server");
-        inputData1.setDomainId(tasks.get(firstIdx).getInput().getInputDataDetailList().get(0).getDomainId());
-        inputData1.setDomainName(tasks.get(firstIdx).getInput().getInputDataDetailList().get(0).getDomainName());
+        InputDetail inputDetail1 = tasks.get(firstIdx).getInput().getInputDataDetailList().get(0);
+        inputData1.setDomainId(inputDetail1.getDomainId());
+        inputData1.setDomainName(inputDetail1.getDomainName());
         inputData1.setDataName(inputData1.getDomainId() + "-" + affectedOutputNames.get(inputData1.getDomainId()));
         inputData1.setTaskSrc(String.valueOf(Integer.parseInt(affectedOutputNames.get(inputData1.getDomainId()))-1));
 //        inputData1.setComments();
+        JSONObject params1 = inputDetail1.getParams();
+        String assetName = params1.getString("table");
         JSONObject inputData1Params = new JSONObject(true);
-        inputData1Params.put("table", tasks.get(firstIdx).getInput().getInputDataDetailList().get(0).getParams().get("table"));
-        inputData1Params.put("field", tasks.get(firstIdx).getInput().getInputDataDetailList().get(0).getParams().get("field"));
+        inputData1Params.put("table", assetName);
+        inputData1Params.put("field", params1.get("field"));
+        inputData1.setAssetName(assetName);
         inputData1.setParams(inputData1Params);
         inputDatas.add(inputData1);
 
         InputDetail inputData2 = new InputDetail();
         inputData2.setRole("client");
-        inputData2.setDomainId(tasks.get(firstIdx).getInput().getInputDataDetailList().get(1).getDomainId());
-        inputData2.setDomainName(tasks.get(firstIdx).getInput().getInputDataDetailList().get(1).getDomainName());
+        InputDetail inputDetail2 = tasks.get(firstIdx).getInput().getInputDataDetailList().get(1);
+        inputData2.setDomainId(inputDetail2.getDomainId());
+        inputData2.setDomainName(inputDetail2.getDomainName());
         inputData2.setDataName(inputData2.getDomainId() + "-" + affectedOutputNames.get(inputData2.getDomainId()));
         inputData2.setTaskSrc(String.valueOf(Integer.parseInt(affectedOutputNames.get(inputData2.getDomainId()))-1));
+
+        JSONObject params2 = inputDetail2.getParams();
+        String assetName2 = params2.getString("table");
+        inputData2.setAssetName(assetName2);
         JSONObject inputData2Params = new JSONObject(true);
-        inputData2Params.put("table", tasks.get(firstIdx).getInput().getInputDataDetailList().get(1).getParams().get("table"));
-        inputData2Params.put("field", tasks.get(firstIdx).getInput().getInputDataDetailList().get(1).getParams().get("field"));
+        inputData2Params.put("table", assetName2);
+        inputData2Params.put("field", params2.get("field"));
         inputData2.setParams(inputData2Params);
         inputDatas.add(inputData2);
+
 
         // 确保server是完整的那一方，对output有影响，因为此处只有client方会有输出
         if (Integer.parseInt(affectedOutputNames.get(inputData1.getDomainId())) < Integer.parseInt(affectedOutputNames.get(inputData2.getDomainId()))) {
