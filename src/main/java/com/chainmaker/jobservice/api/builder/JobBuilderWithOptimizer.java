@@ -1805,10 +1805,123 @@ public List<String> getLeafTasks(HashMap<RelNode, List<Task>> phyTaskMap){
         return expr;
     }
 
-    public Task generateJoinTask(MPCJoin phyPlan, HashMap<RelNode, List<Task>> phyTaskMap) {
-        Task task = basicTask(String.valueOf(cnt++));
-        RexCall cond = (RexCall) phyPlan.getCondition();
+    public InputDetail makeCrossJoinInput(RelNode node, HashMap<RelNode, List<Task>> phyTaskMap, String role){
+        InputDetail inputdata = new InputDetail();
+        if(node instanceof RelSubset){
+            node = ((RelSubset) node).getBest();
+        }
+        Task sourceTask = phyTaskMap.get(node).get(0);
+        JSONObject inputDataParams = new JSONObject(true);
+        if(node instanceof MPCTableScan){
+            MPCTableScan mpcTableScan = (MPCTableScan)node;
+            String assetName = mpcTableScan.getTable().getQualifiedName().get(0);
+            TableInfo tableInfo = metadata.getTable(assetName);
+            inputdata.setAssetName(assetName);
+            inputdata.setTableName(tableInfo.getName());
+            inputdata.setDomainId(tableInfo.getOrgDId());
+            inputdata.setDomainName(tableInfo.getOrgName());
+            inputDataParams.put("table",assetName);
+            inputDataParams.put("field", "1");
 
+        }else if(node instanceof MPCJoin){
+            MPCJoin mpcJoin = (MPCJoin)node;
+            //因为是crossjoin， join条件为真，所以任选一个输出即可。
+            Output output = sourceTask.getOutputList().get(0);
+            inputdata.setDomainId(output.getDomainId());
+            inputdata.setDomainName(output.getDomainName());
+
+            InputDetail inputDetail = sourceTask.getInput().getInputDataDetailList().stream().filter(x -> StrUtil.isEmpty(x.getTaskSrc())).findAny().get();
+            String assetName = inputDetail.getAssetName();
+            inputdata.setAssetName(assetName);
+            inputDataParams.put("table", assetName);
+            inputDataParams.put("field", "1");
+        }
+        Output output = sourceTask.getOutputList().get(0);
+        inputdata.setTaskSrc(sourceTask.getTaskId());
+        inputdata.setDataId(output.getDataId());
+        inputdata.setDataName(output.getDataName());
+        inputdata.setParams(inputDataParams);
+        inputdata.setRole(role);
+        return inputdata;
+    }
+
+    public Task generateCrossJoinTask(MPCJoin phyPlan, HashMap<RelNode, List<Task>> phyTaskMap){
+        Task task = basicTask(String.valueOf(cnt++));
+
+        // 输入信息
+        Input input = new Input();
+        InputDetail inputdata1 = makeCrossJoinInput(phyPlan.getLeft(), phyTaskMap, "client");
+        InputDetail inputdata2 = makeCrossJoinInput(phyPlan.getRight(), phyTaskMap, "server");
+
+        input.setInputDataDetailList(List.of(inputdata1, inputdata2));
+        input.setTaskId(task.getTaskId());
+        task.setInput(input);
+
+        Output outputdata1 = new Output();
+        Output outputdata2 = new Output();
+
+        outputdata1.setDataName(inputdata1.getDomainId() + "-" + cnt);
+        outputdata1.setType(inputdata1.getType());
+        outputdata1.setLength(inputdata1.getLength());
+        outputdata1.setColumnName(inputdata1.getColumnName());
+        outputdata1.setFinalResult("N");
+        outputdata1.setDomainId(inputdata1.getDomainId());
+        outputdata1.setDomainName(inputdata1.getDomainName());
+        outputdata1.setDataId("");
+
+        outputdata2.setDataName(inputdata2.getDomainId() + "-" + cnt);
+        outputdata2.setType(inputdata2.getType());
+        outputdata2.setLength(inputdata2.getLength());
+        outputdata2.setColumnName(inputdata2.getColumnName());
+        outputdata2.setFinalResult("N");
+        outputdata2.setDomainId(inputdata2.getDomainId());
+        outputdata2.setDomainName(inputdata2.getDomainName());
+        outputdata2.setDataId("");
+
+        List<Party> parties = genParties(input,task);
+
+        if (parties.size() == 1) {
+            task.setOutputList(List.of(outputdata1));
+        } else {
+            task.setOutputList(List.of(outputdata1, outputdata2));
+        }
+
+        Module module = new Module();
+        List<ModuleParam> moduleParams = new ArrayList<ModuleParam>();
+        moduleParams.add(new ModuleParam("joinType", JoinType.INNER.name()));
+        moduleParams.add(new ModuleParam("operator", ComparisonExpression.Operator.EQUAL.toString()));
+        module.setParamList(moduleParams);
+
+        String moduleName = "";
+        if (hint != null) {
+            for (HintExpression kv : hint.getValues()) {
+                if (kv.getKey().equals("JOIN") && kv.getValues().get(0).equals("TEE")) {
+                    moduleName = TaskType.TEEPSI.name();
+                    module.setModuleName(moduleName);
+                    module.getParamList().add(new ModuleParam("teeHost", "192.168.40.21"));
+                    module.getParamList().add(new ModuleParam("teePort", "30091"));
+                    module.getParamList().add(new ModuleParam("domainID", "wx-org3.chainmaker.orgDID"));
+                }
+            }
+        }else if (parties.size() == 1) {
+            moduleName = TaskType.LOCALJOIN.name();
+        } else {
+            moduleName = TaskType.OTPSI.name();
+        }
+        module.setModuleName(moduleName);
+        task.setModule(module);
+
+        updatePhyTaskMap(phyTaskMap, phyPlan, task);
+        return task;
+    }
+
+    public Task generateJoinTask(MPCJoin phyPlan, HashMap<RelNode, List<Task>> phyTaskMap) {
+        RexNode condition =phyPlan.getCondition();
+        if (condition instanceof RexLiteral){
+            return generateCrossJoinTask(phyPlan, phyTaskMap);
+        }
+        RexCall cond = (RexCall) condition;
+        Task task = basicTask(String.valueOf(cnt++));
         // module信息（即进行什么操作）
         task.setModule(checkPSIModule(phyPlan));
 
