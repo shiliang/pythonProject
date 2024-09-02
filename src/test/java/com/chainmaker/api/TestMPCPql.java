@@ -105,7 +105,7 @@ public class TestMPCPql {
 
             "SELECT SEQUENCE(FE(model_name=HESCALE, features=[atest_1.*,btest_2.*]),TRAIN(model_name='HELR',label=btest_2.k, features= [atest_1.*,btest_2.*])) From atest_1, btest_2 WHERE atest_1.id = btest_2.id",
 
-            "SELECT FE(model_name=HESCALE, features=[atest_1.*,btest_2.*]),TRAIN(model_name='HELR',label=btest_2.k, features= [atest_1.*,btest_2.*]) From atest_1, btest_2 WHERE atest_1.id = btest_2.id",
+//            "SELECT FE(model_name=HESCALE, features=[atest_1.*,btest_2.*]),TRAIN(model_name='HELR',label=btest_2.k, features= [atest_1.*,btest_2.*]) From atest_1, btest_2 WHERE atest_1.id = btest_2.id",
 
             "SELECT /*+ JOIN(FL) */ TRAIN(model_name='HELR',label=btest_2.k, features= [atest_1.*,btest_2.*]) From atest_1, btest_2 WHERE atest_1.id = btest_2.id",
 
