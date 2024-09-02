@@ -1,62 +1,31 @@
 package com.chainmaker.jobservice.api.model.vo;
 
+import lombok.Data;
+
 import java.util.List;
 
+@Data
 public class ExposeFormVo {
-    private String key;
-    private String values;
+
     private String labels;
+
+    private String key;
+
     private String types;
+
+    private String values;
+
+    private String placeholder;
+
+    private boolean disabled;
+
     private List<SelectParam> options;
-    private String desc;
 
-    public List<SelectParam> getOptions() {
-        return options;
-    }
+    private String rules;
 
-    public void setOptions(List<SelectParam> options) {
-        this.options = options;
-    }
+    private boolean required;
 
-    public String getDesc() {
-        return desc;
-    }
-
-    public void setDesc(String desc) {
-        this.desc = desc;
-    }
-
-    public String getKey() {
-        return key;
-    }
-
-    public void setKey(String key) {
-        this.key = key;
-    }
-
-    public String getValues() {
-        return values;
-    }
-
-    public void setValues(String values) {
-        this.values = values;
-    }
-
-    public String getLabels() {
-        return labels;
-    }
-
-    public void setLabels(String labels) {
-        this.labels = labels;
-    }
-
-    public String getTypes() {
-        return types;
-    }
-
-    public void setTypes(String types) {
-        this.types = types;
-    }
+//    private String desc;
 
     @Override
     public String toString() {
@@ -66,7 +35,7 @@ public class ExposeFormVo {
                 ", labels='" + labels + '\'' +
                 ", types='" + types + '\'' +
                 ", options=" + options +
-                ", desc='" + desc + '\'' +
+//                ", desc='" + desc + '\'' +
                 '}';
     }
 }
