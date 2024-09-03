@@ -1,6 +1,7 @@
 package com.chainmaker.api;
 
 import cn.hutool.core.util.StrUtil;
+import com.google.common.collect.Maps;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -8,6 +9,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.Properties;
 
 public class CustomDelimiterKVStore {
@@ -37,10 +39,11 @@ public class CustomDelimiterKVStore {
     }
 
 
-    private static Properties store = new Properties();
+//    private static Properties store = new Properties();
+    private static LinkedHashMap<String, String> store = Maps.newLinkedHashMap();
 
     public static void put(String key, String value) {
-        store.setProperty(key, value);
+        store.put(key, value);
     }
 
     public static String formatTimestamp(long timestamp) {
@@ -48,7 +51,7 @@ public class CustomDelimiterKVStore {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault()).format(formatter);
     }
     public static String get(String key) {
-        return store.getProperty(key);
+        return store.get(key);
     }
 
     public static void delete(String key) {
@@ -58,8 +61,8 @@ public class CustomDelimiterKVStore {
     public static void saveToFile(String fileName) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, StandardCharsets.UTF_8, false))) {
             // 自定义分隔符
-            for (String key : store.stringPropertyNames()) {
-                writer.write(key + DELIMITER + store.getProperty(key) + "\n");
+            for (String key : store.keySet()) {
+                writer.write(key + DELIMITER + store.get(key) + "\n");
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -73,7 +76,7 @@ public class CustomDelimiterKVStore {
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(DELIMITER, 2); // 分割为两部分
                 if (parts.length == 2) {
-                    store.setProperty(parts[0], parts[1]);
+                    store.put(parts[0], parts[1]);
                 }
             }
         } catch (IOException e) {
