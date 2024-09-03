@@ -18,7 +18,11 @@
         "disabled": false,
         "options":"",
         "rules":"",
-        "required": true
+        "required": true,
+        "minValue": "0.01",
+        "maxValue": "0.99",
+        "valueType": "float",
+        "valueDecimals": "2"
       },
 
       {
@@ -30,7 +34,11 @@
         "disabled": false,
         "options":"",
         "rules":"",
-        "required": true
+        "required": true,
+        "minValue": "0.01",
+        "maxValue": "0.99",
+        "valueType": "float",
+        "valueDecimals": "2"
       },
 
       {
@@ -42,7 +50,11 @@
         "disabled": false,
         "options":"",
         "rules":"",
-        "required": true
+        "required": true,
+        "minValue": "0.01",
+        "maxValue": "0.99",
+        "valueType": "float",
+        "valueDecimals": "2"
       },
 
       {
@@ -54,7 +66,11 @@
         "disabled": false,
         "options":"",
         "rules":"",
-        "required": true
+        "required": true,
+        "minValue": "0.01",
+        "maxValue": "0.99",
+        "valueType": "float",
+        "valueDecimals": "2"
       },
 
       {
@@ -66,7 +82,11 @@
         "disabled": false,
         "options":"",
         "rules":"",
-        "required": true
+        "required": true,
+        "minValue": "0.01",
+        "maxValue": "0.99",
+        "valueType": "float",
+        "valueDecimals": "2"
       },
 
       {
@@ -78,7 +98,11 @@
         "disabled": false,
         "options":"",
         "rules":"",
-        "required": true
+        "required": true,
+        "minValue": "0.01",
+        "maxValue": "0.99",
+        "valueType": "float",
+        "valueDecimals": "2"
       },
 
       {
@@ -90,7 +114,11 @@
         "disabled": true,
         "options":"",
         "rules":"",
-        "required": true
+        "required": true,
+        "minValue": "0.01",
+        "maxValue": "0.99",
+        "valueType": "float",
+        "valueDecimals": "2"
       },
 
       {
@@ -102,7 +130,11 @@
         "disabled": true,
         "options":[{"value":"binary:bce","text":"binary:bce"}],
         "rules":"",
-        "required": true
+        "required": true,
+        "minValue": "0.01",
+        "maxValue": "0.99",
+        "valueType": "float",
+        "valueDecimals": "2"
       }
     ]
   }],

@@ -25,6 +25,14 @@ public class ExposeFormVo {
 
     private boolean required;
 
+    private Double minVal;
+
+    private Double maxVal;
+
+    private String valueType;
+
+    private String valDecimals;
+
 //    private String desc;
 
     @Override
