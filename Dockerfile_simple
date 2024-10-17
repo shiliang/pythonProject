@@ -1,8 +1,0 @@
-FROM openjdk:11.0.14.1-slim-buster
-WORKDIR /home/workspace
-# 设置环境变量
-ARG JAR_VERSION=1.1.0-SNAPSHOT
-# 复制构建的 JAR 文件
-COPY target/mira-job-service-${JAR_VERSION}.jar /home/workspace/mira-job-service.jar
-# 启动应用
-CMD ["java", "-jar", "mira-job-service.jar"]
