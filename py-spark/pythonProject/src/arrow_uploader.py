@@ -1,8 +1,5 @@
 from minio import Minio
-from minio.error import S3Error
-import pyarrow as pa
 import pyarrow.ipc as ipc
-import pandas as pd
 import io
 
 
@@ -32,7 +29,7 @@ class ArrowUploader:
 
         # 上传到 MinIO
         self.minio_client.put_object(
-            bucket_name="batch-data",
+            bucket_name=self.bucket_name,
             object_name=object_name,
             data=byte_stream,
             length=len(byte_stream.getvalue()),

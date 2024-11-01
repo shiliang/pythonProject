@@ -52,12 +52,12 @@ def parse_args():
 
 
 def run_spark_job(config):
-    spark = SparkSession.builder.appName("Dynamic Database Job").getOrCreate()
+    spark = SparkSession.builder.appName("Spark Database Job").getOrCreate()
     strategy = DatabaseFactory.get_strategy(
         config.dbtype, config.host, config.port, config.database, config.username, config.password
     )
-    minio_bucket = "batch-data"
-    local_file_path = f"/tmp/arrow_data/{config.filename}.arrow"
+    minio_bucket = "data-service"
+    object_name = f"{config.filename}.arrow"
     output_path = f"s3a://{minio_bucket}/{config.filename}.arrow"
 
     logger.info(f"Generated filename: {config.filename}")
@@ -71,15 +71,17 @@ def run_spark_job(config):
             .option("driver", strategy.get_driver()) \
             .load()
         print("DataFrame head:\n", df.head())
+        # 将整个 DataFrame 转换为 Arrow 格式
+        arrow_table = convert_dataframe_to_arrow(df)
+
+
         arrow_uploader = ArrowUploader(config.endpoint, config.accesskey, config.secretkey, minio_bucket)
-        arrow_batches = df.rdd.mapPartitions(convert_partition_to_arrow)
+        arrow_uploader.save_to_minio(arrow_table, object_name)
 
         logger.info("DataFrame written to MinIO successfully.")
     except Exception as e:
         logger.error(f"Error writing DataFrame to MinIO: {e}")
 
-    for i, arrow_table in enumerate(arrow_batches.collect()):
-        arrow_uploader.save_to_minio(arrow_table, f"arrow_data_part_{i}.arrow")
     notify_server_of_completion(config, output_path)
     spark.stop()
 
@@ -88,10 +90,26 @@ def notify_server_of_completion(config, minio_url):
     url = urljoin(f"http://{server_endpoint}", "/api/job/completed")
 
     try:
-        response = requests.post(url, json={"filePath": minio_url})
+        response = requests.post(url, json={"filePath": minio_url}, headers={'Content-Type': 'application/json'})
         logger.info(f"Server notification response: {response.text}")
     except Exception as e:
         logger.error(f"Failed to notify server: {e}")
+
+
+def convert_dataframe_to_arrow(df):
+    """将 DataFrame 转换为 PyArrow Table。"""
+    # 获取列名和数据
+    columns = df.columns
+    data = df.collect()
+
+    # 创建 PyArrow Table
+    arrow_table = pa.Table.from_arrays(
+        [pa.array([row[col] for row in data]) for col in columns],
+        names=columns
+    )
+
+    return arrow_table
+
 
 def convert_partition_to_arrow(rows):
     """将每个分区的数据直接转换为 PyArrow Table。"""
