@@ -27,6 +27,9 @@ class ArrowUploader:
 
         byte_stream.seek(0)  # 重置流
 
+        # 上传文件到 MinIO，打印内容验证流数据
+        print(f"Stream data (first 256 bytes): {byte_stream.getvalue()[:256]}")
+
         # 上传到 MinIO
         self.minio_client.put_object(
             bucket_name=self.bucket_name,
