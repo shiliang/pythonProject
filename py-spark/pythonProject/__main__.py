@@ -57,12 +57,6 @@ def run_spark_job(config):
         config.dbtype, config.host, config.port, config.database, config.username, config.password
     )
     minio_bucket = "data-service"
-    object_name = f"{config.filename}.arrow"
-    output_path = f"s3a://{minio_bucket}/{config.filename}.arrow"
-
-    logger.info(f"Generated filename: {config.filename}")
-    logger.info(f"Generated query: {config.query}")
-
     try:
         df = spark.read \
             .format("jdbc") \
@@ -71,26 +65,76 @@ def run_spark_job(config):
             .option("driver", strategy.get_driver()) \
             .load()
         print("DataFrame head:\n", df.head())
-        # 将整个 DataFrame 转换为 Arrow 格式
-        arrow_table = convert_dataframe_to_arrow(df)
+        logger.info("DataFrame loaded successfully.")
 
+        # 计算总行数
+        total_rows = df.count()
+        logger.info(f"Total rows: {total_rows}")
 
-        arrow_uploader = ArrowUploader(config.endpoint, config.accesskey, config.secretkey, minio_bucket)
-        arrow_uploader.save_to_minio(arrow_table, object_name)
+        # 调整分区数
+        total_data_size_gb = df.count() * df.first().__sizeof__() / (1024 * 1024 * 1024)
+        optimal_partitions = calculate_optimal_partitions(spark, total_data_size_gb)
+        logger.info(f"Optimal number of partitions: {optimal_partitions}")
+        # 重新分区
+        df = df.repartition(optimal_partitions)
 
-        logger.info("DataFrame written to MinIO successfully.")
+        # 在分区内分批
+        partition_urls = []
+        df.foreachPartition(
+            lambda partition: process_partition(partition, config, minio_bucket, partition_urls, 10000))
+
+        # 通知服务端
+        notify_server_of_completion(config, partition_urls)
     except Exception as e:
         logger.error(f"Error writing DataFrame to MinIO: {e}")
+    finally:
+        spark.stop()
 
-    notify_server_of_completion(config, output_path)
-    spark.stop()
+def process_partition(partition, config, minio_bucket, partition_urls, batch_size=10):
+    """处理每个分区，将所有批次合并为一个 Arrow 表后上传到 MinIO，并返回预签名 URL。"""
+    rows = list(partition)
+    if not rows:
+        return  # 空分区直接跳过
 
-def notify_server_of_completion(config, minio_url):
+    # 初始化存储所有批次数据的字典
+    combined_data = {}
+    columns = rows[0].asDict().keys()  # 假设每行有相同的列
+
+    # 初始化每列的列表
+    for col in columns:
+        combined_data[col] = []
+
+    # 分区内批次处理
+    for i in range(0, len(rows), batch_size):
+        # 提取当前批次数据
+        batch_rows = rows[i:i + batch_size]
+        for col in columns:
+            combined_data[col].extend([row[col] for row in batch_rows])  # 累积每列数据
+
+    # 将所有批次数据合并为一个 Arrow 表
+    arrow_table = pa.Table.from_pydict(combined_data)
+
+    # 构造文件名
+    object_name = f"{config.filename}_partition_{len(partition_urls)}.arrow"
+    arrow_uploader = ArrowUploader(config.endpoint, config.accesskey, config.secretkey, minio_bucket)
+
+    # 上传到 MinIO
+    arrow_uploader.save_to_minio(arrow_table, object_name)
+
+    # 生成预签名 URL
+    presigned_url = arrow_uploader.generate_presigned_url(object_name, expires=3600)  # 1小时有效期
+    logger.info(f"Uploaded partition with all batches to MinIO with URL: {presigned_url}")
+
+    # 将预签名 URL 添加到列表中
+    partition_urls.append(presigned_url)
+
+
+def notify_server_of_completion(config, partition_urls):
     server_endpoint = f"{config.serverip}:{config.serverport}"
     url = urljoin(f"http://{server_endpoint}", "/api/job/completed")
 
     try:
-        response = requests.post(url, json={"filePath": minio_url}, headers={'Content-Type': 'application/json'})
+        response = requests.post(url, json={"filePaths": partition_urls}, headers={'Content-Type': 'application/json'})
         logger.info(f"Server notification response: {response.text}")
     except Exception as e:
         logger.error(f"Failed to notify server: {e}")
@@ -129,6 +173,19 @@ def convert_partition_to_arrow(rows):
     )
 
     yield arrow_table
+
+def calculate_optimal_partitions(spark, total_data_size_gb, ideal_partition_size_mb=128):
+    """计算最优分区数"""
+    total_cores = spark.sparkContext.defaultParallelism
+    # 基于 CPU 核心数确定分区数量
+    partitions_based_on_cores = total_cores * 1.5
+
+    # 基于数据量确定分区数量
+    partitions_based_on_data_size = (total_data_size_gb * 1024) / ideal_partition_size_mb
+
+    # 取两个值的较大者
+    optimal_partitions = max(partitions_based_on_cores, partitions_based_on_data_size)
+    return int(optimal_partitions)
 
 if __name__ == "__main__":
     config = parse_args()

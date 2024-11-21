@@ -1,4 +1,4 @@
-from minio import Minio
+from minio import Minio, S3Error
 import pyarrow.ipc as ipc
 import io
 
@@ -40,4 +40,15 @@ class ArrowUploader:
         )
         print(f"Uploaded {object_name} successfully to MinIO.")
 
-
+    def generate_presigned_url(self, object_name, expires=3600):
+        """生成预签名 URL"""
+        try:
+            presigned_url = self.minio_client.presigned_get_object(
+                self.bucket_name,
+                object_name,
+                expires=expires  # 默认过期时间为3600秒（1小时）
+            )
+            return presigned_url
+        except S3Error as e:
+            print(f"Error generating presigned URL: {e}")
+            return None
