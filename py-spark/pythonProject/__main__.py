@@ -1,7 +1,6 @@
 import argparse
 import logging
 import uuid
-from queue import Queue
 
 import requests
 import pyarrow as pa
@@ -61,25 +60,48 @@ def run_spark_job(config):
     )
     minio_bucket = "data-service"
     try:
+        # 获取分区列上下界
+        partition_column = "id"  # 替换为实际分区列名
+        bounds_query = f"SELECT MIN({partition_column}) AS lower_bound, MAX({partition_column}) AS upper_bound FROM ({config.query.strip(';')}) AS subquery"
+        bounds_df = spark.read \
+            .format("jdbc") \
+            .option("url", strategy.get_jdbc_url()) \
+            .option("query", bounds_query) \
+            .option("driver", strategy.get_driver()) \
+            .load()
+        bounds = bounds_df.collect()[0]
+        lower_bound = bounds["lower_bound"]
+        upper_bound = bounds["upper_bound"]
+
+        if lower_bound is None or upper_bound is None:
+            raise ValueError(f"Failed to fetch bounds for partitionColumn {partition_column}")
+
+        logger.info(f"Partition bounds: lowerBound={lower_bound}, upperBound={upper_bound}")
+
+        # 读取主数据
         df = spark.read \
             .format("jdbc") \
             .option("url", strategy.get_jdbc_url()) \
-            .option("dbtable", f"({config.query.strip(';')}) dbtable") \
+            .option("dbtable", f"({config.query.strip(';')}) AS dbtable") \
             .option("driver", strategy.get_driver()) \
+            .option("partitionColumn", partition_column) \
+            .option("lowerBound", lower_bound) \
+            .option("upperBound", upper_bound) \
+            .option("numPartitions", 100) \
             .load()
         print("DataFrame head:\n", df.head())
         logger.info("DataFrame loaded successfully.")
 
         # 计算总行数
-        total_rows = df.count()
-        logger.info(f"Total rows: {total_rows}")
+        # total_rows = df.count()
+        # logger.info(f"Total rows: {total_rows}")
 
         # 调整分区数
-        total_data_size_gb = df.count() * df.first().__sizeof__() / (1024 * 1024 * 1024)
-        optimal_partitions = calculate_optimal_partitions(spark, total_data_size_gb)
-        logger.info(f"Optimal number of partitions: {optimal_partitions}")
+        # total_data_size_gb = df.count() * df.first().__sizeof__() / (1024 * 1024 * 1024)
+        # optimal_partitions = calculate_optimal_partitions(spark, total_data_size_gb)
+        # logger.info(f"Optimal number of partitions: {optimal_partitions}")
         # 重新分区
-        df = df.repartition(100)
+        # df = df.repartition(optimal_partitions)
 
         # 使用 mapPartitions 收集分区处理结果
         partition_urls = df.rdd.mapPartitions(
