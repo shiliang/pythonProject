@@ -145,7 +145,7 @@ def process_partition(partition, config, minio_bucket, batch_size=10):
 
     # 构造文件名
     unique_id = uuid.uuid4().hex
-    object_name = f"{config.filename}_partition_{unique_id}.arrow"
+    object_name = f"data/{config.filename}_partition_{unique_id}.arrow"
     logger.info(f"Constructed object name: {object_name}")
 
     # 初始化 ArrowUploader
