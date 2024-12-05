@@ -93,8 +93,8 @@ def run_spark_job(config):
         logger.info("DataFrame loaded successfully.")
 
         # 计算总行数
-        # total_rows = df.count()
-        # logger.info(f"Total rows: {total_rows}")
+        total_rows = df.count()
+        logger.info(f"Total rows: {total_rows}")
 
         # 调整分区数
         # total_data_size_gb = df.count() * df.first().__sizeof__() / (1024 * 1024 * 1024)
@@ -108,7 +108,7 @@ def run_spark_job(config):
             lambda partition: process_partition(partition, config, minio_bucket, batch_size=10000)
         ).collect()
         # 通知服务端
-        notify_server_of_completion(config, partition_urls)
+        notify_server_of_completion(config, partition_urls, total_rows)
     except Exception as e:
         logger.error(f"Error writing DataFrame to MinIO: {e}")
     finally:
@@ -167,12 +167,16 @@ def process_partition(partition, config, minio_bucket, batch_size=10):
     # 返回 URL
     return iter([presigned_url])
 
-def notify_server_of_completion(config, partition_urls):
+def notify_server_of_completion(config, partition_urls, total_rows):
     server_endpoint = f"{config.serverip}:{config.serverport}"
     url = urljoin(f"http://{server_endpoint}", "/api/job/completed")
-    logger.info(f"Partition URLs to notify server: {partition_urls}")
+    payload = {
+        "filePaths": partition_urls,
+        "totalRows": total_rows
+    }
+    logger.info(f"Partition URLs and total rows to notify server: {payload}")
     try:
-        response = requests.post(url, json={"filePaths": partition_urls}, headers={'Content-Type': 'application/json'})
+        response = requests.post(url, json=payload, headers={'Content-Type': 'application/json'})
         logger.info(f"Server notification response: {response.text}")
     except Exception as e:
         logger.error(f"Failed to notify server: {e}")
