@@ -30,6 +30,7 @@ class Config:
         self.filename = kwargs.get('filename', '')
         self.serverip = kwargs.get('serverip', '')
         self.serverport = kwargs.get('serverport', 0)
+        self.partitions = kwargs.get('partitions', None)
 
 
 def parse_args():
@@ -48,6 +49,8 @@ def parse_args():
     parser.add_argument("--password", type= str, required=True, help="Database password")
     parser.add_argument("--query", type= str, required=True, help="SQL query to execute")
     parser.add_argument("--filename", type= str, required=True, help="Filename located in OSS")
+    parser.add_argument("--partitions", type=int,
+                        help="Number of partitions to use (optional, will calculate if not provided)")
 
     args = parser.parse_args()
     return Config(**vars(args))
@@ -55,9 +58,16 @@ def parse_args():
 
 def run_spark_job(config):
     spark = SparkSession.builder.appName("Spark Database Job").getOrCreate()
+
+    # 如果没有传入分区数，则计算最优分区数
+    if config.partitions is None:
+        total_data_size_gb = get_data_size_gb(spark, config)  # 计算数据大小
+        config.partitions = calculate_optimal_partitions(spark, total_data_size_gb)
+        logger.info(f"Calculated optimal number of partitions: {config.partitions}")
     strategy = DatabaseFactory.get_strategy(
         config.dbtype, config.host, config.port, config.database, config.username, config.password
     )
+
     minio_bucket = "data-service"
     try:
         # 获取分区列上下界
@@ -87,7 +97,7 @@ def run_spark_job(config):
             .option("partitionColumn", partition_column) \
             .option("lowerBound", lower_bound) \
             .option("upperBound", upper_bound) \
-            .option("numPartitions", 100) \
+            .option("numPartitions", config.partitions) \
             .load()
         print("DataFrame head:\n", df.head())
         logger.info("DataFrame loaded successfully.")
@@ -104,18 +114,18 @@ def run_spark_job(config):
         # df = df.repartition(optimal_partitions)
 
         # 使用 mapPartitions 收集分区处理结果
-        partition_urls = df.rdd.mapPartitions(
+        partition_object_names = df.rdd.mapPartitions(
             lambda partition: process_partition(partition, config, minio_bucket, batch_size=10000)
         ).collect()
         # 通知服务端
-        notify_server_of_completion(config, partition_urls, total_rows)
+        notify_server_of_completion(config, partition_object_names, total_rows)
     except Exception as e:
         logger.error(f"Error writing DataFrame to MinIO: {e}")
     finally:
         spark.stop()
 
 def process_partition(partition, config, minio_bucket, batch_size=10):
-    """处理每个分区，将所有批次合并为一个 Arrow 表后上传到 MinIO，并返回预签名 URL。"""
+    """处理每个分区，分区内将所有批次合并为一个 Arrow 表后上传到 MinIO，"""
     rows = list(partition)
     if not rows:
         logger.info("Empty partition, skipping.")
@@ -157,15 +167,15 @@ def process_partition(partition, config, minio_bucket, batch_size=10):
     logger.info(f"Uploaded partition to MinIO: {object_name}")
 
     # 生成预签名 URL
-    presigned_url = arrow_uploader.generate_presigned_url(object_name, expires=3600)  # 1小时有效期
-    if presigned_url:
-        logger.info(f"Generated presigned URL for partition: {presigned_url}")
-    else:
-        logger.error(f"Failed to generate presigned URL for partition: {object_name}")
-        return iter([])
+    # presigned_url = arrow_uploader.generate_presigned_url(object_name, expires=3600)  # 1小时有效期
+    # if presigned_url:
+    #     logger.info(f"Generated presigned URL for partition: {presigned_url}")
+    # else:
+    #     logger.error(f"Failed to generate presigned URL for partition: {object_name}")
+    #     return iter([])
 
     # 返回 URL
-    return iter([presigned_url])
+    return iter([object_name])
 
 def notify_server_of_completion(config, partition_urls, total_rows):
     server_endpoint = f"{config.serverip}:{config.serverport}"
@@ -216,7 +226,7 @@ def convert_partition_to_arrow(rows):
 
     yield arrow_table
 
-def calculate_optimal_partitions(spark, total_data_size_gb, ideal_partition_size_mb=128):
+def calculate_optimal_partitions(spark, total_data_size_gb, ideal_partition_size_mb=64):
     """计算最优分区数"""
     total_cores = spark.sparkContext.defaultParallelism
     # 基于 CPU 核心数确定分区数量
@@ -228,6 +238,21 @@ def calculate_optimal_partitions(spark, total_data_size_gb, ideal_partition_size
     # 取两个值的较大者
     optimal_partitions = max(partitions_based_on_cores, partitions_based_on_data_size)
     return int(optimal_partitions)
+
+
+def get_data_size_gb(spark, config):
+    """估算数据大小，返回单位为GB的大小"""
+    # 读取数据来估算大小
+    df = spark.read \
+        .format("jdbc") \
+        .option("url", f"jdbc:{config.dbtype}://{config.host}:{config.port}/{config.database}") \
+        .option("dbtable", f"({config.query.strip(';')}) AS subquery") \
+        .load()
+
+    # 计算数据的大小
+    total_size_bytes = df.rdd.map(lambda row: len(str(row))).sum()  # 估算每行数据的字节数
+    total_size_gb = total_size_bytes / (1024 ** 3)  # 转换为 GB
+    return total_size_gb
 
 if __name__ == "__main__":
     config = parse_args()
